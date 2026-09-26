@@ -250,6 +250,28 @@ def test_id_real_evita_ausente_nuevo_por_contenido_dinamico():
     print("OK: un id real evita el falso AUSENTE+NUEVO cuando el contenido interno cambia por carga asíncrona")
 
 
+def test_cascada_por_posicion_x_se_colapsa():
+    """Caso real v719 (Homepage): un carrusel horizontal de links se corre
+    todo el mismo delta de X (370.03px) porque algo antes de él cambió de
+    ancho — igual que la cascada de Y, pero en el eje horizontal. Antes,
+    'DIFERENCIA POSICIÓN (X)' no estaba en TIPOS_CASCADABLES, así que
+    ninguna cascada horizontal se agrupaba nunca: quedaban N fallas MENOR
+    sueltas 'diciendo lo mismo' (visto: ~15 links con Diff idéntico)."""
+    v1 = [item('a', f'nav > a:nth-child({i})', i * 200, 50, 180, 40,
+                class_attr=f'link-{i}', texto=f'link {i}', order_index=i)
+          for i in range(1, 8)]
+    v2 = [item('a', f'nav > a:nth-child({i})', i * 200 + 370, 50, 180, 40,
+                class_attr=f'link-{i}', texto=f'link {i}', order_index=i)
+          for i in range(1, 8)]
+    fallas = core.comparar_estructura_dom(v1, v2, umbral_pixeles=3, comparar_estilos=False)
+    otras, cascadas = core.agrupar_cascadas(fallas)
+    cascadas_x = [c for c in cascadas if c.get('tipo') == 'DIFERENCIA POSICIÓN (X)']
+    assert len(cascadas_x) == 1, f"Esperaba 1 cascada de X, obtuve {len(cascadas_x)}: {cascadas}"
+    assert cascadas_x[0]['cantidad'] == 7
+    assert len(otras) == 0
+    print("OK: un carrusel horizontal que se corre en X se colapsa en 1 cascada, igual que en Y")
+
+
 def test_estilo_normaliza_font_weight_y_color():
     """Caso: FOUT/FOIT hace que V1 diga font-weight:normal y V2 diga 400
     (son lo mismo), y que el color venga como rgb(0,0,0) vs rgba(0,0,0,1)
