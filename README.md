@@ -24,13 +24,22 @@ Los dos scripts previos (`regre_visual_tn_desk_prod2.py` y
 Este script (`regre_visual_tn.py`, con la lógica en `regre_visual_tn_core.py`)
 soluciona cada uno de esos puntos. El detalle completo está en los
 comentarios de `regre_visual_tn_core.py` y en los tests de `test_core.py`
-(16 casos, cada uno reproduce un patrón real visto en corridas anteriores).
+(18 casos, cada uno reproduce un patrón real visto en corridas anteriores).
 
-La agrupación en cascada (`agrupar_cascadas`) cubre los 3 tipos de diferencia
-que pueden ser causa raíz de un efecto dominó: posición (Y), alto (H) y
-ancho (W) — no solo posición, para no listar como fallas independientes algo
-como "una fila del footer desaparece y 4 contenedores pierden los mismos
-20px de alto".
+La agrupación en cascada (`agrupar_cascadas`) cubre los 4 tipos de diferencia
+que pueden ser causa raíz de un efecto dominó: posición (Y), posición (X),
+alto (H) y ancho (W) — no solo posición vertical, para no listar como fallas
+independientes algo como "una fila del footer desaparece y 4 contenedores
+pierden los mismos 20px de alto" o "un carrusel horizontal corre 5 links el
+mismo delta de X".
+
+Además, en páginas de listado que se actualizan en vivo (ej:
+`/ultimas-noticias/`), una tarjeta de noticia puede quedar emparejada por
+posición con OTRA noticia distinta entre la captura de V1 y la de V2 (el
+listado cambió en el medio). El script detecta esto comparando el texto real
+de la tarjeta (no solo su tag/clase) y, si el contenido es distinto, no
+reporta su geometría/estilo como una falla — comparar el tamaño de dos
+noticias distintas no es un bug real.
 
 ## Uso local
 
@@ -73,7 +82,7 @@ el reporte + capturas como *artifact* descargable desde la misma corrida
 ```
 regre_visual_tn.py         # orquestación con Selenium (captura, screenshots, reporte HTML)
 regre_visual_tn_core.py    # lógica pura de comparación (sin Selenium, testeable offline)
-test_core.py               # 9 tests offline de la lógica de comparación
+test_core.py               # 18 tests offline de la lógica de comparación
 requirements.txt
 .github/workflows/regresion-visual.yml
 reportes/                  # salida (gitignoreada, salvo la carpeta)
