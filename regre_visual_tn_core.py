@@ -330,7 +330,8 @@ def comparar_estructura_dom(data_v1, data_v2, umbral_pixeles=UMBRAL_PIXELES_TOLE
         diff_x = abs(item1['x'] - item2['x'])
         if diff_x > umbral_pixeles:
             fallas.append(_falla(selector, 'DIFERENCIA POSICIÓN (X)', diff_x,
-                                  item1['x'], item2['x'], coords_v2, coords_v1, order_index))
+                                  item1['x'], item2['x'], coords_v2, coords_v1, order_index,
+                                  delta=item2['x'] - item1['x']))
 
         if comparar_estilos:
             styles1 = item1.get('styles', {}) or {}
@@ -371,12 +372,17 @@ def _falla(selector, tipo, diff, v1, v2, coords_v2, coords_v1, order_index, delt
 # =====================================================================
 
 # Tipos de falla que pueden ser causa raíz de una cascada: un desplazamiento
-# en Y (efecto dominó de un elemento anterior que cambió de tamaño) o un
-# cambio de alto/ancho que se repite idéntico en varios selectores porque en
-# realidad es UN solo cambio (ej: una fila del footer que desaparece hace que
-# el contenedor, sus hermanos de igual altura y sus ancestros pierdan todos
-# los mismos px de alto).
-TIPOS_CASCADABLES = ('DIFERENCIA POSICIÓN (Y)', 'DIFERENCIA ALTURA (H)', 'DIFERENCIA ANCHO (W)')
+# en Y o X (efecto dominó de un elemento anterior que cambió de tamaño,
+# vertical u horizontal — ej: un carrusel/scroller horizontal donde varios
+# links se corren el mismo delta de X) o un cambio de alto/ancho que se
+# repite idéntico en varios selectores porque en realidad es UN solo cambio
+# (ej: una fila del footer que desaparece hace que el contenedor, sus
+# hermanos de igual altura y sus ancestros pierdan todos los mismos px de
+# alto).
+TIPOS_CASCADABLES = (
+    'DIFERENCIA POSICIÓN (Y)', 'DIFERENCIA POSICIÓN (X)',
+    'DIFERENCIA ALTURA (H)', 'DIFERENCIA ANCHO (W)',
+)
 
 
 def _es_cadena_de_ancestros(selectores):

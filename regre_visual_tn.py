@@ -508,6 +508,7 @@ def construir_html_fallas(consolidado, cascadas, data_v2_por_selector, url_id):
 
     DESC_CASCADA = {
         'DIFERENCIA POSICIÓN (Y)': ('se movieron', 'en Y'),
+        'DIFERENCIA POSICIÓN (X)': ('se movieron', 'en X'),
         'DIFERENCIA ALTURA (H)': ('cambiaron de alto', 'en H'),
         'DIFERENCIA ANCHO (W)': ('cambiaron de ancho', 'en W'),
     }
