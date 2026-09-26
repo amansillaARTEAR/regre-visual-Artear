@@ -267,6 +267,30 @@ JS_EXTRACCION = """
         // no forma parte del fingerprint de identidad.
         var textoSubtree = (el.innerText || el.textContent || '').trim().replace(/\\s+/g, ' ').slice(0, 80);
 
+        // Identidad visual del subárbol: muchas tarjetas de un carrusel/grilla
+        // "destacados"/"recomendados" son solo una imagen + poco o nada de
+        // texto propio (el título puede estar como atributo alt, o directamente
+        // no haber texto visible). texto_subtree solo no alcanza para detectar
+        // que son tarjetas distintas ahí -> se usa además la URL de la imagen
+        // (primer <img> del subárbol, o el background-image del propio
+        // elemento) como señal de contenido. Caso real (Homepage v719): un
+        // carrusel reordenó sus tarjetas entre la captura de V1 y la de V2 y
+        // se reportaron ~10 cambios de tamaño/posición "GRAVE" que en
+        // realidad eran la misma tarjeta en otro lugar + otra tarjeta ocupando
+        // su lugar viejo, no un cambio real de layout.
+        var imgSrc = '';
+        var imgEl = el.querySelector('img');
+        if (imgEl) {
+            imgSrc = imgEl.currentSrc || imgEl.getAttribute('src') || '';
+        }
+        if (!imgSrc) {
+            var bg = compStyle.backgroundImage;
+            if (bg && bg !== 'none') imgSrc = bg;
+        }
+        // Solo el path (sin query params de cache-busting/resize) para que no
+        // cuente como "distinta" la misma imagen servida con otro tamaño.
+        imgSrc = imgSrc.split('?')[0].slice(-120);
+
         data.push({
             tag: el.tagName.toLowerCase(),
             selector: getCssSelector(el),
@@ -275,6 +299,7 @@ JS_EXTRACCION = """
             data_attrs: getDataAttrs(el),
             texto: texto,
             texto_subtree: textoSubtree,
+            img_src: imgSrc,
             order_index: orderIndex++,
             y: window.pageYOffset + rect.top,
             height: rect.height,
