@@ -489,12 +489,17 @@ def marcar_fallas_en_captura(png_data, consolidado, cascadas):
 # =====================================================================
 
 LEYENDA_HTML = """
-<p style="font-size: 0.9em; color: #555;">
-  <span style="color:red; font-weight:bold;">■ Rojo</span>: falla grave (elemento ausente/nuevo, o cambio de tamaño/estilo confirmado visualmente).
-  <span style="color:blue; font-weight:bold;">■ Azul</span>: desplazamiento menor sin cambio de tamaño.
-  <span style="color:#b8860b; font-weight:bold;">■ Dorado</span>: el DOM detectó una diferencia pero la confirmación visual (crop + diff) mostró que la región es igual — probablemente un falso positivo.
-  <span style="color:#ff8c00; font-weight:bold;">■ Naranja</span>: desplazamiento en cascada — un solo elemento anterior cambió de tamaño y corrió a los siguientes; no son N fallas independientes.
-</p>
+<div style="position: sticky; top: 0; z-index: 500; background: #f7f7f7;
+            padding: 10px 0 8px 0; margin: 0 -20px; border-bottom: 2px solid #ddd;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.08);">
+  <div style="display: flex; flex-wrap: wrap; gap: 8px 24px; font-size: 0.82em;
+              color: #555; padding: 0 20px;">
+    <div style="flex: 1 1 220px;"><span style="color:red; font-weight:bold;">■ Rojo</span>: falla grave (elemento ausente/nuevo, o cambio de tamaño/estilo confirmado visualmente).</div>
+    <div style="flex: 1 1 220px;"><span style="color:blue; font-weight:bold;">■ Azul</span>: desplazamiento menor sin cambio de tamaño.</div>
+    <div style="flex: 1 1 220px;"><span style="color:#b8860b; font-weight:bold;">■ Dorado</span>: el DOM detectó una diferencia pero la confirmación visual (crop + diff) mostró que la región es igual — probablemente un falso positivo.</div>
+    <div style="flex: 1 1 220px;"><span style="color:#ff8c00; font-weight:bold;">■ Naranja</span>: desplazamiento en cascada — un solo elemento anterior cambió de tamaño y corrió a los siguientes; no son N fallas independientes.</div>
+  </div>
+</div>
 """
 
 
