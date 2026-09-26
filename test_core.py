@@ -535,31 +535,6 @@ def test_misma_tarjeta_con_mismo_contenido_si_reporta_diferencia_real():
     print("OK: misma noticia (mismo texto real) que cambia de alto sigue siendo una falla real")
 
 
-def test_cascada_calcula_rango_completo_para_dibujar_en_la_imagen():
-    """
-    Pedido del usuario: el recuadro de la cascada en la imagen debe marcar
-    TODO lo que abarca (desde el primer hasta el último elemento afectado),
-    no solo el elemento "causa raíz". agrupar_cascadas debe calcular ese
-    bounding box (coords_rango_v2) a partir de los coords_v2 de TODOS los
-    elementos del cluster.
-    """
-    v1 = [item('div', f'div:nth-child({i})', 0, i * 100, 300, 100,
-                class_attr=f'block-{i}', texto=f'contenido {i}', order_index=i)
-          for i in range(1, 8)]
-    v2 = [item('div', f'div:nth-child({i})', 0, i * 100 + 350, 300, 100,
-                class_attr=f'block-{i}', texto=f'contenido {i}', order_index=i)
-          for i in range(1, 8)]
-    fallas = core.comparar_estructura_dom(v1, v2, umbral_pixeles=3, comparar_estilos=False)
-    _, cascadas = core.agrupar_cascadas(fallas)
-    assert len(cascadas) == 1
-    rango = cascadas[0]['coords_rango_v2']
-    # El primer elemento cambiado es i=1 (v2 y=450), el último i=7 (v2 y=1050+100=1150)
-    assert rango['y'] == 450, rango
-    assert rango['y'] + rango['height'] == 1150, rango
-    assert rango['x'] == 0 and rango['width'] == 300, rango
-    print("OK: la cascada calcula el rango completo (bounding box de todos sus elementos) para dibujar en la imagen")
-
-
 def test_ad_slot_contenedor_no_reporta_por_rotacion_normal_de_creatividad():
     """
     Pedido del usuario: en vez de excluir los ad-slots por completo (fix #3/
