@@ -637,18 +637,6 @@ def agrupar_cascadas(fallas):
             if len(items) >= CASCADE_MIN_SIZE or cadena_ancestros:
                 items_ordenados = sorted(items, key=lambda f: f['order_index'])
                 primero = items_ordenados[0]
-                # Rango completo que abarca la cascada (desde el elemento más
-                # arriba/izquierda hasta el más abajo/derecha de TODOS los
-                # elementos del cluster) -- a diferencia de 'coords_v2' (solo
-                # el elemento "causa raíz"), esto es lo que se dibuja en la
-                # imagen para mostrar el alcance real de la cascada, pedido
-                # explícito del usuario ("que se marque todo lo que abarca").
-                todas_coords = [f['coords_v2'] for f in items_ordenados]
-                x_min = min(c['x'] for c in todas_coords)
-                y_min = min(c['y'] for c in todas_coords)
-                x_max = max(c['x'] + c['width'] for c in todas_coords)
-                y_max = max(c['y'] + c['height'] for c in todas_coords)
-                coords_rango = {'x': x_min, 'y': y_min, 'width': x_max - x_min, 'height': y_max - y_min}
                 resultado_cascadas.append({
                     'tipo_cascada': True,
                     'tipo': tipo,
@@ -657,7 +645,6 @@ def agrupar_cascadas(fallas):
                     'primer_selector': primero['selector'],
                     'selectores': [f['selector'] for f in items_ordenados],
                     'coords_v2': primero['coords_v2'],
-                    'coords_rango_v2': coords_rango,
                 })
             else:
                 # Cluster chico: no lo tratamos como cascada, va como falla normal.
