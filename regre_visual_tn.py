@@ -42,6 +42,7 @@ import sys
 import time
 import argparse
 import datetime
+from collections import defaultdict
 
 from PIL import Image
 
@@ -501,19 +502,40 @@ def marcar_fallas_en_captura(png_data, consolidado, cascadas):
     img = cv2.imdecode(np.frombuffer(png_data, np.uint8), cv2.IMREAD_COLOR)
     height, width = img.shape[:2]
 
-    def dibujar(coords, color_key):
+    def dibujar(coords, color_key, label=''):
         x1 = max(0, int(coords['x']))
         y1 = max(0, int(coords['y']))
         x2 = min(width - 1, int(coords['x'] + coords['width']))
         y2 = min(height - 1, int(coords['y'] + coords['height']))
         if x2 > x1 and y2 > y1:
             thickness = 5 if color_key == 'grave' else 3
-            cv2.rectangle(img, (x1, y1), (x2, y2), COLOR_BGR[color_key], thickness)
+            color = COLOR_BGR[color_key]
+            cv2.rectangle(img, (x1, y1), (x2, y2), color, thickness)
+            if label:
+                # Etiqueta (mismo número que en la lista de texto del reporte)
+                # quemada al lado del recuadro, para que se entienda de un
+                # vistazo qué pasó ahí sin tener que hacer click en la lista.
+                font, escala, grosor_txt = cv2.FONT_HERSHEY_SIMPLEX, 0.6, 2
+                (tw, th), _ = cv2.getTextSize(label, font, escala, grosor_txt)
+                pad = 4
+                # Encima del recuadro si hay lugar, si no, debajo (para que
+                # no se corte arriba del todo de la imagen).
+                if y1 - th - 2 * pad >= 0:
+                    ty2 = y1
+                    ty1 = ty2 - th - 2 * pad
+                else:
+                    ty1 = y2
+                    ty2 = ty1 + th + 2 * pad
+                tx1 = x1
+                tx2 = min(width - 1, tx1 + tw + 2 * pad)
+                cv2.rectangle(img, (tx1, ty1), (tx2, ty2), color, -1)
+                cv2.putText(img, label, (tx1 + pad, ty2 - pad), font, escala,
+                            (255, 255, 255), grosor_txt, cv2.LINE_AA)
 
     for item in consolidado:
-        dibujar(item['coords_v2'], item['gravedad'])
+        dibujar(item['coords_v2'], item['gravedad'], item.get('_num', ''))
     for cascada in cascadas:
-        dibujar(cascada['coords_v2'], 'cascada')
+        dibujar(cascada['coords_v2'], 'cascada', cascada.get('_num', ''))
 
     is_success, buffer = cv2.imencode(".png", img)
     return buffer.tobytes() if is_success else None
@@ -557,6 +579,7 @@ def construir_html_fallas(consolidado, cascadas, data_v2_por_selector, url_id):
             <li class='diff-item' style='color: #7c3aed; border-bottom: 1px dotted #ccc; padding: 5px 0; cursor: pointer;'
                 onclick="highlightElement('{url_id}', '{coords_str}', this)"
                 data-coords="{coords_str}">
+                <span style="background:#7c3aed; color:#fff; border-radius:3px; padding:1px 6px; font-size:0.8em; font-weight:bold; margin-right:6px;">{c.get('_num', '')}</span>
                 <span style="font-weight: bold;">⚠️ Revisar — desplazamiento en cascada:</span>
                 {c['cantidad']} elementos {verbo} {c['delta_y']:.0f}px {eje}
                 <span style="font-size: 0.8em; color: #888;">(click para verlo resaltado en la imagen)</span>.
@@ -589,6 +612,7 @@ def construir_html_fallas(consolidado, cascadas, data_v2_por_selector, url_id):
             style='color: {color}; border-bottom: 1px dotted #ccc; padding: 5px 0; cursor: pointer;'
             onclick="highlightElement('{url_id}', '{coords_str}', this)"
             data-coords="{coords_str}">
+            <span style="background:{color}; color:#fff; border-radius:3px; padding:1px 6px; font-size:0.8em; font-weight:bold; margin-right:6px;">{item.get('_num', '')}</span>
             <span style="font-weight: bold;">Elemento:</span> <code>{item['selector'][:80]}</code>
             <br><span style="font-weight: bold;">Gravedad:</span> <span style='color:{color};'>{item['gravedad'].upper()}</span>
             {detalle_consolidado}
@@ -612,6 +636,20 @@ def generar_reporte(all_results, version_number, output_dir, timestamp, umbral_p
     for r in all_results:
         graves = [c for c in r['consolidado'] if c['gravedad'] == 'grave']
         cascadas = r.get('cascadas') or []
+
+        # Etiqueta numerada compartida entre la imagen (marcar_fallas_en_captura,
+        # que dibuja esta misma etiqueta al lado del recuadro) y la lista de
+        # texto (construir_html_fallas): así el usuario ve "G1" pintado sobre
+        # la captura y puede ir directo a leer "G1" en el detalle, sin tener
+        # que clickear cada hallazgo para descubrir a qué corresponde.
+        _contador = defaultdict(int)
+        _prefijo = {'grave': 'G', 'menor': 'M', 'informativo': 'I'}
+        for item in r['consolidado']:
+            pref = _prefijo.get(item['gravedad'], '?')
+            _contador[pref] += 1
+            item['_num'] = f"{pref}{_contador[pref]}"
+        for i, c in enumerate(cascadas, start=1):
+            c['_num'] = f"C{i}"
         # Una cascada sigue siendo una diferencia geométrica real entre V1 y
         # V2 (se agrupa para no listarla como N fallas repetidas, pero eso no
         # la vuelve invisible): si hay cascadas y ninguna falla grave, la
