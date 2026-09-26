@@ -53,6 +53,12 @@ PATRONES_EXCLUSION = [
     # de la captura — no es un cambio del sitio. Visto en v721/mobile: el
     # 100% de las 138 "fallas graves" de Vivo eran elementos bmpui-id-*.
     'bmpui',
+    # OneSignal: banner/slidedown pidiendo permiso de notificaciones push.
+    # Aparece o no (y en distinto momento) según si el navegador/perfil ya
+    # respondió el permiso antes, no según cambios del sitio. Visto en
+    # Homepage v719 desktop: causaba una cascada de 12 elementos corridos
+    # en Y (todo lo de abajo empujado por el alto del banner).
+    'onesignal',
 ]
 
 _PATRONES_EXCLUSION_RE = re.compile(
