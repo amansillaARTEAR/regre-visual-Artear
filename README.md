@@ -24,7 +24,7 @@ Los dos scripts previos (`regre_visual_tn_desk_prod2.py` y
 Este script (`regre_visual_tn.py`, con la lógica en `regre_visual_tn_core.py`)
 soluciona cada uno de esos puntos. El detalle completo está en los
 comentarios de `regre_visual_tn_core.py` y en los tests de `test_core.py`
-(10 casos, cada uno reproduce un patrón real visto en corridas anteriores).
+(11 casos, cada uno reproduce un patrón real visto en corridas anteriores).
 
 La agrupación en cascada (`agrupar_cascadas`) cubre los 3 tipos de diferencia
 que pueden ser causa raíz de un efecto dominó: posición (Y), alto (H) y
