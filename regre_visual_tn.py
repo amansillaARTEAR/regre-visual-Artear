@@ -59,7 +59,7 @@ CONFIG_MODOS = {
                         '(KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'),
         'bloquear_imagenes': False,
         'ancho_referencia_js': 1920,
-        'page_load_timeout': 60,
+        'page_load_timeout': 90,
     },
     'mobile': {
         'output_dir': os.path.join('reportes', 'mobile'),
@@ -329,6 +329,17 @@ def ejecutar_selenium_para_estructura(url, modo, config):
     if config['bloquear_imagenes']:
         options.add_experimental_option("prefs", {"profile.managed_default_content_settings.images": 1})
 
+    # 'eager' = driver.get() vuelve apenas el DOM está listo (DOMContentLoaded),
+    # sin esperar a que TERMINEN de cargar ads/trackers/iframes de terceros.
+    # Antes (estrategia 'normal', default): en desktop, sin bloqueo de dominios
+    # de ads, la home de TN no siempre llega a "load" completo dentro del
+    # page_load_timeout -> Selenium tira "Timed out receiving message from
+    # renderer". Con 'eager' evitamos depender de que esos recursos lentos
+    # terminen; el WebDriverWait posterior sobre document.readyState y los
+    # scrolls de forzar_carga_contenido igual dan tiempo a que lo importante
+    # (el layout real) se asiente antes de medir.
+    options.page_load_strategy = 'eager'
+
     w, h = config['window_size']
     options.add_argument("--headless=new")
     options.add_argument(f"--window-size={w},{h}")
@@ -347,9 +358,12 @@ def ejecutar_selenium_para_estructura(url, modo, config):
         service = Service(ChromeDriverManager().install())
         driver = webdriver.Chrome(service=service, options=options)
 
-        if modo == 'mobile':
-            driver.execute_cdp_cmd('Network.enable', {})
-            driver.execute_cdp_cmd('Network.setBlockedURLs', {"urls": DOMINIOS_BLOQUEADOS})
+        # Antes: el bloqueo de dominios de ads/trackers via CDP solo estaba en
+        # mobile (copiado del script viejo). Eso dejaba a desktop cargando
+        # TODOS los ads sin filtrar, más lento y con más chance de timeout
+        # en un runner compartido de CI. Ahora se aplica en los dos modos.
+        driver.execute_cdp_cmd('Network.enable', {})
+        driver.execute_cdp_cmd('Network.setBlockedURLs', {"urls": DOMINIOS_BLOQUEADOS})
 
         driver.set_page_load_timeout(config['page_load_timeout'])
         driver.get(url)

@@ -27,6 +27,11 @@ on:
         type: string
         default: "3"
 
+env:
+  # Sin esto, los print() de Python quedan bufferizados y no se ven en vivo
+  # en el log de Actions hasta que el proceso termina (parecía "colgado").
+  PYTHONUNBUFFERED: "1"
+
 jobs:
   tests-offline:
     runs-on: ubuntu-latest
