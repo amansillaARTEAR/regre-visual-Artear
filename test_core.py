@@ -109,6 +109,32 @@ def test_cascada_pequena_no_se_colapsa():
     print("OK: cluster de 2 elementos no se trata como cascada (queda como fallas individuales)")
 
 
+def test_cascada_por_altura_de_footer_se_colapsa():
+    """
+    Caso Homepage del reporte real v721: una fila del footer desaparece y
+    el contenedor, sus 3 columnas hermanas (de igual alto por flexbox) y su
+    ancestro pierden todos exactamente 20px de alto. Antes se reportaban
+    como 4+ fallas graves independientes; deberían colapsarse en 1 cascada
+    de tipo ALTURA (H), igual que ya pasaba para POSICIÓN (Y)."""
+    nombres = ['footer-wrap', 'footer-col-1', 'footer-col-2', 'footer-col-3']
+    v1 = [item('div', f'footer > div:nth-child({i})', 0, 0, 300, 300,
+                class_attr=nombre, texto=nombre, order_index=i)
+          for i, nombre in enumerate(nombres, start=1)]
+    v2 = [item('div', f'footer > div:nth-child({i})', 0, 0, 300, 280,
+                class_attr=nombre, texto=nombre, order_index=i)
+          for i, nombre in enumerate(nombres, start=1)]
+
+    fallas = core.comparar_estructura_dom(v1, v2, umbral_pixeles=3, comparar_estilos=False)
+    otras, cascadas = core.agrupar_cascadas(fallas)
+
+    assert len(cascadas) == 1, f"Esperaba 1 cluster de cascada por altura, obtuve {len(cascadas)}"
+    assert cascadas[0]['tipo'] == 'DIFERENCIA ALTURA (H)'
+    assert cascadas[0]['cantidad'] == 4, f"Esperaba 4 elementos en la cascada, obtuve {cascadas[0]['cantidad']}"
+    assert abs(cascadas[0]['delta_y'] - (-20)) <= core.CASCADE_Y_EPSILON
+    assert len(otras) == 0, "No debería quedar ninguna falla suelta de altura fuera de la cascada"
+    print("OK: cascada de 4 elementos por un mismo delta de altura (footer) se colapsa en 1 hallazgo")
+
+
 def test_estilo_normaliza_font_weight_y_color():
     """Caso: FOUT/FOIT hace que V1 diga font-weight:normal y V2 diga 400
     (son lo mismo), y que el color venga como rgb(0,0,0) vs rgba(0,0,0,1)

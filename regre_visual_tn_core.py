@@ -280,18 +280,20 @@ def comparar_estructura_dom(data_v1, data_v2, umbral_pixeles=UMBRAL_PIXELES_TOLE
         diff_height = abs(item1['height'] - item2['height'])
         if diff_height > umbral_pixeles:
             fallas.append(_falla(selector, 'DIFERENCIA ALTURA (H)', diff_height,
-                                  item1['height'], item2['height'], coords_v2, coords_v1, order_index))
+                                  item1['height'], item2['height'], coords_v2, coords_v1, order_index,
+                                  delta=item2['height'] - item1['height']))
 
         diff_width = abs(item1['width'] - item2['width'])
         if diff_width > umbral_pixeles:
             fallas.append(_falla(selector, 'DIFERENCIA ANCHO (W)', diff_width,
-                                  item1['width'], item2['width'], coords_v2, coords_v1, order_index))
+                                  item1['width'], item2['width'], coords_v2, coords_v1, order_index,
+                                  delta=item2['width'] - item1['width']))
 
         diff_y = abs(item1['y'] - item2['y'])
         if diff_y > umbral_pixeles:
             fallas.append(_falla(selector, 'DIFERENCIA POSICIÓN (Y)', diff_y,
                                   item1['y'], item2['y'], coords_v2, coords_v1, order_index,
-                                  delta_y=item2['y'] - item1['y']))
+                                  delta_y=item2['y'] - item1['y'], delta=item2['y'] - item1['y']))
 
         diff_x = abs(item1['x'] - item2['x'])
         if diff_x > umbral_pixeles:
@@ -320,11 +322,15 @@ def comparar_estructura_dom(data_v1, data_v2, umbral_pixeles=UMBRAL_PIXELES_TOLE
     return fallas
 
 
-def _falla(selector, tipo, diff, v1, v2, coords_v2, coords_v1, order_index, delta_y=None):
+def _falla(selector, tipo, diff, v1, v2, coords_v2, coords_v1, order_index, delta_y=None, delta=None):
     return {
         'selector': selector, 'tipo': tipo, 'diff': diff, 'v1': v1, 'v2': v2,
         'coords_v2': coords_v2, 'coords_v1': coords_v1, 'order_index': order_index,
+        # 'delta_y' se mantiene por compatibilidad (código/tests viejos lo usan
+        # para el tipo Y específicamente); 'delta' es el equivalente genérico
+        # (con signo) para cualquier tipo agrupable en cascada (Y, H o W).
         'delta_y': delta_y,
+        'delta': delta if delta is not None else delta_y,
     }
 
 
@@ -332,60 +338,78 @@ def _falla(selector, tipo, diff, v1, v2, coords_v2, coords_v1, order_index, delt
 # AGRUPACIÓN POR CAUSA RAÍZ (CASCADA)
 # =====================================================================
 
+# Tipos de falla que pueden ser causa raíz de una cascada: un desplazamiento
+# en Y (efecto dominó de un elemento anterior que cambió de tamaño) o un
+# cambio de alto/ancho que se repite idéntico en varios selectores porque en
+# realidad es UN solo cambio (ej: una fila del footer que desaparece hace que
+# el contenedor, sus hermanos de igual altura y sus ancestros pierdan todos
+# los mismos px de alto).
+TIPOS_CASCADABLES = ('DIFERENCIA POSICIÓN (Y)', 'DIFERENCIA ALTURA (H)', 'DIFERENCIA ANCHO (W)')
+
+
 def agrupar_cascadas(fallas):
     """
-    Detecta clusters de fallas 'DIFERENCIA POSICIÓN (Y)' que comparten
-    (casi) el mismo delta de Y y NO tienen ningún otro tipo de diferencia
-    para ese mismo selector. Eso es la firma de un desplazamiento en
-    cascada causado por UN elemento anterior que cambió de altura, no N
+    Detecta clusters de fallas que comparten (casi) el mismo delta con
+    signo para un mismo tipo (Y, H o W) y NO tienen ningún otro tipo de
+    diferencia para ese mismo selector. Eso es la firma de un cambio en
+    cascada causado por UNA sola causa raíz (un elemento que se movió, o
+    que cambió de tamaño y arrastró a sus contenedores/hermanos), no N
     regresiones independientes.
 
     Colapsa cada cluster de tamaño >= CASCADE_MIN_SIZE en un único
-    hallazgo informativo, y deja el resto de las fallas (incluidas las Y
-    que no entran en ningún cluster grande, o que coexisten con otro tipo
-    de diferencia en el mismo selector) sin tocar.
+    hallazgo informativo, y deja el resto de las fallas (incluidas las que
+    no entran en ningún cluster grande, o que coexisten con otro tipo de
+    diferencia en el mismo selector) sin tocar.
     """
-    # Selectores que tienen ALGÚN tipo de falla que no sea posición Y:
-    # esos no son "puro efecto dominó", tratarlos como fallas reales.
-    selectores_con_otra_falla = set()
-    fallas_por_selector = defaultdict(list)
-    for f in fallas:
-        fallas_por_selector[f['selector']].append(f)
-
-    for selector, lst in fallas_por_selector.items():
-        tipos = {f['tipo'] for f in lst}
-        if tipos - {'DIFERENCIA POSICIÓN (Y)'}:
-            selectores_con_otra_falla.add(selector)
-
-    candidatas_cascada = [
-        f for f in fallas
-        if f['tipo'] == 'DIFERENCIA POSICIÓN (Y)' and f['selector'] not in selectores_con_otra_falla
-        and f.get('delta_y') is not None
-    ]
-    otras_fallas = [f for f in fallas if f not in candidatas_cascada]
-
-    # Cluster por delta_y redondeado a un bucket de CASCADE_Y_EPSILON
-    clusters = defaultdict(list)
-    for f in candidatas_cascada:
-        bucket = round(f['delta_y'] / CASCADE_Y_EPSILON) * CASCADE_Y_EPSILON
-        clusters[bucket].append(f)
-
+    otras_fallas = list(fallas)
     resultado_cascadas = []
-    for bucket, items in clusters.items():
-        if len(items) >= CASCADE_MIN_SIZE:
-            items_ordenados = sorted(items, key=lambda f: f['order_index'])
-            primero = items_ordenados[0]
-            resultado_cascadas.append({
-                'tipo_cascada': True,
-                'delta_y': bucket,
-                'cantidad': len(items),
-                'primer_selector': primero['selector'],
-                'selectores': [f['selector'] for f in items_ordenados],
-                'coords_v2': primero['coords_v2'],
-            })
-        else:
-            # Cluster chico: no lo tratamos como cascada, va como falla normal.
-            otras_fallas.extend(items)
+
+    for tipo in TIPOS_CASCADABLES:
+        # Selectores que tienen, para este tipo, ALGÚN otro tipo de falla:
+        # esos no son "puro efecto dominó" para este tipo, tratarlos como
+        # fallas reales (se decide sobre las fallas ORIGINALES, no sobre lo
+        # que ya fue colapsado por un tipo anterior en este mismo loop).
+        selectores_con_otra_falla = set()
+        fallas_por_selector = defaultdict(list)
+        for f in fallas:
+            fallas_por_selector[f['selector']].append(f)
+        for selector, lst in fallas_por_selector.items():
+            tipos_del_selector = {f['tipo'] for f in lst}
+            if tipos_del_selector - {tipo}:
+                selectores_con_otra_falla.add(selector)
+
+        candidatas_cascada = [
+            f for f in otras_fallas
+            if f['tipo'] == tipo and f['selector'] not in selectores_con_otra_falla
+            and f.get('delta') is not None
+        ]
+        restantes = [f for f in otras_fallas if f not in candidatas_cascada]
+
+        # Cluster por delta redondeado a un bucket de CASCADE_Y_EPSILON
+        # (misma tolerancia de bucketing para Y/H/W: son todas medidas en px).
+        clusters = defaultdict(list)
+        for f in candidatas_cascada:
+            bucket = round(f['delta'] / CASCADE_Y_EPSILON) * CASCADE_Y_EPSILON
+            clusters[bucket].append(f)
+
+        for bucket, items in clusters.items():
+            if len(items) >= CASCADE_MIN_SIZE:
+                items_ordenados = sorted(items, key=lambda f: f['order_index'])
+                primero = items_ordenados[0]
+                resultado_cascadas.append({
+                    'tipo_cascada': True,
+                    'tipo': tipo,
+                    'delta_y': bucket,  # compatibilidad: mismo nombre de campo para los 3 tipos
+                    'cantidad': len(items),
+                    'primer_selector': primero['selector'],
+                    'selectores': [f['selector'] for f in items_ordenados],
+                    'coords_v2': primero['coords_v2'],
+                })
+            else:
+                # Cluster chico: no lo tratamos como cascada, va como falla normal.
+                restantes.extend(items)
+
+        otras_fallas = restantes
 
     return otras_fallas, resultado_cascadas
 
