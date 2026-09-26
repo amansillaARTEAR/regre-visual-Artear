@@ -292,6 +292,21 @@ JS_EXTRACCION = """
         // cuente como "distinta" la misma imagen servida con otro tamaño.
         imgSrc = imgSrc.split('?')[0].slice(-120);
 
+        // Señal de contenido para contenedores de ads (ad-slot, banner-container,
+        // etc.): la creatividad se renderiza en un <iframe> de otro origen, así
+        // que no se puede leer texto/imagen de ADENTRO (bloqueado por CORS),
+        // pero el atributo src/id/name del iframe SÍ es legible desde el padre
+        // y cambia en cada request de ad -> sirve para saber "rotó de creativo"
+        // sin poder ver el contenido. A diferencia de imgSrc, acá NO se recorta
+        // el query string: en URLs de ad servers casi todo lo distintivo está
+        // en los parámetros, no en el path.
+        var iframeSrc = '';
+        var iframeEl = el.querySelector('iframe');
+        if (iframeEl) {
+            iframeSrc = iframeEl.getAttribute('src') || iframeEl.getAttribute('id') || iframeEl.getAttribute('name') || '';
+        }
+        iframeSrc = iframeSrc.slice(-200);
+
         data.push({
             tag: el.tagName.toLowerCase(),
             selector: getCssSelector(el),
@@ -301,6 +316,7 @@ JS_EXTRACCION = """
             texto: texto,
             texto_subtree: textoSubtree,
             img_src: imgSrc,
+            iframe_src: iframeSrc,
             order_index: orderIndex++,
             y: window.pageYOffset + rect.top,
             height: rect.height,

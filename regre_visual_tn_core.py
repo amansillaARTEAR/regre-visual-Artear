@@ -40,9 +40,11 @@ UMBRAL_DIFERENCIA_VISUAL = 0.03
 # elementos se EXCLUYEN de la comparación DOM (no solo se ocultan para
 # limpiar popups, como hacían los scripts originales).
 PATRONES_EXCLUSION = [
-    'ad-slot', 'parent-ad-slot', 'ad-slot-header', 'ad-slot-caja',
-    'ad-slot-megalateral', 'google_ads_iframe', 'dfp-ad', 'aniBox',
-    'banner-container', 'cont-sidebar-ad',
+    # Renderer interno del ad (el iframe/div donde el SDK de Google/DFP
+    # pinta la creatividad) — no tiene sentido comparar SU geometría propia,
+    # ya la cubre (con contenido ignorado) el contenedor/slot que lo envuelve,
+    # ver PATRONES_AD_SLOT_CONTENEDOR más abajo.
+    'google_ads_iframe', 'dfp-ad', 'aniBox',
     'teads', 'outbrain', 'taboola', 'criteo', 'moat', 'doubleclick',
     'recommend', 'recomendad', 'widget-clima', 'widget-dolar',
     'cotizacion', 'contador-en-vivo', 'live-counter',
@@ -61,6 +63,22 @@ PATRONES_EXCLUSION = [
     'onesignal',
 ]
 
+# Contenedores/slots de ads: a diferencia de PATRONES_EXCLUSION, estos NO se
+# excluyen de la comparación — el usuario pidió explícitamente poder detectar
+# si el DIV que reserva el espacio del ad cambia de tamaño/posición de forma
+# no explicada por la rotación normal de creatividades (un bug real de
+# integración), en vez de ignorar los ads por completo. Siguen tratándose
+# como "identidad débil" (sin texto/id propio) y su contenido interno se
+# sigue ignorando vía la señal de iframe_src en _contenido_distinto: si el
+# iframe de adentro cambió de src/id (rotó de creativo, lo normal en
+# cualquier corrida), NO se reporta nada; si el contenedor cambia de tamaño
+# con el MISMO iframe adentro (o sin ninguna señal legible), sí se compara
+# como cualquier otro elemento.
+PATRONES_AD_SLOT_CONTENEDOR = [
+    'ad-slot', 'parent-ad-slot', 'ad-slot-header', 'ad-slot-caja',
+    'ad-slot-megalateral', 'banner-container', 'cont-sidebar-ad',
+]
+
 _PATRONES_EXCLUSION_RE = re.compile(
     '|'.join(re.escape(p) for p in PATRONES_EXCLUSION), re.IGNORECASE
 )
@@ -68,8 +86,10 @@ _PATRONES_EXCLUSION_RE = re.compile(
 
 def elemento_excluido(item):
     """
-    True si el id o clase del elemento matchea algún patrón de masking
-    (ads, contenido de terceros, widgets dinámicos conocidos).
+    True si el id o clase del elemento matchea algún patrón de masking total
+    (contenido de terceros, widgets dinámicos conocidos, o el renderer
+    interno de un ad). Los CONTENEDORES de ad-slot (PATRONES_AD_SLOT_CONTENEDOR)
+    a propósito NO están acá: esos se comparan (ver comentario arriba).
     """
     id_attr = (item.get('id_attr') or '')
     class_attr = (item.get('class_attr') or '')
@@ -185,9 +205,9 @@ def _identidad_es_debil(item):
 def _contenido_distinto(item1, item2):
     """
     True si el CONTENIDO real (no la geometría) de los dos elementos
-    emparejados difiere -> son en verdad DOS tarjetas/noticias distintas,
-    no la misma tarjeta que cambió de tamaño/posición. Dos señales,
-    cualquiera alcanza:
+    emparejados difiere -> son en verdad DOS tarjetas/noticias/creatividades
+    distintas, no la misma que cambió de tamaño/posición. Tres señales, la
+    primera que tenga dato en ambos lados decide:
       1. Texto del subárbol (título/copete real, no solo el texto propio
          usado en el fingerprint).
       2. Imagen del subárbol (primer <img src> o background-image) — hay
@@ -197,10 +217,16 @@ def _contenido_distinto(item1, item2):
          captura de V1 y V2 y, sin esta señal, se reportaban ~10 cambios de
          tamaño/posición GRAVE que en realidad eran la misma tarjeta en
          otro lugar + otra ocupando su lugar viejo.
-    Si NINGUNA de las dos señales tiene dato en ambos lados, no hay forma
-    de decidir y se sigue comparando geometría normalmente (más vale un
-    posible falso positivo raro que ocultar un cambio real sin ninguna
-    evidencia de que el contenido cambió).
+      3. src/id/name del <iframe> del subárbol — para contenedores de ads
+         (ad-slot, banner-container, etc.) cuya creatividad se renderiza en
+         un iframe de otro origen: no se puede leer texto/imagen de ADENTRO
+         (CORS), pero el iframe siempre cambia de src/id en cada request de
+         ad, así que sirve igual para detectar "rotó de creativo" sin ver
+         el contenido.
+    Si NINGUNA señal tiene dato en ambos lados, no hay forma de decidir y
+    se sigue comparando geometría normalmente (más vale un posible falso
+    positivo raro que ocultar un cambio real sin ninguna evidencia de que
+    el contenido cambió).
     """
     t1 = (item1.get('texto_subtree', '') or '').strip()
     t2 = (item2.get('texto_subtree', '') or '').strip()
@@ -211,6 +237,11 @@ def _contenido_distinto(item1, item2):
     img2 = (item2.get('img_src', '') or '').strip()
     if img1 and img2:
         return img1 != img2
+
+    ifr1 = (item1.get('iframe_src', '') or '').strip()
+    ifr2 = (item2.get('iframe_src', '') or '').strip()
+    if ifr1 and ifr2:
+        return ifr1 != ifr2
 
     return False
 
