@@ -336,6 +336,32 @@ JS_EXTRACCION = """
 """
 
 
+def esperar_fuentes(driver, timeout=5):
+    """
+    Espera a que las tipografías web (WOFF/WOFF2 custom del sitio) terminen
+    de cargar (Promise `document.fonts.ready`), best-effort con timeout corto.
+
+    Sin esto: si la captura de V1 (o V2) ocurre antes de que la fuente
+    custom termine de cargar, el navegador renderiza ese texto con la
+    fuente de fallback -> las métricas (ancho de carácter, alto de línea)
+    son distintas aunque el CSS `font-size` en px sea IDÉNTICO entre V1 y
+    V2. Resultado: un título se ve visiblemente más grande/chico en la
+    captura, pero `getComputedStyle().fontSize` no cambió -> la comparación
+    de estilos no lo detecta como diferencia (fix #19, reportado por el
+    usuario viendo un título con fuente visualmente más grande en Homepage
+    desktop v719 que no generó ningún hallazgo de ESTILO/FONTSIZE).
+    """
+    try:
+        driver.set_script_timeout(timeout)
+        driver.execute_async_script(
+            "var cb = arguments[arguments.length - 1];"
+            "if (!window.document.fonts) { cb(); return; }"
+            "document.fonts.ready.then(function () { cb(); }).catch(function () { cb(); });"
+        )
+    except Exception:
+        pass  # no bloqueamos la corrida por esto; es una mejora best-effort
+
+
 def obtener_estructura_dom(driver, incluir_texto=True, espera_scroll=2):
     """Devuelve (data, png) para la URL actualmente cargada en el driver."""
     from selenium.webdriver.support.ui import WebDriverWait
@@ -343,6 +369,7 @@ def obtener_estructura_dom(driver, incluir_texto=True, espera_scroll=2):
     data, png = [], None
     try:
         WebDriverWait(driver, 20).until(lambda d: d.execute_script("return document.readyState") == "complete")
+        esperar_fuentes(driver)
 
         limpiar_entorno(driver)
         time.sleep(1)
@@ -357,6 +384,7 @@ def obtener_estructura_dom(driver, incluir_texto=True, espera_scroll=2):
         original_size = driver.get_window_size()
         driver.set_window_size(original_size['width'], total_height)
         time.sleep(1)
+        esperar_fuentes(driver)  # el resize puede revelar contenido lazy-loaded con su propia fuente
 
         js = JS_EXTRACCION.replace('INCLUIR_TEXTO', 'true' if incluir_texto else 'false')
         result = driver.execute_script(js)
