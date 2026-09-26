@@ -456,7 +456,17 @@ def ejecutar_selenium_para_estructura(url, modo, config):
         driver.set_page_load_timeout(config['page_load_timeout'])
         driver.get(url)
 
-        data, png = obtener_estructura_dom(driver, incluir_texto=(modo == 'mobile'))
+        # Antes: incluir_texto=(modo == 'mobile') -> desktop solo extraía
+        # div/article, nunca h1-h6/p/span/a/button/label/li. Remanente de
+        # cuando se unificaron los dos scripts viejos (commit 920c068):
+        # el desktop original solo comparaba contenedores. Efecto real
+        # descubierto en v719 (fix #22): un <a> de titular en Homepage
+        # cambió de 36px a 44px de fontSize entre V1 y V2 (confirmado a
+        # mano en DevTools) y el reporte desktop no lo detectó -> no es que
+        # el estilo comparara igual, es que ese <a> nunca se extraía en
+        # desktop, así que ni pasaba por emparejamiento ni por comparación
+        # de estilos. Ahora ambos modos extraen los mismos tags.
+        data, png = obtener_estructura_dom(driver, incluir_texto=True)
 
     except Exception as e:
         print(f"❌ Error al inicializar/ejecutar Selenium en {url}: {e}")
