@@ -328,7 +328,15 @@ JS_EXTRACCION = """
                 fontSize: compStyle.fontSize,
                 fontWeight: compStyle.fontWeight,
                 fontFamily: compStyle.fontFamily,
-                textAlign: compStyle.textAlign
+                textAlign: compStyle.textAlign,
+                marginTop: compStyle.marginTop,
+                marginRight: compStyle.marginRight,
+                marginBottom: compStyle.marginBottom,
+                marginLeft: compStyle.marginLeft,
+                paddingTop: compStyle.paddingTop,
+                paddingRight: compStyle.paddingRight,
+                paddingBottom: compStyle.paddingBottom,
+                paddingLeft: compStyle.paddingLeft
             }
         });
     }

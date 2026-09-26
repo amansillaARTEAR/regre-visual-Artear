@@ -426,12 +426,48 @@ _NORMALIZADORES = {
     'fontFamily': _normalizar_font_family,
 }
 
+# Propiedades de estilo cuyo valor es un tamaño en píxeles (getComputedStyle
+# ya los devuelve resueltos, ej: "16px", "24.5px") y por lo tanto se
+# comparan como NÚMERO con una tolerancia chica, no como string exacto:
+# un layout puede rendear con subpíxeles de diferencia (16.0023px vs
+# 16.0031px) sin que eso sea un cambio real de diseño. A diferencia de la
+# tolerancia de geometría (posición/tamaño del elemento, más ruidosa por
+# contenido dinámico), acá el umbral es chico a propósito: un cambio de
+# font-size, padding o margin casi siempre es un valor de diseño discreto
+# (14px -> 16px, 8px -> 12px), así que 1px ya es señal real.
+UMBRAL_ESTILO_PIXELES_DEFAULT = 1
 
-def estilos_difieren(key, val1, val2):
+PIXEL_STYLE_KEYS = (
+    'fontSize',
+    'marginTop', 'marginRight', 'marginBottom', 'marginLeft',
+    'paddingTop', 'paddingRight', 'paddingBottom', 'paddingLeft',
+)
+
+_PX_RE = re.compile(r'^(-?[\d.]+)px$')
+
+
+def _parse_px(valor):
+    """'16px' -> 16.0. Si no es un tamaño en px resuelto (ej: 'normal',
+    porcentajes sin resolver, string vacío), devuelve None: sin dato
+    comparable, no se puede confirmar una diferencia."""
+    if not valor:
+        return None
+    m = _PX_RE.match(valor.strip())
+    if not m:
+        return None
+    return float(m.group(1))
+
+
+def estilos_difieren(key, val1, val2, umbral_px=UMBRAL_ESTILO_PIXELES_DEFAULT):
     """True si, tras normalizar, los dos valores de estilo son realmente
-    distintos (y no un artefacto de serialización/carga de fuente)."""
+    distintos (y no un artefacto de serialización/carga de fuente/subpíxel)."""
     if not val1 or not val2:
         return False  # falta de dato no es una diferencia confirmable
+    if key in PIXEL_STYLE_KEYS:
+        v1px, v2px = _parse_px(val1), _parse_px(val2)
+        if v1px is None or v2px is None:
+            return val1.strip() != val2.strip()  # no resuelto a px: fallback a string exacto
+        return abs(v1px - v2px) > umbral_px
     normalizador = _NORMALIZADORES.get(key)
     if normalizador:
         v1n = normalizador(val1)
@@ -444,7 +480,11 @@ def estilos_difieren(key, val1, val2):
 # COMPARACIÓN GEOMÉTRICA + DE ESTILOS
 # =====================================================================
 
-STYLE_KEYS = ['color', 'bgColor', 'fontSize', 'fontWeight', 'fontFamily', 'textAlign']
+STYLE_KEYS = [
+    'color', 'bgColor', 'fontSize', 'fontWeight', 'fontFamily', 'textAlign',
+    'marginTop', 'marginRight', 'marginBottom', 'marginLeft',
+    'paddingTop', 'paddingRight', 'paddingBottom', 'paddingLeft',
+]
 
 
 def comparar_estructura_dom(data_v1, data_v2, umbral_pixeles=UMBRAL_PIXELES_TOLERANCIA_DEFAULT,
