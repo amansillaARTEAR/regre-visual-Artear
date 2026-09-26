@@ -13,12 +13,12 @@ import regre_visual_tn_core as core
 
 
 def item(tag, selector, x, y, w, h, id_attr='', class_attr='', texto='', styles=None,
-         data_attrs='', order_index=0, texto_subtree='', img_src=''):
+         data_attrs='', order_index=0, texto_subtree='', img_src='', iframe_src=''):
     return {
         'tag': tag, 'selector': selector, 'x': x, 'y': y, 'width': w, 'height': h,
         'id_attr': id_attr, 'class_attr': class_attr, 'texto': texto,
         'styles': styles or {}, 'data_attrs': data_attrs, 'order_index': order_index,
-        'texto_subtree': texto_subtree, 'img_src': img_src,
+        'texto_subtree': texto_subtree, 'img_src': img_src, 'iframe_src': iframe_src,
     }
 
 
@@ -533,6 +533,65 @@ def test_misma_tarjeta_con_mismo_contenido_si_reporta_diferencia_real():
     tipos = [f['tipo'] for f in fallas]
     assert tipos == ['DIFERENCIA ALTURA (H)'], fallas
     print("OK: misma noticia (mismo texto real) que cambia de alto sigue siendo una falla real")
+
+
+def test_ad_slot_contenedor_no_reporta_por_rotacion_normal_de_creatividad():
+    """
+    Pedido del usuario: en vez de excluir los ad-slots por completo (fix #3/
+    histórico), ahora el CONTENEDOR/slot del ad sí se compara -- pero su
+    contenido interno (la creatividad, en un <iframe> de otro origen que no
+    se puede inspeccionar por CORS) se sigue ignorando vía la señal
+    iframe_src: si el iframe de adentro cambió de src (rotó de creativo,
+    lo normal en cualquier corrida real, incluso con tamaño distinto), no
+    debe reportarse nada.
+    """
+    v1 = [item('div', 'div.ad-slot-caja', 0, 500, 300, 250, class_attr='ad-slot-caja',
+                iframe_src='https://ads.example.com/serve?id=AAA111', order_index=0)]
+    v2 = [item('div', 'div.ad-slot-caja', 0, 500, 300, 600, class_attr='ad-slot-caja',
+                iframe_src='https://ads.example.com/serve?id=ZZZ999', order_index=0)]
+    fallas = core.comparar_estructura_dom(v1, v2, umbral_pixeles=3, comparar_estilos=False)
+    assert fallas == [], f"la rotación normal de la creatividad del ad no debería reportar nada: {fallas}"
+    print("OK: contenedor de ad-slot no reporta cambio de tamaño explicado por rotación normal de creatividad")
+
+
+def test_ad_slot_contenedor_si_reporta_cambio_de_tamano_con_mismo_creativo():
+    """
+    Control: si el MISMO iframe (mismo src, no rotó) queda en un contenedor
+    de otro tamaño, es un bug real de integración (el slot no está
+    reservando el espacio que el creativo necesita) y se debe seguir
+    reportando -- a diferencia de antes, cuando el ad-slot se excluía
+    completo y esto era invisible para la herramienta.
+    """
+    v1 = [item('div', 'div.ad-slot-caja', 0, 500, 300, 250, class_attr='ad-slot-caja',
+                iframe_src='https://ads.example.com/serve?id=AAA111', order_index=0)]
+    v2 = [item('div', 'div.ad-slot-caja', 0, 500, 300, 600, class_attr='ad-slot-caja',
+                iframe_src='https://ads.example.com/serve?id=AAA111', order_index=0)]
+    fallas = core.comparar_estructura_dom(v1, v2, umbral_pixeles=3, comparar_estilos=False)
+    tipos = [f['tipo'] for f in fallas]
+    assert 'DIFERENCIA ALTURA (H)' in tipos, (
+        f"un cambio de tamaño del slot con el MISMO creativo adentro es un bug real "
+        f"de integración y debería reportarse: {fallas}"
+    )
+    print("OK: contenedor de ad-slot con el mismo creativo adentro sigue reportando cambios reales de tamaño")
+
+
+def test_renderer_interno_del_ad_sigue_excluido():
+    """El renderer interno (google_ads_iframe, dfp-ad, aniBox) sigue
+    completamente excluido -- ya lo cubre (con contenido ignorado) el
+    contenedor/slot que lo envuelve, no aporta nada compararlo aparte."""
+    v1 = [
+        item('div', 'div.ad-slot-caja', 0, 500, 300, 250, class_attr='ad-slot-caja', order_index=0),
+        item('div', 'div.ad-slot-caja > div#google_ads_iframe-1', 10, 510, 280, 230,
+             id_attr='google_ads_iframe-1', order_index=1),
+    ]
+    v2 = [
+        item('div', 'div.ad-slot-caja', 0, 500, 300, 250, class_attr='ad-slot-caja', order_index=0),
+        item('div', 'div.ad-slot-caja > div#google_ads_iframe-2', 10, 510, 250, 200,
+             id_attr='google_ads_iframe-2', order_index=1),
+    ]
+    fallas = core.comparar_estructura_dom(v1, v2, umbral_pixeles=3, comparar_estilos=False)
+    assert fallas == [], f"el renderer interno del ad debería seguir excluido: {fallas}"
+    print("OK: el renderer interno del ad (google_ads_iframe/dfp-ad/aniBox) sigue excluido de la comparación")
 
 
 if __name__ == '__main__':
