@@ -526,13 +526,19 @@ def construir_html_fallas(consolidado, cascadas, data_v2_por_selector, url_id):
     if cascadas:
         for c in cascadas:
             verbo, eje = DESC_CASCADA.get(c.get('tipo'), ('se movieron', 'en Y'))
+            coords = c['coords_v2']
+            coords_str = f"{int(coords['x'])},{int(coords['y'])},{int(coords['width'])},{int(coords['height'])}"
             html += f"""
-            <li class='diff-item' style='color: #7c3aed; border-bottom: 1px dotted #ccc; padding: 5px 0;'>
-                <span style="font-weight: bold;">Desplazamiento en cascada:</span>
-                {c['cantidad']} elementos {verbo} {c['delta_y']:.0f}px {eje}.
+            <li class='diff-item' style='color: #7c3aed; border-bottom: 1px dotted #ccc; padding: 5px 0; cursor: pointer;'
+                onclick="highlightElement('{url_id}', '{coords_str}', this)"
+                data-coords="{coords_str}">
+                <span style="font-weight: bold;">⚠️ Revisar — desplazamiento en cascada:</span>
+                {c['cantidad']} elementos {verbo} {c['delta_y']:.0f}px {eje}
+                <span style="font-size: 0.8em; color: #888;">(click para verlo resaltado en la imagen)</span>.
                 <br><span style="font-size: 0.85em; color: #666;">
-                Causa probable: un cambio de tamaño en un elemento anterior del DOM
-                (empezando por <code>{c['primer_selector'][:60]}</code>), no {c['cantidad']} regresiones independientes.
+                Causa probable: un solo elemento anterior del DOM cambió de tamaño y arrastró a los
+                {c['cantidad']} de abajo — no son {c['cantidad']} regresiones independientes, es 1 sola causa raíz
+                (empezando por <code>{c['primer_selector'][:60]}</code>).
                 </span>
             </li>
             """
@@ -576,19 +582,33 @@ def generar_reporte(all_results, version_number, output_dir, timestamp, umbral_p
 
     all_details_html = ""
     sites_con_grave = 0
+    sites_con_cascada = 0
 
     for r in all_results:
         graves = [c for c in r['consolidado'] if c['gravedad'] == 'grave']
-        alert = 'red' if (r['fatal'] or graves) else 'green'
+        cascadas = r.get('cascadas') or []
+        # Una cascada sigue siendo una diferencia geométrica real entre V1 y
+        # V2 (se agrupa para no listarla como N fallas repetidas, pero eso no
+        # la vuelve invisible): si hay cascadas y ninguna falla grave, la
+        # página queda en un estado intermedio "revisar" en vez de "✅ todo
+        # igual", que es lo que generaba la confusión de por qué el reporte
+        # decía que estaba todo bien y después mostraba desplazamientos.
+        alert = 'red' if (r['fatal'] or graves) else ('orange' if cascadas else 'green')
         if alert == 'red':
             sites_con_grave += 1
+        elif alert == 'orange':
+            sites_con_cascada += 1
 
         if r['fatal']:
             resumen_texto = "❌ Error grave en la ejecución de Selenium (ver logs)."
         elif graves:
             resumen_texto = f"❌ Se detectaron {len(graves)} diferencias graves."
+        elif cascadas:
+            resumen_texto = (f"⚠️ Sin diferencias graves, pero hay {len(cascadas)} desplazamiento(s) en cascada "
+                              f"para revisar (ver detalle) — puede ser contenido que legítimamente cambió de "
+                              f"tamaño, o un bug de layout real.")
         else:
-            resumen_texto = "✅ No se encontraron diferencias graves."
+            resumen_texto = "✅ No se encontraron diferencias."
 
         fallas_html = "<li>Error grave, sin datos.</li>" if r['fatal'] else construir_html_fallas(
             r['consolidado'], r['cascadas'], {}, r['url_id']
@@ -623,10 +643,16 @@ def generar_reporte(all_results, version_number, output_dir, timestamp, umbral_p
         </div>
         """
 
-    global_color = 'red' if sites_con_grave > 0 else 'green'
-    global_text = (f'❌ Se encontraron diferencias graves en {sites_con_grave} de {len(all_results)} urls.'
-                    if sites_con_grave > 0 else
-                    '✅ Todas las URLs pasaron la prueba estructural.')
+    if sites_con_grave > 0:
+        global_color = 'red'
+        global_text = f'❌ Se encontraron diferencias graves en {sites_con_grave} de {len(all_results)} urls. NO recomendado deployar a PROD sin revisar.'
+    elif sites_con_cascada > 0:
+        global_color = 'orange'
+        global_text = (f'⚠️ Sin diferencias graves, pero {sites_con_cascada} de {len(all_results)} urls tienen '
+                        f'desplazamientos en cascada para revisar antes de deployar (ver el detalle de cada una).')
+    else:
+        global_color = 'green'
+        global_text = '✅ Todas las URLs pasaron la prueba estructural. Apto para deployar a PROD.'
 
     html = f"""
     <html><head><meta charset="utf-8">
