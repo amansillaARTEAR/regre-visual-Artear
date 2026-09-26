@@ -304,6 +304,67 @@ def test_estilo_real_si_se_detecta():
     print("OK: un cambio de estilo real (no artefacto) sigue detectándose")
 
 
+def test_fontsize_real_se_detecta():
+    """Caso reportado por el usuario: un título se ve visiblemente más
+    grande en V2 (14px -> 18px de font-size real). Debe detectarse como
+    DIFERENCIA ESTILO (FONTSIZE) y clasificarse GRAVE."""
+    v1 = [item('h2', 'h2:nth-child(1)', 0, 0, 300, 20, texto='Título de la nota',
+                styles={'fontSize': '14px'})]
+    v2 = [item('h2', 'h2:nth-child(1)', 0, 0, 300, 26, texto='Título de la nota',
+                styles={'fontSize': '18px'})]
+    fallas = core.comparar_estructura_dom(v1, v2, umbral_pixeles=3, comparar_estilos=True)
+    fontsize = [f for f in fallas if f['tipo'] == 'DIFERENCIA ESTILO (FONTSIZE)']
+    assert len(fontsize) == 1, f"Un cambio real de fontSize debería detectarse, obtuve: {fallas}"
+    consolidado = core.consolidar_fallas(fallas)
+    grave = next(c for c in consolidado if c['selector'] == 'h2:nth-child(1)')
+    assert grave['gravedad'] == 'grave', f"Un fontSize distinto debería ser grave, fue: {grave['gravedad']}"
+    print("OK: un cambio real de font-size se detecta y se clasifica como grave")
+
+
+def test_fontsize_subpixel_no_genera_ruido():
+    """El navegador puede rendear el mismo font-size con subpíxeles de
+    diferencia (16.0023px vs 16.0031px) sin que sea un cambio real de
+    diseño. Con tolerancia de 1px esto no debe marcarse."""
+    v1 = [item('h2', 'h2:nth-child(1)', 0, 0, 300, 20, texto='Título',
+                styles={'fontSize': '16.0023px'})]
+    v2 = [item('h2', 'h2:nth-child(1)', 0, 0, 300, 20, texto='Título',
+                styles={'fontSize': '16.0031px'})]
+    fallas = core.comparar_estructura_dom(v1, v2, umbral_pixeles=3, comparar_estilos=True)
+    fontsize = [f for f in fallas if 'FONTSIZE' in f['tipo']]
+    assert len(fontsize) == 0, f"Subpíxel de fontSize no debería marcarse, obtuve: {fallas}"
+    print("OK: diferencia de subpíxel en font-size (redondeo del navegador) no genera ruido")
+
+
+def test_padding_y_margin_reales_se_detectan():
+    """Pedido explícito del usuario: además de font-size, validar padding y
+    margin. Un cambio real de padding-top y de margin-left debe reportarse
+    como su propia DIFERENCIA ESTILO."""
+    v1 = [item('div', 'div.card', 0, 0, 300, 100, class_attr='card', texto='',
+                texto_subtree='Nota A',
+                styles={'paddingTop': '8px', 'marginLeft': '0px'})]
+    v2 = [item('div', 'div.card', 0, 0, 300, 100, class_attr='card', texto='',
+                texto_subtree='Nota A',
+                styles={'paddingTop': '16px', 'marginLeft': '12px'})]
+    fallas = core.comparar_estructura_dom(v1, v2, umbral_pixeles=3, comparar_estilos=True)
+    tipos = {f['tipo'] for f in fallas}
+    assert 'DIFERENCIA ESTILO (PADDINGTOP)' in tipos, f"Debería detectar el cambio de padding-top, obtuve: {tipos}"
+    assert 'DIFERENCIA ESTILO (MARGINLEFT)' in tipos, f"Debería detectar el cambio de margin-left, obtuve: {tipos}"
+    print("OK: cambios reales de padding y margin se detectan como diferencias de estilo propias")
+
+
+def test_padding_subpixel_no_genera_ruido():
+    """Igual que con font-size: un padding con subpíxeles de diferencia
+    por redondeo de layout no debe marcarse como cambio real."""
+    v1 = [item('div', 'div.card', 0, 0, 300, 100, class_attr='card', texto='card',
+                styles={'paddingTop': '8.0012px'})]
+    v2 = [item('div', 'div.card', 0, 0, 300, 100, class_attr='card', texto='card',
+                styles={'paddingTop': '8.0009px'})]
+    fallas = core.comparar_estructura_dom(v1, v2, umbral_pixeles=3, comparar_estilos=True)
+    paddings = [f for f in fallas if 'PADDING' in f['tipo']]
+    assert len(paddings) == 0, f"Subpíxel de padding no debería marcarse, obtuve: {fallas}"
+    print("OK: diferencia de subpíxel en padding (redondeo de layout) no genera ruido")
+
+
 def test_tolerancia_evita_ruido_de_scrollbar():
     """Caso Homepage/Juegos/Longform del reporte real: ancho de página
     difiere ~12-15px por aparición/desaparición de la scrollbar. Con
