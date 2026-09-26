@@ -354,6 +354,30 @@ def _falla(selector, tipo, diff, v1, v2, coords_v2, coords_v1, order_index, delt
 TIPOS_CASCADABLES = ('DIFERENCIA POSICIÓN (Y)', 'DIFERENCIA ALTURA (H)', 'DIFERENCIA ANCHO (W)')
 
 
+def _es_cadena_de_ancestros(selectores):
+    """
+    True si cada selector de la lista es ancestro/descendiente directo del
+    anterior en la jerarquía del DOM (ej: 'div:nth-child(48)',
+    'div:nth-child(48) > div', 'div:nth-child(48) > div > div'). Es decir:
+    es literalmente EL MISMO elemento visto en distintas profundidades de
+    anidamiento (el box de un ad + su wrapper + su contenedor), no una
+    coincidencia de magnitud entre selectores sin relación. Visto en el
+    reporte real v719: un ad-slot solo tiene 2 niveles (no 3+), así que
+    nunca llegaba a CASCADE_MIN_SIZE aunque fuera clarísimamente el mismo
+    elemento.
+    """
+    if len(selectores) < 2:
+        return False
+    partes = sorted((s.split(' > ') for s in selectores if s), key=len)
+    if len(partes) != len(selectores):
+        return False
+    for i in range(len(partes) - 1):
+        corto, largo = partes[i], partes[i + 1]
+        if largo[:len(corto)] != corto:
+            return False
+    return True
+
+
 def agrupar_cascadas(fallas):
     """
     Detecta clusters de fallas que comparten (casi) el mismo delta con
@@ -409,7 +433,8 @@ def agrupar_cascadas(fallas):
             clusters[bucket].append(f)
 
         for bucket, items in clusters.items():
-            if len(items) >= CASCADE_MIN_SIZE:
+            cadena_ancestros = _es_cadena_de_ancestros([f['selector'] for f in items])
+            if len(items) >= CASCADE_MIN_SIZE or cadena_ancestros:
                 items_ordenados = sorted(items, key=lambda f: f['order_index'])
                 primero = items_ordenados[0]
                 resultado_cascadas.append({

@@ -212,6 +212,29 @@ def test_cascada_por_altura_no_se_descalifica_por_tener_tambien_y():
     print("OK: un ad-slot anidado con H+Y a la vez en cada nivel igual se agrupa por altura")
 
 
+def test_cascada_de_2_se_colapsa_si_es_cadena_de_ancestros():
+    """Caso real v719 (después del fix anterior): un ad-slot con solo 2
+    niveles de anidamiento (el div y su hijo directo) comparte el mismo
+    delta de alto, pero como son solo 2 no llegaba a CASCADE_MIN_SIZE=3 y
+    quedaba como 2 fallas GRAVE sueltas — aun siendo obviamente el MISMO
+    elemento. Si los selectores forman una cadena ancestro→hijo, alcanza
+    con 2 para colapsar (no es coincidencia de magnitud, es el mismo caja)."""
+    v1 = [
+        item('div', 'main > div:nth-child(72)', 0, 15000, 1200, 737.97, order_index=1, texto='ad'),
+        item('div', 'main > div:nth-child(72) > div', 0, 15000, 1200, 737.97, order_index=2, texto='ad-inner'),
+    ]
+    v2 = [
+        item('div', 'main > div:nth-child(72)', 0, 15000, 1200, 786.98, order_index=1, texto='ad'),
+        item('div', 'main > div:nth-child(72) > div', 0, 15000, 1200, 786.98, order_index=2, texto='ad-inner'),
+    ]
+    fallas = core.comparar_estructura_dom(v1, v2, umbral_pixeles=3, comparar_estilos=False)
+    otras, cascadas = core.agrupar_cascadas(fallas)
+    assert len(cascadas) == 1, f"Esperaba 1 cascada, obtuve {len(cascadas)}: fallas sueltas={otras}"
+    assert cascadas[0]['cantidad'] == 2
+    assert len(otras) == 0
+    print("OK: 2 elementos en cadena ancestro-hijo con el mismo delta se colapsan aunque sean solo 2")
+
+
 def test_estilo_normaliza_font_weight_y_color():
     """Caso: FOUT/FOIT hace que V1 diga font-weight:normal y V2 diga 400
     (son lo mismo), y que el color venga como rgb(0,0,0) vs rgba(0,0,0,1)
