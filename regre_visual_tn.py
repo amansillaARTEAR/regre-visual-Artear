@@ -462,7 +462,7 @@ COLOR_BGR = {
     'grave': (0, 0, 255),        # rojo
     'menor': (255, 0, 0),        # azul
     'informativo': (0, 200, 200),  # amarillo/dorado — degradado por confirmación visual
-    'cascada': (0, 165, 255),    # naranja — desplazamiento en cascada agrupado
+    'cascada': (237, 58, 124),    # violeta — desplazamiento en cascada agrupado (distinto del dorado, antes naranja se confundía)
 }
 
 
@@ -507,7 +507,7 @@ LEYENDA_HTML = """
     <div style="flex: 1 1 220px;"><span style="color:red; font-weight:bold;">■ Rojo</span>: falla grave (elemento ausente/nuevo, o cambio de tamaño/estilo confirmado visualmente).</div>
     <div style="flex: 1 1 220px;"><span style="color:blue; font-weight:bold;">■ Azul</span>: desplazamiento menor sin cambio de tamaño.</div>
     <div style="flex: 1 1 220px;"><span style="color:#b8860b; font-weight:bold;">■ Dorado</span>: el DOM detectó una diferencia pero la confirmación visual (crop + diff) mostró que la región es igual — probablemente un falso positivo.</div>
-    <div style="flex: 1 1 220px;"><span style="color:#ff8c00; font-weight:bold;">■ Naranja</span>: desplazamiento en cascada — un solo elemento anterior cambió de tamaño y corrió a los siguientes; no son N fallas independientes.</div>
+    <div style="flex: 1 1 220px;"><span style="color:#7c3aed; font-weight:bold;">■ Violeta</span>: desplazamiento en cascada — un solo elemento anterior cambió de tamaño y corrió a los siguientes; no son N fallas independientes.</div>
   </div>
 </div>
 """
@@ -527,7 +527,7 @@ def construir_html_fallas(consolidado, cascadas, data_v2_por_selector, url_id):
         for c in cascadas:
             verbo, eje = DESC_CASCADA.get(c.get('tipo'), ('se movieron', 'en Y'))
             html += f"""
-            <li class='diff-item' style='color: #ff8c00; border-bottom: 1px dotted #ccc; padding: 5px 0;'>
+            <li class='diff-item' style='color: #7c3aed; border-bottom: 1px dotted #ccc; padding: 5px 0;'>
                 <span style="font-weight: bold;">Desplazamiento en cascada:</span>
                 {c['cantidad']} elementos {verbo} {c['delta_y']:.0f}px {eje}.
                 <br><span style="font-size: 0.85em; color: #666;">
