@@ -418,6 +418,32 @@ def agrupar_cascadas(fallas):
 
         otras_fallas = restantes
 
+    # Pass final: un contenedor que envuelve TODA la página (ej: el wrapper
+    # raíz del body) cambia de alto/ancho exactamente lo mismo que la causa
+    # raíz real de más abajo, porque su tamaño es la suma de su contenido.
+    # Visto en varios reportes reales: "header > div > div:nth-child(3)"
+    # (miles/decenas de miles de px de alto) queda como GRAVE suelto con el
+    # mismo delta que una cascada ya detectada en esa misma página. Es el
+    # mismo cambio visto desde la raíz, no una regresión adicional — se
+    # absorbe en la cascada existente en vez de listarse aparte.
+    if resultado_cascadas:
+        aun_sueltas = []
+        for f in otras_fallas:
+            if f['tipo'] not in TIPOS_CASCADABLES or f.get('delta') is None:
+                aun_sueltas.append(f)
+                continue
+            cascada_match = next(
+                (c for c in resultado_cascadas
+                 if abs(abs(c['delta_y']) - abs(f['delta'])) <= CASCADE_Y_EPSILON),
+                None,
+            )
+            if cascada_match:
+                cascada_match['cantidad'] += 1
+                cascada_match['selectores'].append(f['selector'])
+            else:
+                aun_sueltas.append(f)
+        otras_fallas = aun_sueltas
+
     return otras_fallas, resultado_cascadas
 
 

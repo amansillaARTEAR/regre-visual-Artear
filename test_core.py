@@ -157,6 +157,36 @@ def test_cascada_por_altura_de_footer_se_colapsa():
     print("OK: cascada de 4 elementos por un mismo delta de altura (footer) se colapsa en 1 hallazgo")
 
 
+def test_falla_suelta_de_wrapper_de_pagina_se_absorbe_en_cascada():
+    """Caso Homepage/Elecciones del reporte real v719: un cambio de
+    contenido más abajo genera una cascada de posición Y de varios
+    elementos, y ADEMÁS el contenedor que envuelve toda la página (altura
+    de decenas de miles de px) aparece con un cambio de alto EXACTAMENTE
+    igual al delta de esa cascada. Es el mismo cambio visto desde la raíz,
+    no una falla independiente: debe absorberse en la cascada, no quedar
+    como GRAVE suelto."""
+    v1 = [item('div', f'div:nth-child({i})', 0, i * 100, 300, 100,
+                class_attr=f'block-{i}', texto=f'contenido {i}', order_index=i)
+          for i in range(1, 8)]
+    v2 = [item('div', f'div:nth-child({i})', 0, i * 100 + 16, 300, 100,
+                class_attr=f'block-{i}', texto=f'contenido {i}', order_index=i)
+          for i in range(1, 8)]
+    # El wrapper de toda la página: mismo delta (16px) pero de ALTURA, no de Y.
+    v1.append(item('div', 'header > div > div:nth-child(3)', 0, 0, 50000, 44367,
+                    id_attr='page-wrapper', texto='wrapper', order_index=0))
+    v2.append(item('div', 'header > div > div:nth-child(3)', 0, 0, 50000, 44383,
+                    id_attr='page-wrapper', texto='wrapper', order_index=0))
+
+    fallas = core.comparar_estructura_dom(v1, v2, umbral_pixeles=3, comparar_estilos=False)
+    otras, cascadas = core.agrupar_cascadas(fallas)
+
+    assert len(cascadas) == 1, f"Esperaba 1 cascada, obtuve {len(cascadas)}"
+    assert cascadas[0]['cantidad'] == 8, f"Esperaba 7 elementos + el wrapper = 8, obtuve {cascadas[0]['cantidad']}"
+    assert not any('page-wrapper' in (f['selector'] or '') for f in otras), \
+        "El wrapper de página debería haberse absorbido en la cascada, no quedar suelto"
+    print("OK: falla suelta del wrapper de página se absorbe en la cascada existente en vez de listarse como GRAVE aparte")
+
+
 def test_estilo_normaliza_font_weight_y_color():
     """Caso: FOUT/FOIT hace que V1 diga font-weight:normal y V2 diga 400
     (son lo mismo), y que el color venga como rgb(0,0,0) vs rgba(0,0,0,1)
