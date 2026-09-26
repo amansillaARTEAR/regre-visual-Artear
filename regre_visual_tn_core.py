@@ -718,6 +718,53 @@ def agrupar_cascadas(fallas):
                 aun_sueltas.append(f)
         otras_fallas = aun_sueltas
 
+    # Pass: agrupar diffs de ESTILO idénticos (mismo tipo + mismo V1 + mismo
+    # V2) repetidos en muchos selectores distintos -> señal de una sola
+    # causa raíz (un cambio de CSS global, ej: la clase de título de nota
+    # subió de 36px a 44px), no N regresiones de estilo independientes.
+    # Caso real (Homepage v719, fix #22): el mismo cambio de FONTSIZE
+    # 36px->44px apareció en 16 elementos sueltos apenas desktop empezó a
+    # extraer tags de texto (a/h1-h6/p/span/etc, ver fix #22) — sin esta
+    # agrupación, cada titular de la portada generaba su propia línea GRAVE.
+    # A diferencia de las cascadas geométricas de arriba, acá SÍ se agrupa
+    # aunque el selector tenga TAMBIÉN un cambio de ALTURA/ANCHO propio: es
+    # un efecto esperable de una fuente más grande sobre su propia caja
+    # (no una regresión aparte), así que esos H/W del mismo selector se
+    # absorben en la cascada de estilo en vez de listarse sueltos.
+    estilo_por_key = defaultdict(list)
+    no_estilo = []
+    for f in otras_fallas:
+        if f['tipo'].startswith('DIFERENCIA ESTILO'):
+            estilo_por_key[(f['tipo'], f['v1'], f['v2'])].append(f)
+        else:
+            no_estilo.append(f)
+
+    restantes_estilo = []
+    selectores_absorbidos = set()
+    for (tipo, v1, v2), items in estilo_por_key.items():
+        if len(items) >= CASCADE_MIN_SIZE:
+            items_ordenados = sorted(items, key=lambda f: f['order_index'])
+            primero = items_ordenados[0]
+            resultado_cascadas.append({
+                'tipo_cascada': True,
+                'tipo': tipo,
+                'v1': v1,
+                'v2': v2,
+                'cantidad': len(items),
+                'primer_selector': primero['selector'],
+                'selectores': [f['selector'] for f in items_ordenados],
+                'coords_v2': primero['coords_v2'],
+            })
+            selectores_absorbidos.update(f['selector'] for f in items)
+        else:
+            restantes_estilo.extend(items)
+
+    otras_fallas = [
+        f for f in (no_estilo + restantes_estilo)
+        if not (f['selector'] in selectores_absorbidos
+                and f['tipo'] in ('DIFERENCIA ALTURA (H)', 'DIFERENCIA ANCHO (W)'))
+    ]
+
     return otras_fallas, resultado_cascadas
 
 

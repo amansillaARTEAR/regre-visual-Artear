@@ -365,6 +365,52 @@ def test_padding_subpixel_no_genera_ruido():
     print("OK: diferencia de subpíxel en padding (redondeo de layout) no genera ruido")
 
 
+def test_cascada_de_estilo_agrupa_cambio_global_de_fontsize():
+    """Caso real (Homepage v719, fix #22/#23): al empezar a extraer tags de
+    texto en desktop, un cambio de CSS global (la clase de título de nota
+    subió de 36px a 44px) apareció como 16 GRAVE sueltos, uno por cada
+    titular de la portada, en vez de 1 sola causa raíz. Con >= 3 elementos
+    con el MISMO tipo+V1+V2 de estilo, deben agruparse en 1 cascada."""
+    v1 = [item('h2', f'h2:nth-child({i})', 0, i * 100, 300, 40, texto=f'Nota {i}',
+                order_index=i, styles={'fontSize': '36px'})
+          for i in range(5)]
+    v2 = [item('h2', f'h2:nth-child({i})', 0, i * 100, 300, 50, texto=f'Nota {i}',
+                order_index=i, styles={'fontSize': '44px'})
+          for i in range(5)]
+    fallas = core.comparar_estructura_dom(v1, v2, umbral_pixeles=3, comparar_estilos=True)
+    sueltas, cascadas = core.agrupar_cascadas(fallas)
+
+    cascadas_estilo = [c for c in cascadas if c.get('tipo') == 'DIFERENCIA ESTILO (FONTSIZE)']
+    assert len(cascadas_estilo) == 1, f"Debería colapsar en 1 cascada de estilo, obtuve: {cascadas_estilo}"
+    assert cascadas_estilo[0]['cantidad'] == 5
+    assert cascadas_estilo[0]['v1'] == '36px' and cascadas_estilo[0]['v2'] == '44px'
+
+    sueltas_fontsize = [f for f in sueltas if f['tipo'] == 'DIFERENCIA ESTILO (FONTSIZE)']
+    assert len(sueltas_fontsize) == 0, "No debería quedar ningún FONTSIZE suelto fuera de la cascada"
+    # El cambio de alto (H) asociado a cada elemento (efecto esperable de una
+    # fuente más grande) también se absorbe, no queda como GRAVE aparte.
+    sueltas_altura = [f for f in sueltas if f['tipo'] == 'DIFERENCIA ALTURA (H)']
+    assert len(sueltas_altura) == 0, f"La altura asociada al fontSize debería absorberse, obtuve: {sueltas_altura}"
+    print("OK: un cambio de fontSize repetido en muchos elementos se agrupa en 1 cascada de estilo")
+
+
+def test_cambio_de_estilo_aislado_no_se_agrupa_en_cascada():
+    """Si el mismo tipo+V1+V2 de estilo aparece en pocos elementos (menos
+    que CASCADE_MIN_SIZE), no es una señal de causa global — debe seguir
+    reportándose como fallas GRAVE sueltas, no forzarse a una cascada."""
+    v1 = [item('h2', f'h2:nth-child({i})', 0, i * 100, 300, 40, texto=f'Nota {i}',
+                order_index=i, styles={'fontSize': '36px'})
+          for i in range(2)]
+    v2 = [item('h2', f'h2:nth-child({i})', 0, i * 100, 300, 40, texto=f'Nota {i}',
+                order_index=i, styles={'fontSize': '44px'})
+          for i in range(2)]
+    fallas = core.comparar_estructura_dom(v1, v2, umbral_pixeles=3, comparar_estilos=True)
+    sueltas, cascadas = core.agrupar_cascadas(fallas)
+    assert len(cascadas) == 0
+    assert len([f for f in sueltas if f['tipo'] == 'DIFERENCIA ESTILO (FONTSIZE)']) == 2
+    print("OK: un cambio de estilo en pocos elementos sigue reportándose suelto, no se fuerza a cascada")
+
+
 def test_tolerancia_evita_ruido_de_scrollbar():
     """Caso Homepage/Juegos/Longform del reporte real: ancho de página
     difiere ~12-15px por aparición/desaparición de la scrollbar. Con

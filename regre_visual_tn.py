@@ -634,21 +634,36 @@ def construir_html_fallas(consolidado, cascadas, data_v2_por_selector, url_id):
 
     if cascadas:
         for c in cascadas:
-            verbo, eje = DESC_CASCADA.get(c.get('tipo'), ('se movieron', 'en Y'))
+            es_estilo = c.get('tipo', '').startswith('DIFERENCIA ESTILO')
             coords = c['coords_v2']
             coords_str = f"{int(coords['x'])},{int(coords['y'])},{int(coords['width'])},{int(coords['height'])}"
+            if es_estilo:
+                # Cascada de ESTILO (fix #23): mismo tipo+V1+V2 repetido en
+                # muchos selectores -> probablemente 1 sola causa raíz (un
+                # cambio de CSS global), no N cambios de estilo sueltos.
+                nombre_estilo = c['tipo'].replace('DIFERENCIA ESTILO (', '').rstrip(')')
+                resumen = (f"{c['cantidad']} elementos cambiaron su {nombre_estilo} "
+                           f"de {c['v1']} a {c['v2']}")
+                causa = (f"Causa probable: un cambio de CSS global (ej: una clase compartida) "
+                         f"afectó a los {c['cantidad']} elementos por igual — no son {c['cantidad']} "
+                         f"regresiones de estilo independientes, es 1 sola causa raíz "
+                         f"(primer elemento afectado: <code>{c['primer_selector'][:60]}</code>).")
+            else:
+                verbo, eje = DESC_CASCADA.get(c.get('tipo'), ('se movieron', 'en Y'))
+                resumen = f"{c['cantidad']} elementos {verbo} {c['delta_y']:.0f}px {eje}"
+                causa = (f"Causa probable: un solo elemento anterior del DOM cambió de tamaño y arrastró a los "
+                         f"{c['cantidad']} de abajo — no son {c['cantidad']} regresiones independientes, es 1 sola causa raíz "
+                         f"(empezando por <code>{c['primer_selector'][:60]}</code>).")
             html += f"""
             <li class='diff-item' style='color: #7c3aed; border-bottom: 1px dotted #ccc; padding: 5px 0; cursor: pointer;'
                 onclick="highlightElement('{url_id}', '{coords_str}', this)"
                 data-coords="{coords_str}">
                 <span style="background:#7c3aed; color:#fff; border-radius:3px; padding:1px 6px; font-size:0.8em; font-weight:bold; margin-right:6px;">{c.get('_num', '')}</span>
-                <span style="font-weight: bold;">⚠️ Revisar — desplazamiento en cascada:</span>
-                {c['cantidad']} elementos {verbo} {c['delta_y']:.0f}px {eje}
+                <span style="font-weight: bold;">⚠️ Revisar — {'cambio de estilo repetido' if es_estilo else 'desplazamiento en cascada'}:</span>
+                {resumen}
                 <span style="font-size: 0.8em; color: #888;">(click para verlo resaltado en la imagen)</span>.
                 <br><span style="font-size: 0.85em; color: #666;">
-                Causa probable: un solo elemento anterior del DOM cambió de tamaño y arrastró a los
-                {c['cantidad']} de abajo — no son {c['cantidad']} regresiones independientes, es 1 sola causa raíz
-                (empezando por <code>{c['primer_selector'][:60]}</code>).
+                {causa}
                 </span>
             </li>
             """
