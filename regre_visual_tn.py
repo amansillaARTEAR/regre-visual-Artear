@@ -501,12 +501,19 @@ LEYENDA_HTML = """
 def construir_html_fallas(consolidado, cascadas, data_v2_por_selector, url_id):
     html = "<ul>"
 
+    DESC_CASCADA = {
+        'DIFERENCIA POSICIÓN (Y)': ('se movieron', 'en Y'),
+        'DIFERENCIA ALTURA (H)': ('cambiaron de alto', 'en H'),
+        'DIFERENCIA ANCHO (W)': ('cambiaron de ancho', 'en W'),
+    }
+
     if cascadas:
         for c in cascadas:
+            verbo, eje = DESC_CASCADA.get(c.get('tipo'), ('se movieron', 'en Y'))
             html += f"""
             <li class='diff-item' style='color: #ff8c00; border-bottom: 1px dotted #ccc; padding: 5px 0;'>
                 <span style="font-weight: bold;">Desplazamiento en cascada:</span>
-                {c['cantidad']} elementos se movieron {c['delta_y']:.0f}px en Y.
+                {c['cantidad']} elementos {verbo} {c['delta_y']:.0f}px {eje}.
                 <br><span style="font-size: 0.85em; color: #666;">
                 Causa probable: un cambio de tamaño en un elemento anterior del DOM
                 (empezando por <code>{c['primer_selector'][:60]}</code>), no {c['cantidad']} regresiones independientes.
@@ -577,8 +584,8 @@ def generar_reporte(all_results, version_number, output_dir, timestamp, umbral_p
         all_details_html += f"""
         <div style="border: 2px solid #ddd; padding: 15px; margin-top: 20px; border-radius: 8px;">
             <h2>{r['description']}</h2>
-            <p><strong>URL Base (V1):</strong> <code>{r['url1']}</code></p>
-            <p><strong>URL Comparada (V2):</strong> <code>{r['url2']}</code></p>
+            <p><strong>URL Base (V1):</strong> <a href="{r['url1']}" target="_blank"><code>{r['url1']}</code></a></p>
+            <p><strong>URL Comparada (V2):</strong> <a href="{r['url2']}" target="_blank"><code>{r['url2']}</code></a></p>
             <p><strong>Resultado:</strong> <span style="font-weight:bold; color:{alert};">{resumen_texto}</span></p>
             <p><strong>Tiempo de Ejecución:</strong> {r['time_elapsed']}</p>
             <details>
