@@ -518,6 +518,29 @@ def marcar_fallas_en_captura(png_data, consolidado, cascadas):
     img = cv2.imdecode(np.frombuffer(png_data, np.uint8), cv2.IMREAD_COLOR)
     height, width = img.shape[:2]
 
+    def _dibujar_etiqueta(x1, y1, x2, y2, color, label):
+        # Etiqueta (mismo número que en la lista de texto del reporte)
+        # quemada al lado del recuadro, para que se entienda de un vistazo
+        # qué pasó ahí sin tener que hacer click en la lista.
+        if not label:
+            return
+        font, escala, grosor_txt = cv2.FONT_HERSHEY_SIMPLEX, 0.6, 2
+        (tw, th), _ = cv2.getTextSize(label, font, escala, grosor_txt)
+        pad = 4
+        # Encima del recuadro si hay lugar, si no, debajo (para que no se
+        # corte arriba del todo de la imagen).
+        if y1 - th - 2 * pad >= 0:
+            ty2 = y1
+            ty1 = ty2 - th - 2 * pad
+        else:
+            ty1 = y2
+            ty2 = ty1 + th + 2 * pad
+        tx1 = x1
+        tx2 = min(width - 1, tx1 + tw + 2 * pad)
+        cv2.rectangle(img, (tx1, ty1), (tx2, ty2), color, -1)
+        cv2.putText(img, label, (tx1 + pad, ty2 - pad), font, escala,
+                    (255, 255, 255), grosor_txt, cv2.LINE_AA)
+
     def dibujar(coords, color_key, label=''):
         x1 = max(0, int(coords['x']))
         y1 = max(0, int(coords['y']))
@@ -527,31 +550,48 @@ def marcar_fallas_en_captura(png_data, consolidado, cascadas):
             thickness = 5 if color_key == 'grave' else 3
             color = COLOR_BGR[color_key]
             cv2.rectangle(img, (x1, y1), (x2, y2), color, thickness)
-            if label:
-                # Etiqueta (mismo número que en la lista de texto del reporte)
-                # quemada al lado del recuadro, para que se entienda de un
-                # vistazo qué pasó ahí sin tener que hacer click en la lista.
-                font, escala, grosor_txt = cv2.FONT_HERSHEY_SIMPLEX, 0.6, 2
-                (tw, th), _ = cv2.getTextSize(label, font, escala, grosor_txt)
-                pad = 4
-                # Encima del recuadro si hay lugar, si no, debajo (para que
-                # no se corte arriba del todo de la imagen).
-                if y1 - th - 2 * pad >= 0:
-                    ty2 = y1
-                    ty1 = ty2 - th - 2 * pad
-                else:
-                    ty1 = y2
-                    ty2 = ty1 + th + 2 * pad
-                tx1 = x1
-                tx2 = min(width - 1, tx1 + tw + 2 * pad)
-                cv2.rectangle(img, (tx1, ty1), (tx2, ty2), color, -1)
-                cv2.putText(img, label, (tx1 + pad, ty2 - pad), font, escala,
-                            (255, 255, 255), grosor_txt, cv2.LINE_AA)
+            _dibujar_etiqueta(x1, y1, x2, y2, color, label)
+
+    def _linea_punteada(pt1, pt2, color, thickness, largo_trazo=12, hueco=8):
+        x1, y1 = pt1
+        x2, y2 = pt2
+        dist = max(1, int(((x2 - x1) ** 2 + (y2 - y1) ** 2) ** 0.5))
+        paso = largo_trazo + hueco
+        n = dist // paso + 1
+        for i in range(n):
+            t0 = min(1.0, (i * paso) / dist)
+            t1 = min(1.0, (i * paso + largo_trazo) / dist)
+            xa = int(x1 + (x2 - x1) * t0)
+            ya = int(y1 + (y2 - y1) * t0)
+            xb = int(x1 + (x2 - x1) * t1)
+            yb = int(y1 + (y2 - y1) * t1)
+            cv2.line(img, (xa, ya), (xb, yb), color, thickness)
+
+    def dibujar_punteado(coords, color_key, label=''):
+        # Cascada: se dibuja el RANGO COMPLETO que abarca (desde el primer
+        # hasta el último elemento afectado), no solo el elemento "causa
+        # raíz" -- pedido explícito del usuario. Se usa línea punteada en
+        # vez de sólida para diferenciarlo de un recuadro de falla real
+        # (grave/menor/informativo): esto es "el área que se corrió", no
+        # "el elemento que cambió".
+        x1 = max(0, int(coords['x']))
+        y1 = max(0, int(coords['y']))
+        x2 = min(width - 1, int(coords['x'] + coords['width']))
+        y2 = min(height - 1, int(coords['y'] + coords['height']))
+        if x2 > x1 and y2 > y1:
+            color = COLOR_BGR[color_key]
+            thickness = 3
+            _linea_punteada((x1, y1), (x2, y1), color, thickness)
+            _linea_punteada((x2, y1), (x2, y2), color, thickness)
+            _linea_punteada((x2, y2), (x1, y2), color, thickness)
+            _linea_punteada((x1, y2), (x1, y1), color, thickness)
+            _dibujar_etiqueta(x1, y1, x2, y2, color, label)
 
     for item in consolidado:
         dibujar(item['coords_v2'], item['gravedad'], item.get('_num', ''))
     for cascada in cascadas:
-        dibujar(cascada['coords_v2'], 'cascada', cascada.get('_num', ''))
+        coords = cascada.get('coords_rango_v2') or cascada['coords_v2']
+        dibujar_punteado(coords, 'cascada', cascada.get('_num', ''))
 
     is_success, buffer = cv2.imencode(".png", img)
     return buffer.tobytes() if is_success else None
@@ -570,7 +610,7 @@ LEYENDA_HTML = """
     <div style="flex: 1 1 220px;"><span style="color:red; font-weight:bold;">■ Rojo</span>: falla grave (elemento ausente/nuevo, o cambio de tamaño/estilo confirmado visualmente).</div>
     <div style="flex: 1 1 220px;"><span style="color:blue; font-weight:bold;">■ Azul</span>: desplazamiento menor sin cambio de tamaño.</div>
     <div style="flex: 1 1 220px;"><span style="color:#b8860b; font-weight:bold;">■ Dorado</span>: el DOM detectó una diferencia pero la confirmación visual (crop + diff) mostró que la región es igual — probablemente un falso positivo.</div>
-    <div style="flex: 1 1 220px;"><span style="color:#7c3aed; font-weight:bold;">■ Violeta</span>: desplazamiento en cascada — un solo elemento anterior cambió de tamaño y corrió a los siguientes; no son N fallas independientes.</div>
+    <div style="flex: 1 1 220px;"><span style="color:#7c3aed; font-weight:bold;">┄ Violeta punteado</span>: desplazamiento en cascada (rango completo afectado) — un solo elemento anterior cambió de tamaño y corrió a los siguientes; no son N fallas independientes.</div>
   </div>
 </div>
 """
@@ -589,7 +629,10 @@ def construir_html_fallas(consolidado, cascadas, data_v2_por_selector, url_id):
     if cascadas:
         for c in cascadas:
             verbo, eje = DESC_CASCADA.get(c.get('tipo'), ('se movieron', 'en Y'))
-            coords = c['coords_v2']
+            # Rango completo (todos los elementos de la cascada), no solo la
+            # causa raíz -- así el click y el resaltado en la imagen muestran
+            # el alcance real, no un solo punto.
+            coords = c.get('coords_rango_v2') or c['coords_v2']
             coords_str = f"{int(coords['x'])},{int(coords['y'])},{int(coords['width'])},{int(coords['height'])}"
             html += f"""
             <li class='diff-item' style='color: #7c3aed; border-bottom: 1px dotted #ccc; padding: 5px 0; cursor: pointer;'
