@@ -1,0 +1,93 @@
+name: Regresión Visual TN
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Número de versión a testear (se arma como ?d=VERSION)"
+        required: true
+        type: string
+      modo:
+        description: "Qué correr"
+        required: true
+        type: choice
+        options:
+          - ambos
+          - desktop
+          - mobile
+        default: ambos
+      urls:
+        description: "Opcional: nombres separados por coma (de BASE_URLS_MAP) para testear solo un subconjunto. Vacío = todas."
+        required: false
+        type: string
+        default: ""
+      tolerancia:
+        description: "Tolerancia en píxeles"
+        required: false
+        type: string
+        default: "3"
+
+jobs:
+  tests-offline:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Instalar dependencias
+        run: pip install -r requirements.txt
+      - name: Correr tests offline de la lógica de comparación
+        run: python test_core.py
+
+  regresion-desktop:
+    needs: tests-offline
+    if: ${{ inputs.modo == 'desktop' || inputs.modo == 'ambos' }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Instalar Chrome
+        uses: browser-actions/setup-chrome@v1
+      - name: Instalar dependencias
+        run: pip install -r requirements.txt
+      - name: Correr regresión desktop
+        run: |
+          python regre_visual_tn.py "${{ inputs.version }}" \
+            --modo desktop \
+            --tolerancia "${{ inputs.tolerancia }}" \
+            ${{ inputs.urls != '' && format('--urls {0}', inputs.urls) || '' }}
+      - name: Subir reporte como artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: reporte-desktop-v${{ inputs.version }}
+          path: reportes/desktop/
+          retention-days: 30
+
+  regresion-mobile:
+    needs: tests-offline
+    if: ${{ inputs.modo == 'mobile' || inputs.modo == 'ambos' }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Instalar Chrome
+        uses: browser-actions/setup-chrome@v1
+      - name: Instalar dependencias
+        run: pip install -r requirements.txt
+      - name: Correr regresión mobile
+        run: |
+          python regre_visual_tn.py "${{ inputs.version }}" \
+            --modo mobile \
+            --tolerancia "${{ inputs.tolerancia }}" \
+            ${{ inputs.urls != '' && format('--urls {0}', inputs.urls) || '' }}
+      - name: Subir reporte como artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: reporte-mobile-v${{ inputs.version }}
+          path: reportes/mobile/
+          retention-days: 30
