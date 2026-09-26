@@ -372,17 +372,26 @@ def agrupar_cascadas(fallas):
     resultado_cascadas = []
 
     for tipo in TIPOS_CASCADABLES:
-        # Selectores que tienen, para este tipo, ALGÚN otro tipo de falla:
-        # esos no son "puro efecto dominó" para este tipo, tratarlos como
+        # Selectores que tienen, ADEMÁS, un tipo de falla NO cascadeable
+        # (estilo, posición X, ausente/nuevo): esos sí son un cambio real
+        # propio del elemento, no "puro efecto dominó", y se tratan como
         # fallas reales (se decide sobre las fallas ORIGINALES, no sobre lo
         # que ya fue colapsado por un tipo anterior en este mismo loop).
+        #
+        # OJO: que un mismo elemento tenga a la vez H Y Y (o W y H) NO lo
+        # descalifica — es exactamente lo esperable en un ad-slot anidado:
+        # el contenedor cambia de alto (su propia causa) Y además se corre
+        # en Y (efecto de lo que cambió arriba). Descalificarlo por eso
+        # hacía que NINGÚN ad-slot calificara nunca para agruparse (visto
+        # en el reporte real v719: 7 ad-slots x 2-3 niveles de anidamiento
+        # quedaban como ~20 fallas "graves" sueltas en vez de agruparse).
         selectores_con_otra_falla = set()
         fallas_por_selector = defaultdict(list)
         for f in fallas:
             fallas_por_selector[f['selector']].append(f)
         for selector, lst in fallas_por_selector.items():
             tipos_del_selector = {f['tipo'] for f in lst}
-            if tipos_del_selector - {tipo}:
+            if tipos_del_selector - set(TIPOS_CASCADABLES):
                 selectores_con_otra_falla.add(selector)
 
         candidatas_cascada = [

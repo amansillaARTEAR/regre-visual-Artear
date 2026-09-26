@@ -187,6 +187,31 @@ def test_falla_suelta_de_wrapper_de_pagina_se_absorbe_en_cascada():
     print("OK: falla suelta del wrapper de página se absorbe en la cascada existente en vez de listarse como GRAVE aparte")
 
 
+def test_cascada_por_altura_no_se_descalifica_por_tener_tambien_y():
+    """Caso real v719: un ad-slot anidado (el div del ad, su wrapper y su
+    contenedor) cambia de alto en los 3 niveles por el mismo delta, y CADA
+    nivel además tiene su propio corrimiento de Y (efecto normal de que algo
+    más arriba también cambió). Antes, tener Y ademas de H descalificaba al
+    selector de agruparse por H — así que NINGÚN ad-slot se agrupaba nunca
+    y quedaban ~3 fallas GRAVE sueltas por cada ad, todas "diciendo lo
+    mismo". Deben colapsarse en 1 cascada de tipo H igual que el resto."""
+    nombres = ['ad-outer', 'ad-wrapper', 'ad-inner']
+    v1 = [item('div', f'main > div:nth-child(48){suf}', 0, 15000 + i * 10, 300, 600,
+                class_attr=nombre, texto=nombre, order_index=i)
+          for i, (nombre, suf) in enumerate(zip(nombres, ['', ' > div', ' > div > div']))]
+    v2 = [item('div', f'main > div:nth-child(48){suf}', 0, 15086 + i * 10, 300, 686,
+                class_attr=nombre, texto=nombre, order_index=i)
+          for i, (nombre, suf) in enumerate(zip(nombres, ['', ' > div', ' > div > div']))]
+
+    fallas = core.comparar_estructura_dom(v1, v2, umbral_pixeles=3, comparar_estilos=False)
+    otras, cascadas = core.agrupar_cascadas(fallas)
+
+    cascadas_h = [c for c in cascadas if c.get('tipo') == 'DIFERENCIA ALTURA (H)']
+    assert len(cascadas_h) == 1, f"Esperaba 1 cascada de altura, obtuve {len(cascadas_h)}: {cascadas}"
+    assert cascadas_h[0]['cantidad'] == 3
+    print("OK: un ad-slot anidado con H+Y a la vez en cada nivel igual se agrupa por altura")
+
+
 def test_estilo_normaliza_font_weight_y_color():
     """Caso: FOUT/FOIT hace que V1 diga font-weight:normal y V2 diga 400
     (son lo mismo), y que el color venga como rgb(0,0,0) vs rgba(0,0,0,1)
