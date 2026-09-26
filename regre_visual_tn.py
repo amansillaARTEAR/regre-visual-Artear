@@ -842,6 +842,17 @@ def main():
         faltantes = nombres - set(urls_map.values())
         if faltantes:
             print(f"⚠️ No encontrados en BASE_URLS_MAP: {faltantes}")
+        if not urls_map:
+            # Sin esto: 0 URLs corridas generaba igual un reporte con
+            # "Resumen global: ✅ Todas las URLs pasaron la prueba
+            # estructural" (verdad vacía sobre 0/0) — un resultado en verde
+            # sin ninguna URL testeada, indistinguible de una corrida real
+            # limpia. Detectado en la práctica: --urls con la URL completa
+            # en vez del nombre de BASE_URLS_MAP (ej. "https://tn.com.ar/"
+            # en vez de "Homepage") pasaba silenciosamente como éxito.
+            print(f"❌ Ningún nombre de --urls coincide con BASE_URLS_MAP. "
+                  f"Nombres válidos: {sorted(BASE_URLS_MAP.values())}")
+            sys.exit(1)
 
     timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
     all_results = []
