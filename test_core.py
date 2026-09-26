@@ -13,12 +13,12 @@ import regre_visual_tn_core as core
 
 
 def item(tag, selector, x, y, w, h, id_attr='', class_attr='', texto='', styles=None,
-         data_attrs='', order_index=0, texto_subtree=''):
+         data_attrs='', order_index=0, texto_subtree='', img_src=''):
     return {
         'tag': tag, 'selector': selector, 'x': x, 'y': y, 'width': w, 'height': h,
         'id_attr': id_attr, 'class_attr': class_attr, 'texto': texto,
         'styles': styles or {}, 'data_attrs': data_attrs, 'order_index': order_index,
-        'texto_subtree': texto_subtree,
+        'texto_subtree': texto_subtree, 'img_src': img_src,
     }
 
 
@@ -391,6 +391,46 @@ def test_listado_con_noticias_distintas_no_reporta_geometria():
     fallas = core.comparar_estructura_dom(v1, v2, umbral_pixeles=3, comparar_estilos=True)
     assert fallas == [], f"no debería reportar nada, son noticias distintas: {fallas}"
     print("OK: tarjetas de listado con noticias distintas no generan fallas de geometría/estilo")
+
+
+def test_carrusel_de_imagenes_reordenado_no_reporta_geometria():
+    """
+    Caso real (Homepage v719 mobile): un carrusel de tarjetas "destacadas"
+    (imagen grande + poco/nada de texto propio o anidado) se reordenó entre
+    la captura de V1 y la de V2 -> dos tarjetas literalmente intercambiaron
+    tamaño (una pasó de 675px a 219px de alto y la otra al revés), y sin
+    señal de texto (texto_subtree vacío en ambas) se reportaban como
+    cambios de layout reales. La imagen (img_src) es la señal que falta.
+    """
+    v1 = [
+        item('div', 'div:nth-child(38) > div > div', 0, 100, 300, 675,
+             img_src='/img/nota-colapinto.jpg', order_index=0),
+        item('div', 'div:nth-child(39) > div > div', 0, 775, 300, 219,
+             img_src='/img/nota-racing.jpg', order_index=1),
+    ]
+    # V2: se reordenó el carrusel -> la tarjeta grande ahora es la de Racing
+    # (era la chica) y la chica ahora es la de Colapinto (era la grande).
+    v2 = [
+        item('div', 'div:nth-child(38) > div > div', 0, 100, 300, 219,
+             img_src='/img/nota-racing.jpg', order_index=0),
+        item('div', 'div:nth-child(39) > div > div', 0, 319, 300, 675,
+             img_src='/img/nota-colapinto.jpg', order_index=1),
+    ]
+    fallas = core.comparar_estructura_dom(v1, v2, umbral_pixeles=3, comparar_estilos=True)
+    assert fallas == [], f"no debería reportar nada, son tarjetas distintas reordenadas: {fallas}"
+    print("OK: carrusel de tarjetas-imagen reordenado no genera fallas de geometría/estilo")
+
+
+def test_misma_imagen_que_cambia_de_tamano_si_reporta_diferencia_real():
+    """Control: si es la MISMA imagen (mismo img_src) y cambia de alto, sigue
+    siendo una falla real — el fix no debe volverse ciego a regresiones
+    reales solo porque el elemento no tiene texto."""
+    v1 = [item('div', 'div:nth-child(1)', 0, 0, 300, 200, img_src='/img/nota-x.jpg', order_index=0)]
+    v2 = [item('div', 'div:nth-child(1)', 0, 0, 300, 260, img_src='/img/nota-x.jpg', order_index=0)]
+    fallas = core.comparar_estructura_dom(v1, v2, umbral_pixeles=3, comparar_estilos=False)
+    tipos = [f['tipo'] for f in fallas]
+    assert tipos == ['DIFERENCIA ALTURA (H)'], fallas
+    print("OK: la misma imagen (mismo img_src) que cambia de alto sigue siendo una falla real")
 
 
 def test_misma_tarjeta_con_mismo_contenido_si_reporta_diferencia_real():

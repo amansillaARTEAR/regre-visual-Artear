@@ -178,19 +178,35 @@ def _identidad_es_debil(item):
 
 def _contenido_distinto(item1, item2):
     """
-    True si el texto del subárbol (título/copete real, no solo el texto
-    propio usado en el fingerprint) difiere entre los dos elementos
-    emparejados -> son en verdad DOS noticias/tarjetas distintas, no la
-    misma tarjeta que cambió de tamaño/posición. Si alguno no tiene texto
-    de subárbol (ej: un ícono, una imagen sin alt) no hay señal para
-    decidir, así que no se lo considera "distinto" (se sigue comparando
-    geometría normalmente).
+    True si el CONTENIDO real (no la geometría) de los dos elementos
+    emparejados difiere -> son en verdad DOS tarjetas/noticias distintas,
+    no la misma tarjeta que cambió de tamaño/posición. Dos señales,
+    cualquiera alcanza:
+      1. Texto del subárbol (título/copete real, no solo el texto propio
+         usado en el fingerprint).
+      2. Imagen del subárbol (primer <img src> o background-image) — hay
+         tarjetas (carruseles de "destacados"/"recomendados") que son casi
+         puro imagen, sin texto visible ni siquiera anidado. Caso real
+         (Homepage v719): un carrusel reordenó sus tarjetas entre la
+         captura de V1 y V2 y, sin esta señal, se reportaban ~10 cambios de
+         tamaño/posición GRAVE que en realidad eran la misma tarjeta en
+         otro lugar + otra ocupando su lugar viejo.
+    Si NINGUNA de las dos señales tiene dato en ambos lados, no hay forma
+    de decidir y se sigue comparando geometría normalmente (más vale un
+    posible falso positivo raro que ocultar un cambio real sin ninguna
+    evidencia de que el contenido cambió).
     """
     t1 = (item1.get('texto_subtree', '') or '').strip()
     t2 = (item2.get('texto_subtree', '') or '').strip()
-    if not t1 or not t2:
-        return False
-    return t1 != t2
+    if t1 and t2:
+        return t1 != t2
+
+    img1 = (item1.get('img_src', '') or '').strip()
+    img2 = (item2.get('img_src', '') or '').strip()
+    if img1 and img2:
+        return img1 != img2
+
+    return False
 
 
 def emparejar_elementos(data_v1, data_v2):
