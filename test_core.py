@@ -13,11 +13,12 @@ import regre_visual_tn_core as core
 
 
 def item(tag, selector, x, y, w, h, id_attr='', class_attr='', texto='', styles=None,
-         data_attrs='', order_index=0):
+         data_attrs='', order_index=0, texto_subtree=''):
     return {
         'tag': tag, 'selector': selector, 'x': x, 'y': y, 'width': w, 'height': h,
         'id_attr': id_attr, 'class_attr': class_attr, 'texto': texto,
         'styles': styles or {}, 'data_attrs': data_attrs, 'order_index': order_index,
+        'texto_subtree': texto_subtree,
     }
 
 
@@ -363,6 +364,48 @@ def test_ausente_y_nuevo_siguen_siendo_graves():
     assert len(consolidado) == 1
     assert consolidado[0]['gravedad'] == 'grave'
     print("OK: un elemento realmente ausente sigue clasificado como grave")
+
+
+def test_listado_con_noticias_distintas_no_reporta_geometria():
+    """
+    Caso real (v719, "Listado"/últimas-noticias, mobile): las tarjetas son
+    <article class="card"> con el título en un <h2> anidado -> texto propio
+    vacío -> fingerprint = solo 'article.card', igual para las 3 tarjetas.
+    Entre la captura de V1 y la de V2 el listado (que se actualiza en vivo)
+    mostró OTRAS noticias en esos mismos lugares. Antes del fix esto se
+    reportaba como que la tarjeta "cambió" de tamaño/posición; en realidad
+    son dos noticias distintas y no hay nada que comparar geométricamente.
+    """
+    v1 = [
+        item('article', 'article:nth-child(1)', 0, 0, 300, 120, class_attr='card',
+             texto_subtree='Noticia A: se cayó un avión', order_index=0),
+        item('article', 'article:nth-child(2)', 0, 120, 300, 120, class_attr='card',
+             texto_subtree='Noticia B: sube el dólar', order_index=1),
+    ]
+    v2 = [
+        item('article', 'article:nth-child(1)', 0, 0, 300, 150, class_attr='card',
+             texto_subtree='Noticia C: nuevo escandalo politico', order_index=0),
+        item('article', 'article:nth-child(2)', 0, 150, 300, 95, class_attr='card',
+             texto_subtree='Noticia D: resultado de futbol', order_index=1),
+    ]
+    fallas = core.comparar_estructura_dom(v1, v2, umbral_pixeles=3, comparar_estilos=True)
+    assert fallas == [], f"no debería reportar nada, son noticias distintas: {fallas}"
+    print("OK: tarjetas de listado con noticias distintas no generan fallas de geometría/estilo")
+
+
+def test_misma_tarjeta_con_mismo_contenido_si_reporta_diferencia_real():
+    """
+    Control: si el contenido (texto de subárbol) es el MISMO en V1 y V2,
+    sigue siendo la misma tarjeta -> un cambio real de alto (ej: un bug de
+    CSS) debe seguir reportándose como antes."""
+    v1 = [item('article', 'article:nth-child(1)', 0, 0, 300, 120, class_attr='card',
+                texto_subtree='Noticia A: se cayó un avión', order_index=0)]
+    v2 = [item('article', 'article:nth-child(1)', 0, 0, 300, 180, class_attr='card',
+                texto_subtree='Noticia A: se cayó un avión', order_index=0)]
+    fallas = core.comparar_estructura_dom(v1, v2, umbral_pixeles=3, comparar_estilos=False)
+    tipos = [f['tipo'] for f in fallas]
+    assert tipos == ['DIFERENCIA ALTURA (H)'], fallas
+    print("OK: misma noticia (mismo texto real) que cambia de alto sigue siendo una falla real")
 
 
 if __name__ == '__main__':

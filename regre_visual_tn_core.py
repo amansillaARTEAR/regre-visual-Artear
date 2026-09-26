@@ -161,6 +161,38 @@ def indexar_por_fingerprint(data):
     return grupos, sin_fingerprint
 
 
+def _identidad_es_debil(item):
+    """
+    True si la identidad de este item viene solo de tag+clases (sin id real
+    ni texto propio) — es decir, si dos elementos distintos con la misma
+    clase/tag caerían en el mismo fingerprint sin que su CONTENIDO real se
+    haya comparado nunca. Caso real (v719, "Listado"/últimas-noticias): las
+    tarjetas de noticia son <article class="card">, con el título en un
+    <h2> anidado -> texto propio vacío -> el fingerprint es solo
+    "article.card", y la tarjeta N de V1 queda emparejada con la tarjeta N
+    de V2 aunque sean noticias completamente distintas (el listado se
+    actualiza entre una corrida y otra).
+    """
+    return not _id_estable(item.get('id_attr')) and not (item.get('texto', '') or '').strip()
+
+
+def _contenido_distinto(item1, item2):
+    """
+    True si el texto del subárbol (título/copete real, no solo el texto
+    propio usado en el fingerprint) difiere entre los dos elementos
+    emparejados -> son en verdad DOS noticias/tarjetas distintas, no la
+    misma tarjeta que cambió de tamaño/posición. Si alguno no tiene texto
+    de subárbol (ej: un ícono, una imagen sin alt) no hay señal para
+    decidir, así que no se lo considera "distinto" (se sigue comparando
+    geometría normalmente).
+    """
+    t1 = (item1.get('texto_subtree', '') or '').strip()
+    t2 = (item2.get('texto_subtree', '') or '').strip()
+    if not t1 or not t2:
+        return False
+    return t1 != t2
+
+
 def emparejar_elementos(data_v1, data_v2):
     """
     Empareja elementos de V1 con V2 usando:
@@ -170,7 +202,12 @@ def emparejar_elementos(data_v1, data_v2):
          fingerprint útil (p. ej. <div> genérico sin clases ni texto).
 
     Devuelve: (pares, solo_v1, solo_v2)
-      pares: lista de (item_v1, item_v2)
+      pares: lista de (item_v1, item_v2, identidad_debil) — identidad_debil
+        es True cuando el emparejamiento se hizo sin ninguna señal de
+        contenido (ni id real, ni texto propio, ni siquiera fingerprint:
+        cayó al fallback nth-child), es decir, cuando dos elementos
+        "distintos" pueden haber quedado apareados solo por ocupar la
+        misma posición.
       solo_v1: items de V1 sin matcheo en V2 -> candidatos a AUSENTE V2
       solo_v2: items de V2 sin matcheo en V1 -> candidatos a NUEVO EN V2
     """
@@ -187,13 +224,15 @@ def emparejar_elementos(data_v1, data_v2):
         lista_v2 = grupos_v2.get(fp, [])
         n = min(len(lista_v1), len(lista_v2))
         for i in range(n):
-            pares.append((lista_v1[i], lista_v2[i]))
+            debil = _identidad_es_debil(lista_v1[i])
+            pares.append((lista_v1[i], lista_v2[i], debil))
         if len(lista_v1) > n:
             solo_v1.extend(lista_v1[n:])
         if len(lista_v2) > n:
             solo_v2.extend(lista_v2[n:])
 
-    # Fallback nth-child para elementos sin fingerprint útil
+    # Fallback nth-child para elementos sin fingerprint útil: nunca hubo
+    # ninguna señal de contenido en el emparejamiento -> siempre "débil".
     map_v2_selector = {}
     for item in resto_v2:
         map_v2_selector.setdefault(item.get('selector'), []).append(item)
@@ -205,7 +244,7 @@ def emparejar_elementos(data_v1, data_v2):
         candidato = next((c for c in candidatos if id(c) not in usados_v2), None)
         if candidato is not None:
             usados_v2.add(id(candidato))
-            pares.append((item1, candidato))
+            pares.append((item1, candidato, True))
         else:
             solo_v1.append(item1)
 
@@ -303,7 +342,17 @@ def comparar_estructura_dom(data_v1, data_v2, umbral_pixeles=UMBRAL_PIXELES_TOLE
 
     fallas = []
 
-    for item1, item2 in pares:
+    for item1, item2, debil in pares:
+        # Emparejamiento sin ninguna señal de contenido (mismo tag+clase o
+        # misma posición nth-child) + texto de subárbol realmente distinto
+        # -> no es el mismo elemento "que cambió", son dos elementos DISTINTOS
+        # que casualmente cayeron en la misma posición (caso real: tarjetas
+        # de un listado de noticias en vivo, donde la noticia de ese lugar
+        # cambió entre la captura de V1 y la de V2). Comparar su geometría o
+        # estilo no sería un bug real, sería comparar peras con manzanas.
+        if debil and _contenido_distinto(item1, item2):
+            continue
+
         selector = item2.get('selector') or item1.get('selector')
         coords_v2 = {'x': item2['x'], 'y': item2['y'], 'width': item2['width'], 'height': item2['height']}
         coords_v1 = {'x': item1['x'], 'y': item1['y'], 'width': item1['width'], 'height': item1['height']}

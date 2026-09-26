@@ -258,6 +258,15 @@ JS_EXTRACCION = """
         }
         texto = texto.trim().slice(0, 60);
 
+        // Texto de todo el subárbol (no solo hijos de texto directos), para
+        // detectar contenido real distinto en wrappers de tarjetas cuyo
+        // título/texto está anidado (ej: <article> con un <h2> adentro, que
+        // por eso tiene texto propio vacío). Se usa SOLO para decidir si dos
+        // elementos emparejados por posición son en verdad "la misma tarjeta"
+        // o dos noticias distintas de un listado que se actualiza en vivo —
+        // no forma parte del fingerprint de identidad.
+        var textoSubtree = (el.innerText || el.textContent || '').trim().replace(/\\s+/g, ' ').slice(0, 80);
+
         data.push({
             tag: el.tagName.toLowerCase(),
             selector: getCssSelector(el),
@@ -265,6 +274,7 @@ JS_EXTRACCION = """
             class_attr: el.className,
             data_attrs: getDataAttrs(el),
             texto: texto,
+            texto_subtree: textoSubtree,
             order_index: orderIndex++,
             y: window.pageYOffset + rect.top,
             height: rect.height,
