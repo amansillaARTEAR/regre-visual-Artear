@@ -433,6 +433,44 @@ def test_misma_imagen_que_cambia_de_tamano_si_reporta_diferencia_real():
     print("OK: la misma imagen (mismo img_src) que cambia de alto sigue siendo una falla real")
 
 
+def test_modulo_de_noticias_con_texto_propio_no_reporta_ausente_nuevo_por_cada_titular():
+    """
+    Caso real (Homepage v719 mobile, módulo "últimas noticias" embebido,
+    reportado por el usuario con captura mostrando los titulares distintos
+    resaltados en rojo): a diferencia de las tarjetas de Listado (título
+    anidado, texto propio vacío), acá el titular ES el texto propio del
+    elemento -> el fingerprint (que incluye texto) ya es distinto de
+    entrada entre una noticia y otra, así que NUNCA llegan a compararse
+    como "el mismo elemento que cambió" — la vieja queda suelta como
+    AUSENTE V2 y la nueva suelta como NUEVO EN V2, aunque ocupen el mismo
+    lugar en el módulo. Deben quedar emparejadas por posición dentro del
+    mismo padre y descartadas (mismo criterio de contenido distinto).
+    """
+    v1 = [
+        item('a', 'div.modulo-noticias > a:nth-child(1)', 0, 0, 300, 60,
+             texto='Un jugador de Racing se lesionó a horas del partido...', order_index=0),
+        item('a', 'div.modulo-noticias > a:nth-child(2)', 0, 60, 300, 60,
+             texto='George Russell salió en apoyo de Franco Colapinto...', order_index=1),
+        item('a', 'div.modulo-noticias > a:nth-child(3)', 0, 120, 300, 60,
+             texto='El secretario de Defensa británico dijo que...', order_index=2),
+    ]
+    # V2: entró 1 noticia nueva arriba (mismo lugar que "Racing", que cayó
+    # del feed), las otras 2 son las mismas de siempre -> matchean normal
+    # por fingerprint y solo se corren de posición.
+    v2 = [
+        item('a', 'div.modulo-noticias > a:nth-child(1)', 0, 0, 300, 90,
+             texto='Benjamín Vicuña apuntó contra la China Suárez...', order_index=0),
+        item('a', 'div.modulo-noticias > a:nth-child(2)', 0, 90, 300, 60,
+             texto='George Russell salió en apoyo de Franco Colapinto...', order_index=1),
+        item('a', 'div.modulo-noticias > a:nth-child(3)', 0, 150, 300, 60,
+             texto='El secretario de Defensa británico dijo que...', order_index=2),
+    ]
+    fallas = core.comparar_estructura_dom(v1, v2, umbral_pixeles=3, comparar_estilos=True)
+    tipos = [f['tipo'] for f in fallas]
+    assert 'AUSENTE V2' not in tipos and 'NUEVO EN V2' not in tipos, fallas
+    print("OK: módulo de noticias con texto propio no genera AUSENTE/NUEVO por cada titular que rotó")
+
+
 def test_misma_tarjeta_con_mismo_contenido_si_reporta_diferencia_real():
     """
     Control: si el contenido (texto de subárbol) es el MISMO en V1 y V2,

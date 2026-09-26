@@ -274,6 +274,50 @@ def emparejar_elementos(data_v1, data_v2):
         if id(item) not in usados_v2:
             solo_v2.append(item)
 
+    # Última pasada: "mismo lugar, contenido distinto" para lo que ni el
+    # fingerprint ni el fallback nth-child lograron emparejar. Pasa cuando
+    # el propio TEXTO forma parte del fingerprint (a diferencia del caso de
+    # Listado, acá el título SÍ es texto propio del elemento, no está
+    # anidado) -> dos noticias distintas ya tienen fingerprints distintos
+    # de entrada y nunca llegan a compararse como "par": la vieja queda
+    # suelta en AUSENTE V2 y la nueva suelta en NUEVO EN V2, una por cada
+    # noticia que cambió, en vez de una sola vez agrupado. Caso real
+    # (Homepage v719 mobile, módulo "últimas noticias" embebido): 5+ noticias
+    # cambiaron de una corrida a la otra -> 5+ pares AUSENTE+NUEVO "GRAVE"
+    # sueltos, mismo síntoma que el de Listado pero con otra causa técnica.
+    # Se agrupan por selector del PADRE (mismo contenedor exacto) y se
+    # emparejan por orden de aparición dentro de ese padre; el propio chequeo
+    # de "_contenido_distinto" en comparar_estructura_dom decide si de verdad
+    # hay que descartarlo (si el contenido no difiere, sigue como falla real).
+    restantes_v1 = {id(it): it for it in solo_v1}
+    restantes_v2 = {id(it): it for it in solo_v2}
+    por_padre_v1 = defaultdict(list)
+    por_padre_v2 = defaultdict(list)
+    for it in solo_v1:
+        sel = it.get('selector') or ''
+        if ' > ' in sel:
+            por_padre_v1[sel.rsplit(' > ', 1)[0]].append(it)
+    for it in solo_v2:
+        sel = it.get('selector') or ''
+        if ' > ' in sel:
+            por_padre_v2[sel.rsplit(' > ', 1)[0]].append(it)
+
+    for padre, lista1 in por_padre_v1.items():
+        lista2 = por_padre_v2.get(padre)
+        if not lista2:
+            continue
+        lista1_ord = sorted(lista1, key=lambda f: f.get('order_index', 0))
+        lista2_ord = sorted(lista2, key=lambda f: f.get('order_index', 0))
+        n = min(len(lista1_ord), len(lista2_ord))
+        for i in range(n):
+            it1, it2 = lista1_ord[i], lista2_ord[i]
+            pares.append((it1, it2, True))
+            del restantes_v1[id(it1)]
+            del restantes_v2[id(it2)]
+
+    solo_v1 = list(restantes_v1.values())
+    solo_v2 = list(restantes_v2.values())
+
     return pares, solo_v1, solo_v2
 
 
