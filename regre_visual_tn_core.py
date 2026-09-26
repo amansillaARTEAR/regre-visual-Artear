@@ -46,6 +46,13 @@ PATRONES_EXCLUSION = [
     'teads', 'outbrain', 'taboola', 'criteo', 'moat', 'doubleclick',
     'recommend', 'recomendad', 'widget-clima', 'widget-dolar',
     'cotizacion', 'contador-en-vivo', 'live-counter',
+    # Bitmovin Player UI (reproductor de video, usado en "Vivo"/streaming):
+    # sus controles (play/pause, seek bar, tiempo, subtítulos) se redibujan
+    # con tamaños/posiciones distintos según el estado de reproducción
+    # (buffering, si está pausado, tiempo transcurrido) en el momento exacto
+    # de la captura — no es un cambio del sitio. Visto en v721/mobile: el
+    # 100% de las 138 "fallas graves" de Vivo eran elementos bmpui-id-*.
+    'bmpui',
 ]
 
 _PATRONES_EXCLUSION_RE = re.compile(

@@ -71,6 +71,28 @@ def test_masking_excluye_ads_y_terceros():
     print("OK: masking excluye bloques de Teads/terceros de la comparación")
 
 
+def test_masking_excluye_controles_de_video_bmpui():
+    """Caso Vivo del reporte real v721/mobile: el 100% de las 138 fallas
+    graves eran controles del reproductor Bitmovin (ids bmpui-id-*), que
+    cambian de tamaño/posición según el estado de reproducción en el
+    momento exacto de la captura, no porque el sitio haya cambiado."""
+    v1 = [
+        item('div', 'div#player', 0, 0, 485, 300, id_attr='player', class_attr='video-wrapper',
+             texto='reproductor'),
+        item('div', 'div#bmpui-id-129', 0, 300, 485, 36, id_attr='bmpui-id-129',
+             texto='controles'),
+    ]
+    v2 = [
+        item('div', 'div#player', 0, 0, 485, 300, id_attr='player', class_attr='video-wrapper',
+             texto='reproductor'),
+        item('div', 'div#bmpui-id-129', 0, 300, 449, 18, id_attr='bmpui-id-129',
+             texto='controles'),
+    ]
+    fallas = core.comparar_estructura_dom(v1, v2, umbral_pixeles=3, comparar_estilos=False)
+    assert len(fallas) == 0, f"Los controles bmpui deberían estar excluidos por masking, pero generó: {fallas}"
+    print("OK: masking excluye controles del reproductor de video (bmpui) de la comparación")
+
+
 def test_cascada_por_altura_de_ad_se_colapsa():
     """
     Caso Podcast del reporte real: un ad pasa de 250 a 600px de alto, y
