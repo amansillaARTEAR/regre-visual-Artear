@@ -471,6 +471,55 @@ def test_modulo_de_noticias_con_texto_propio_no_reporta_ausente_nuevo_por_cada_t
     print("OK: módulo de noticias con texto propio no genera AUSENTE/NUEVO por cada titular que rotó")
 
 
+def test_listado_con_desparejo_de_cantidad_no_fuerza_emparejamiento_por_padre():
+    """
+    Regresión real (v719, commit 332065b): la tercera pasada de
+    emparejar_elementos (agrupar leftovers por selector del padre) rompió
+    Listado, que ya estaba en 0 graves gracias al fix de
+    _identidad_es_debil/_contenido_distinto. Causa: Listado tiene tarjetas
+    de identidad DÉBIL (article.card con título anidado, texto propio
+    vacío) y el listado se actualiza en vivo, así que V1 y V2 pueden tener
+    distinta CANTIDAD de tarjetas bajo el mismo padre (p. ej. entraron 2
+    noticias nuevas). Las tarjetas que sobran del emparejamiento por
+    fingerprint (pasada 1) quedan en solo_v1/solo_v2 -- ese desparejo de
+    cantidad es a propósito fuera de alcance (AUSENTE V2 / NUEVO EN V2).
+    Si la tercera pasada las vuelve a emparejar por posición dentro del
+    padre, dos tarjetas de noticias completamente distintas terminan
+    comparadas geométricamente y, si no hay señal de texto/imagen para
+    descartarlas, se reportan como GRAVE de posición/ancho falsos -- que es
+    exactamente lo que pasó en producción.
+    """
+    padre = 'div#fusion-app > div:nth-child(7) > main > div:nth-child(7) > div'
+    v1 = [
+        item('article', f'{padre} > article:nth-child(1)', 0, 0, 300, 120,
+             class_attr='card', texto_subtree='Noticia A: se cayó un avión', order_index=0),
+        item('article', f'{padre} > article:nth-child(2)', 0, 120, 300, 120,
+             class_attr='card', texto_subtree='Noticia B: sube el dólar', order_index=1),
+    ]
+    # V2: entraron 2 noticias nuevas arriba del listado (se actualizó en
+    # vivo) -> 4 tarjetas en vez de 2, todas bajo el mismo padre exacto, y
+    # las 2 que ya estaban (B y A) se corrieron de posición/tamaño (efecto
+    # secundario normal de que se sumaron tarjetas arriba, no un bug).
+    v2 = [
+        item('article', f'{padre} > article:nth-child(1)', 0, 0, 300, 90,
+             class_attr='card', texto_subtree='Noticia C: nuevo escandalo politico', order_index=0),
+        item('article', f'{padre} > article:nth-child(2)', 0, 90, 300, 140,
+             class_attr='card', texto_subtree='Noticia D: resultado de futbol', order_index=1),
+        item('article', f'{padre} > article:nth-child(3)', 0, 230, 300, 120,
+             class_attr='card', texto_subtree='Noticia A: se cayó un avión', order_index=2),
+        item('article', f'{padre} > article:nth-child(4)', 0, 350, 300, 120,
+             class_attr='card', texto_subtree='Noticia B: sube el dólar', order_index=3),
+    ]
+    fallas = core.comparar_estructura_dom(v1, v2, umbral_pixeles=3, comparar_estilos=False)
+    tipos = [f['tipo'] for f in fallas]
+    graves_geometria = [t for t in tipos if t not in ('AUSENTE V2', 'NUEVO EN V2')]
+    assert graves_geometria == [], (
+        f"no debería forzar comparación geométrica entre tarjetas de identidad "
+        f"débil desparejadas en cantidad: {fallas}"
+    )
+    print("OK: desparejo de cantidad en tarjetas de identidad débil no fuerza comparación geométrica falsa")
+
+
 def test_misma_tarjeta_con_mismo_contenido_si_reporta_diferencia_real():
     """
     Control: si el contenido (texto de subárbol) es el MISMO en V1 y V2,

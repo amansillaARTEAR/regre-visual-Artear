@@ -289,15 +289,38 @@ def emparejar_elementos(data_v1, data_v2):
     # emparejan por orden de aparición dentro de ese padre; el propio chequeo
     # de "_contenido_distinto" en comparar_estructura_dom decide si de verdad
     # hay que descartarlo (si el contenido no difiere, sigue como falla real).
+    # OJO: esta pasada NUNCA debe tocar leftovers de identidad DÉBIL
+    # (_identidad_es_debil == True), es decir, sin id real ni texto propio.
+    # Esos leftovers son casi siempre un desparejo de CANTIDAD dentro de un
+    # mismo grupo de fingerprint (p. ej. Listado: 20 tarjetas "article.card"
+    # en V1 vs 22 en V2 porque el listado se actualizó) -> son justamente el
+    # caso "AUSENTE V2 / NUEVO EN V2 por desparejo de cantidad" que la pasada
+    # 1 (fingerprint) ya deja afuera A PROPÓSITO (fuera de alcance, ver fix
+    # #10). Si esta tercera pasada los agrupa por selector del padre y los
+    # empareja posicionalmente igual, vuelve a introducir exactamente ese
+    # bug: tarjetas totalmente distintas quedan "emparejadas" solo por
+    # ocupar la misma posición dentro del padre, y si _contenido_distinto
+    # no tiene señal para descartarlas (texto/imagen vacíos o iguales por
+    # casualidad) se reportan como GRAVE de posición/ancho falsos.
+    # (Regresión real: v719 commit 332065b rompió Listado, que ya estaba en
+    # 0 graves, exactamente por este motivo.)
+    # Esta pasada es solo para identidad FUERTE (hay texto/id propio, pero
+    # cambió de contenido entre V1 y V2, por eso el fingerprint ya no
+    # coincide de entrada) — caso real: módulo "últimas noticias" embebido
+    # en Homepage, con el título como texto propio directo del elemento.
     restantes_v1 = {id(it): it for it in solo_v1}
     restantes_v2 = {id(it): it for it in solo_v2}
     por_padre_v1 = defaultdict(list)
     por_padre_v2 = defaultdict(list)
     for it in solo_v1:
+        if _identidad_es_debil(it):
+            continue
         sel = it.get('selector') or ''
         if ' > ' in sel:
             por_padre_v1[sel.rsplit(' > ', 1)[0]].append(it)
     for it in solo_v2:
+        if _identidad_es_debil(it):
+            continue
         sel = it.get('selector') or ''
         if ' > ' in sel:
             por_padre_v2[sel.rsplit(' > ', 1)[0]].append(it)
