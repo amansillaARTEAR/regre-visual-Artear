@@ -235,6 +235,21 @@ def test_cascada_de_2_se_colapsa_si_es_cadena_de_ancestros():
     print("OK: 2 elementos en cadena ancestro-hijo con el mismo delta se colapsan aunque sean solo 2")
 
 
+def test_id_real_evita_ausente_nuevo_por_contenido_dinamico():
+    """Caso real v719: 'Vivo' tiene un reproductor de video en vivo cuyo
+    contenido interno se inicializa de forma asíncrona — en V1 la captura
+    lo agarra vacío/negro (sin texto todavía) y en V2 ya cargado (con el
+    logo/texto). Antes esto rompía el fingerprint (basado en texto) y el
+    div#player quedaba como AUSENTE V2 + NUEVO EN V2 (2 fallas GRAVE) en
+    vez de matchear como el mismo elemento. Con id real, debe matchear
+    (y al no cambiar tamaño/posición, no generar ninguna falla)."""
+    v1 = [item('div', 'div#player', 100, 200, 974, 547, id_attr='player', texto='')]
+    v2 = [item('div', 'div#player', 100, 200, 974, 547, id_attr='player', texto='TN en vivo')]
+    fallas = core.comparar_estructura_dom(v1, v2, umbral_pixeles=3, comparar_estilos=False)
+    assert len(fallas) == 0, f"div#player debería matchear por id y no generar fallas, obtuve: {fallas}"
+    print("OK: un id real evita el falso AUSENTE+NUEVO cuando el contenido interno cambia por carga asíncrona")
+
+
 def test_estilo_normaliza_font_weight_y_color():
     """Caso: FOUT/FOIT hace que V1 diga font-weight:normal y V2 diga 400
     (son lo mismo), y que el color venga como rgb(0,0,0) vs rgba(0,0,0,1)

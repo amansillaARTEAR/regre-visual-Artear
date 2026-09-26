@@ -90,6 +90,20 @@ def _clases_estables(class_attr):
     return sorted(estables)  # orden estable, no depende del orden en el DOM
 
 
+def _id_estable(id_attr):
+    """
+    Un id real asignado por el sitio (ej: 'player', 'main-nav') es la señal
+    de identidad MÁS fuerte que hay — más confiable que clases o texto, que
+    pueden cambiar legítimamente sin que el elemento sea "otro" (un
+    reproductor de video en vivo, un ad, un ticker). Se descartan los ids
+    que parecen generados/hasheados (mismo patrón que las clases generadas).
+    """
+    id_attr = (id_attr or '').strip()
+    if not id_attr or _CLASE_GENERADA_RE.match(id_attr):
+        return None
+    return id_attr
+
+
 def construir_fingerprint(item):
     """
     Identidad de un elemento basada en su naturaleza, no en su posición
@@ -97,10 +111,21 @@ def construir_fingerprint(item):
     identidad de todos los que están después de él (el problema principal
     de nth-child puro).
 
-    fingerprint = tag + clases estables (sin hashes) + atributos data-*
-                  estables + primeros 40 caracteres del texto propio
+    Si el elemento tiene un id real (no generado), ES la identidad —
+    ignorando texto/clases. Caso real (v719, "Vivo"): div#player quedaba
+    AUSENTE V2 + NUEVO EN V2 porque su contenido interno cambia según el
+    estado de carga del video en vivo (V1 capturado antes de inicializar,
+    V2 después), y antes el fingerprint dependía del texto, que difería.
+
+    Si no hay id útil: fingerprint = tag + clases estables (sin hashes) +
+    atributos data-* estables + primeros 40 caracteres del texto propio.
     """
     tag = item.get('tag', '')
+
+    id_attr = _id_estable(item.get('id_attr'))
+    if id_attr:
+        return f'{tag}#{id_attr}'
+
     clases = _clases_estables(item.get('class_attr', ''))
     data_attrs = item.get('data_attrs', '') or ''
     texto = (item.get('texto', '') or '')[:40].strip()
