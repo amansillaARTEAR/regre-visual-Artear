@@ -629,10 +629,10 @@ def construir_html_fallas(consolidado, cascadas, data_v2_por_selector, url_id):
     html = "<ul>"
 
     DESC_CASCADA = {
-        'DIFERENCIA POSICIÓN (Y)': ('se movieron', 'en Y'),
-        'DIFERENCIA POSICIÓN (X)': ('se movieron', 'en X'),
-        'DIFERENCIA ALTURA (H)': ('cambiaron de alto', 'en H'),
-        'DIFERENCIA ANCHO (W)': ('cambiaron de ancho', 'en W'),
+        'DIFERENCIA POSICIÓN (Y)': ('se movieron', 'verticalmente'),
+        'DIFERENCIA POSICIÓN (X)': ('se movieron', 'horizontalmente'),
+        'DIFERENCIA ALTURA (H)': ('cambiaron de alto', ''),
+        'DIFERENCIA ANCHO (W)': ('cambiaron de ancho', ''),
     }
 
     if cascadas:
@@ -661,8 +661,8 @@ def construir_html_fallas(consolidado, cascadas, data_v2_por_selector, url_id):
                          f"Es un cambio de diseño real: revisar si fue intencional antes de deployar.")
                 titulo = "❌ GRAVE — cambio de estilo repetido:"
             else:
-                verbo, eje = DESC_CASCADA.get(c.get('tipo'), ('se movieron', 'en Y'))
-                resumen = f"{c['cantidad']} elementos {verbo} {c['delta_y']:.0f}px {eje}"
+                verbo, eje = DESC_CASCADA.get(c.get('tipo'), ('se movieron', 'verticalmente'))
+                resumen = f"{c['cantidad']} elementos {verbo} {c['delta_y']:.0f}px" + (f" {eje}" if eje else "")
                 causa = (f"Causa probable: un solo elemento anterior del DOM cambió de tamaño y arrastró a los "
                          f"{c['cantidad']} de abajo — no son {c['cantidad']} regresiones independientes, es 1 sola causa raíz "
                          f"(empezando por <code>{c['primer_selector'][:60]}</code>).")
