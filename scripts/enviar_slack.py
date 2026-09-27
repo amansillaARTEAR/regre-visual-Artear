@@ -145,7 +145,9 @@ def slack_post(token, channel, message, file_path, file_title):
     # aparte, que Slack termina mostrando duplicado (mensaje + preview del link).
     team_url, bot_id = team_url_and_bot_id(token)
     permalink = f"{team_url}/files/{bot_id}/{file_id}/{urllib.parse.quote(filename)}"
-    texto_final = f"{message}\n🔗 Ver reporte: {permalink}"
+    # <url|texto> es el formato mrkdwn de Slack para un link con texto corto,
+    # en vez de mostrar la URL completa (que se ve fea partida en varias líneas).
+    texto_final = f"{message}\n🔗 <{permalink}|Ver reporte>"
 
     r = requests.post(
         f"{SLACK_API}/files.completeUploadExternal",
