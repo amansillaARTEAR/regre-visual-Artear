@@ -549,8 +549,8 @@ def procesar_url(url_description, base_url, version_number, modo, config,
 COLOR_BGR = {
     'grave': (0, 0, 255),        # rojo
     'menor': (255, 0, 0),        # azul
-    'informativo': (0, 200, 200),  # amarillo/dorado — degradado por confirmación visual
-    'cascada': (237, 58, 124),    # violeta — desplazamiento en cascada agrupado (distinto del dorado, antes naranja se confundía)
+    'informativo': (0, 140, 255),  # naranja — degradado por confirmación visual (antes dorado, fix #26)
+    'cascada': (237, 58, 124),    # violeta — desplazamiento en cascada agrupado (distinto del naranja/informativo)
 }
 
 
@@ -618,7 +618,7 @@ LEYENDA_HTML = """
               color: #555; padding: 0 20px;">
     <div style="flex: 1 1 220px;"><span style="color:red; font-weight:bold;">■ Rojo</span>: falla grave (elemento ausente/nuevo, o cambio de tamaño/estilo confirmado visualmente).</div>
     <div style="flex: 1 1 220px;"><span style="color:blue; font-weight:bold;">■ Azul</span>: desplazamiento menor sin cambio de tamaño.</div>
-    <div style="flex: 1 1 220px;"><span style="color:#b8860b; font-weight:bold;">■ Dorado</span>: el DOM detectó una diferencia pero la confirmación visual (crop + diff) mostró que la región es igual — probablemente un falso positivo.</div>
+    <div style="flex: 1 1 220px;"><span style="color:#ff8c00; font-weight:bold;">■ Naranja</span>: el DOM detectó una diferencia pero la confirmación visual (crop + diff) mostró que la región es igual — probablemente un falso positivo.</div>
     <div style="flex: 1 1 220px;"><span style="color:#7c3aed; font-weight:bold;">■ Violeta</span>: desplazamiento en cascada — un solo elemento anterior cambió de tamaño y corrió a los siguientes; no son N fallas independientes.</div>
   </div>
 </div>
@@ -682,7 +682,7 @@ def construir_html_fallas(consolidado, cascadas, data_v2_por_selector, url_id):
             """
 
     for item in consolidado:
-        color = {'grave': 'red', 'menor': '#007bff', 'informativo': '#b8860b'}[item['gravedad']]
+        color = {'grave': 'red', 'menor': '#007bff', 'informativo': '#ff8c00'}[item['gravedad']]
         coords = item['coords_v2']
         coords_str = f"{int(coords['x'])},{int(coords['y'])},{int(coords['width'])},{int(coords['height'])}"
 
