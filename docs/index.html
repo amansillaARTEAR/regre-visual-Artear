@@ -169,7 +169,10 @@
         <h1 id="viewTitle">Regresión Visual</h1>
         <div class="sub" id="viewSub">Comparación pixel a pixel y estructural entre dos versiones de un sitio</div>
       </div>
-      <div class="token-bar" id="tokenBar"></div>
+      <div style="display:flex;align-items:center;gap:10px">
+        <div class="token-bar" id="wmRunnerBadge" style="display:none"></div>
+        <div class="token-bar" id="tokenBar"></div>
+      </div>
     </header>
 
     <main>
@@ -314,7 +317,7 @@
           <div class="hint">No hace falta tu PC prendida. El link al PR aparece en "Corridas recientes" → "ver en GitHub".</div>
         </div>
 
-        <div class="grid3">
+        <div class="grid">
 
           <div class="card">
             <h2>Disparar — Android</h2>
@@ -323,15 +326,6 @@
               <button onclick="dispatchWebmobile()" id="btnWmDispatch">Disparar corrida</button>
             </div>
             <div class="hint">Usa los casos tildados abajo (ninguno = suite completa). Requiere runner prendido + Android por USB.</div>
-          </div>
-
-          <div class="card">
-            <h2>Estado del runner</h2>
-            <p class="muted" style="margin-top:0">PC de Alejandro (corre Android y también dispara iOS hacia AWS).</p>
-            <div id="wmRunnerStatus"><div class="empty">Configurá el token.</div></div>
-            <div class="actions">
-              <button class="ghost" onclick="loadRunnerStatusWebmobile()">↻ Actualizar</button>
-            </div>
           </div>
 
           <div class="card">
@@ -465,6 +459,7 @@ function showView(view){
   document.getElementById("viewSub").textContent = VIEW_META[view].sub;
   localStorage.setItem("qa_tools_view", view);
   if(view === "webmobile" && TOKEN){ loadRunsWebmobile(); loadRunnerStatusWebmobile(); }
+  else { document.getElementById("wmRunnerBadge").style.display = "none"; }
 }
 
 function toast(msg, kind){
@@ -864,25 +859,29 @@ async function generarCasoDesdeJira(){
 }
 
 async function loadRunnerStatusWebmobile(){
-  if(!TOKEN) return;
-  const wrap = document.getElementById("wmRunnerStatus");
-  wrap.innerHTML = `<div class="empty"><span class="spinner"></span> Cargando…</div>`;
+  const badge = document.getElementById("wmRunnerBadge");
+  badge.style.display = "flex";
+  if(!TOKEN){ badge.innerHTML = ""; badge.style.display = "none"; return; }
+  badge.innerHTML = `<div class="token-ok"><span class="spinner"></span> Runner…</div>`;
   try{
     const data = await ghJson(`/repos/${WEBMOBILE_OWNER}/${WEBMOBILE_REPO}/actions/runners`);
     const runners = data.runners || [];
     if(!runners.length){
-      wrap.innerHTML = `<div class="token-ok"><span class="dot off"></span> Sin runner registrado</div>`;
+      badge.innerHTML = `<div class="token-ok" title="Sin runner registrado" style="cursor:pointer" onclick="loadRunnerStatusWebmobile()"><span class="dot off"></span> Sin runner</div>`;
       return;
     }
-    wrap.innerHTML = runners.map(r => {
-      const online = r.status === "online";
-      return `<div class="token-ok" style="margin-bottom:6px">
-        <span class="dot ${online ? "" : "off"}"></span>
-        <b>${r.name}</b> — ${online ? (r.busy ? "ocupado" : "disponible") : "desconectado"}
-      </div>`;
-    }).join("");
+    // Si hay varios runners, mostramos el peor estado (offline > ocupado > disponible) para que no pase desapercibido.
+    const peor = runners.reduce((acc, r) => {
+      const rango = r.status !== "online" ? 0 : (r.busy ? 1 : 2);
+      return rango < acc.rango ? {r, rango} : acc;
+    }, {r: runners[0], rango: 99}).r;
+    const online = peor.status === "online";
+    const estado = online ? (peor.busy ? "ocupado" : "disponible") : "desconectado";
+    badge.innerHTML = `<div class="token-ok" title="${peor.name} — ${estado} · click para actualizar" style="cursor:pointer" onclick="loadRunnerStatusWebmobile()">
+      <span class="dot ${online && !peor.busy ? "" : "off"}"></span> Runner: ${estado}
+    </div>`;
   } catch(e){
-    wrap.innerHTML = `<div class="empty">Error: ${e.message}</div>`;
+    badge.innerHTML = `<div class="token-ok" style="cursor:pointer" onclick="loadRunnerStatusWebmobile()" title="${e.message}">Runner: error</div>`;
   }
 }
 
