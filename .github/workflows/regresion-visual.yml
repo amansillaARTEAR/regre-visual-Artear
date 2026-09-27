@@ -1,4 +1,5 @@
 name: Regresión Visual
+run-name: "Regresión Visual — ${{ inputs.producto }} ${{ inputs.modo }} v${{ inputs.version }} por @${{ github.actor }}"
 
 on:
   workflow_dispatch:
@@ -79,7 +80,7 @@ jobs:
         with:
           name: reporte-${{ inputs.producto }}-desktop-v${{ inputs.version }}
           path: reportes/${{ inputs.producto }}/desktop/
-          retention-days: 30
+          retention-days: 7
 
   regresion-mobile:
     needs: tests-offline
@@ -105,4 +106,4 @@ jobs:
         with:
           name: reporte-${{ inputs.producto }}-mobile-v${{ inputs.version }}
           path: reportes/${{ inputs.producto }}/mobile/
-          retention-days: 30
+          retention-days: 7
