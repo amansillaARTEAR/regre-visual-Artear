@@ -412,6 +412,16 @@ function fmtDate(iso){
   const d = new Date(iso);
   return d.toLocaleString("es-AR", {day:"2-digit",month:"2-digit",hour:"2-digit",minute:"2-digit"});
 }
+function fmtDuracion(run){
+  if(run.status !== "completed") return `<span class="muted">—</span>`;
+  const start = new Date(run.run_started_at || run.created_at).getTime();
+  const end = new Date(run.updated_at).getTime();
+  let secs = Math.round((end - start) / 1000);
+  if(!isFinite(secs) || secs < 0) return `<span class="muted">—</span>`;
+  const m = Math.floor(secs / 60);
+  const s = secs % 60;
+  return `${m}m ${String(s).padStart(2,"0")}s`;
+}
 
 async function loadRuns(){
   if(!TOKEN) return;
@@ -423,12 +433,13 @@ async function loadRuns(){
     if(!runs.length){ wrap.innerHTML = `<div class="empty">Todavía no hay corridas.</div>`; return; }
     wrap.innerHTML = `
       <table>
-        <thead><tr><th>Run</th><th>Estado</th><th>Disparado</th><th></th></tr></thead>
+        <thead><tr><th>Run</th><th>Estado</th><th>Duración</th><th>Disparado</th><th></th></tr></thead>
         <tbody>
           ${runs.map(r => `
             <tr>
               <td>${r.display_title || r.name}</td>
               <td>${badge(r.status, r.conclusion)}</td>
+              <td class="muted">${fmtDuracion(r)}</td>
               <td class="muted">${fmtDate(r.created_at)}</td>
               <td><a href="${r.html_url}" target="_blank">ver en GitHub →</a></td>
             </tr>
