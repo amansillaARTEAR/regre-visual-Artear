@@ -80,8 +80,30 @@ def contar_urls(html):
     return len(re.findall(r'<h2>[^<]+</h2>', html))
 
 
+def resolve_channel(token, channel_id):
+    """files.completeUploadExternal solo acepta channel_id de canal/DM (C/G/D/Z...),
+    no un ID de usuario (U...). Si nos pasan un ID de usuario, abrimos (o reusamos)
+    el DM con esa persona y devolvemos el ID de esa conversación."""
+    if not channel_id.startswith("U"):
+        return channel_id
+
+    r = requests.post(
+        f"{SLACK_API}/conversations.open",
+        headers={"Authorization": f"Bearer {token}"},
+        data={"users": channel_id},
+        timeout=30,
+    )
+    r.raise_for_status()
+    data = r.json()
+    if not data.get("ok"):
+        raise RuntimeError(f"conversations.open falló: {data}")
+    return data["channel"]["id"]
+
+
 def slack_post(token, channel, message, file_path, file_title):
     headers = {"Authorization": f"Bearer {token}"}
+
+    channel = resolve_channel(token, channel)
 
     size = os.path.getsize(file_path)
     r = requests.post(
