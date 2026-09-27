@@ -292,10 +292,11 @@
             <p class="muted" style="margin-top:0">
               Corre la suite de Appium (Android) contra el celular conectado por USB a la PC del runner.
             </p>
-            <label>Filtro de casos <span class="muted">(opcional — expresión -k de pytest, ej: ca03 or ca07)</span></label>
-            <input type="text" id="wmFiltro" placeholder="vacío = suite completa">
+            <label>Casos a correr <span class="muted">(sin marcar ninguno = suite completa)</span></label>
+            <div class="chips" id="wmCasosChips"></div>
             <div class="actions">
               <button onclick="dispatchWebmobile()" id="btnWmDispatch">Disparar corrida</button>
+              <button class="secondary" onclick="clearCasosChips('wmCasosChips')">Limpiar selección</button>
             </div>
             <div class="hint">Necesita que la PC con el runner esté prendida y el Android conectado con depuración USB habilitada.</div>
           </div>
@@ -326,10 +327,11 @@
             </ol>
             <label>URL del endpoint de Appium</label>
             <input type="text" id="wmIosEndpoint" placeholder="https://...devicefarm...amazonaws.com/wd/hub/...">
-            <label>Filtro de casos <span class="muted">(opcional)</span></label>
-            <input type="text" id="wmIosFiltro" placeholder="vacío = suite completa">
+            <label>Casos a correr <span class="muted">(sin marcar ninguno = suite completa)</span></label>
+            <div class="chips" id="wmIosCasosChips"></div>
             <div class="actions">
               <button onclick="dispatchWebmobileIos()" id="btnWmIosDispatch">Disparar corrida iOS</button>
+              <button class="secondary" onclick="clearCasosChips('wmIosCasosChips')">Limpiar selección</button>
             </div>
           </div>
 
@@ -381,6 +383,23 @@ const WEBMOBILE_OWNER = "amansillaARTEAR";
 const WEBMOBILE_REPO = "Mobile-Artear";
 const WEBMOBILE_WORKFLOW = "webmobile.yml";
 const WEBMOBILE_IOS_WORKFLOW = "webmobile-ios.yml";
+
+const WEBMOBILE_CASOS = [
+  {id:"test_00_version", label:"00 · Versión promovida"},
+  {id:"ca01", label:"CA1 · Colecciones"},
+  {id:"ca02", label:"CA2 · Lo importante (orden)"},
+  {id:"ca03", label:"CA3 · Lo último (cronológico)"},
+  {id:"ca04", label:"CA4 · Videos 9:16"},
+  {id:"ca05", label:"CA5 · Autoplay / play-pause"},
+  {id:"ca06", label:"CA6 · Siguiente automático"},
+  {id:"ca07", label:"CA7 · Scroll intenso"},
+  {id:"ca08", label:"CA8 · Paginación"},
+  {id:"ca09", label:"CA9 · Conserva video por pestaña"},
+  {id:"ca10", label:"CA10 · Barra de progreso"},
+  {id:"ca11", label:"CA11 · Controles"},
+  {id:"ca12", label:"CA12 · Cerrar redirige a home"},
+  {id:"ca13", label:"CA13 · Sin placeholders"},
+];
 
 const PRODUCTOS = {
   tn: ["Homepage","Listado","Videos","Vivo","Clima","Economia","Divisas","Podcast","deportivo",
@@ -638,9 +657,23 @@ async function loadRuns(){
 }
 
 // ---------- WebMobile ----------
+function renderCasosChips(containerId){
+  const wrap = document.getElementById(containerId);
+  wrap.innerHTML = WEBMOBILE_CASOS.map(c =>
+    `<label class="chip"><input type="checkbox" value="${c.id}">${c.label}</label>`
+  ).join("");
+}
+function clearCasosChips(containerId){
+  document.querySelectorAll(`#${containerId} input[type=checkbox]`).forEach(cb => cb.checked = false);
+}
+function selectedCasosFiltro(containerId){
+  const ids = Array.from(document.querySelectorAll(`#${containerId} input:checked`)).map(cb => cb.value);
+  return ids.join(" or ");
+}
+
 async function dispatchWebmobile(){
   if(!TOKEN){ toast("Configurá el token primero", "error"); return; }
-  const filtro = document.getElementById("wmFiltro").value.trim();
+  const filtro = selectedCasosFiltro("wmCasosChips");
   const btn = document.getElementById("btnWmDispatch");
   btn.disabled = true; btn.innerHTML = `<span class="spinner"></span> Disparando…`;
   try{
@@ -660,7 +693,7 @@ async function dispatchWebmobile(){
 async function dispatchWebmobileIos(){
   if(!TOKEN){ toast("Configurá el token primero", "error"); return; }
   const endpoint = document.getElementById("wmIosEndpoint").value.trim();
-  const filtro = document.getElementById("wmIosFiltro").value.trim();
+  const filtro = selectedCasosFiltro("wmIosCasosChips");
   if(!endpoint){ toast("Pegá la URL del endpoint de AWS Device Farm primero", "error"); return; }
 
   const btn = document.getElementById("btnWmIosDispatch");
@@ -803,6 +836,8 @@ document.getElementById("modalBg").addEventListener("click", e => {
 // ---------- Init ----------
 renderTokenBar();
 renderUrlChips();
+renderCasosChips("wmCasosChips");
+renderCasosChips("wmIosCasosChips");
 if(TOKEN){ loadRuns(); loadReportBranches(); }
 const savedView = localStorage.getItem("qa_tools_view");
 if(savedView && VIEW_META[savedView]) showView(savedView);
