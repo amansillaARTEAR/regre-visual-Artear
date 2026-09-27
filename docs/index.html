@@ -1,0 +1,475 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Regresión Visual — Dashboard</title>
+<style>
+  :root{
+    --bg:#0f1115; --panel:#161923; --panel2:#1d2130; --border:#2a2f42;
+    --text:#e7e9ee; --muted:#9198ab; --accent:#5b8cff; --accent2:#7aa2ff;
+    --green:#2fbf71; --red:#f0506e; --orange:#f0a63a; --gray:#6b7280;
+    --radius:10px;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;font-size:14px;line-height:1.5}
+  header{padding:22px 28px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px}
+  header h1{font-size:18px;margin:0;font-weight:600}
+  header .sub{color:var(--muted);font-size:12.5px;margin-top:2px}
+  main{max-width:1180px;margin:0 auto;padding:24px 20px 60px}
+  .grid{display:grid;grid-template-columns:1fr 1fr;gap:20px}
+  @media (max-width:900px){.grid{grid-template-columns:1fr}}
+  .card{background:var(--panel);border:1px solid var(--border);border-radius:var(--radius);padding:18px 20px;margin-bottom:20px}
+  .card h2{font-size:14px;margin:0 0 14px;text-transform:uppercase;letter-spacing:.04em;color:var(--accent2);font-weight:600}
+  label{display:block;font-size:12.5px;color:var(--muted);margin-bottom:5px;margin-top:12px}
+  label:first-of-type{margin-top:0}
+  select,input[type=text],input[type=number],input[type=password]{
+    width:100%;padding:9px 10px;background:var(--panel2);border:1px solid var(--border);
+    border-radius:7px;color:var(--text);font-size:13.5px
+  }
+  select:focus,input:focus{outline:none;border-color:var(--accent)}
+  .row{display:flex;gap:10px}
+  .row > *{flex:1}
+  button{
+    background:var(--accent);color:#fff;border:none;border-radius:7px;padding:10px 16px;
+    font-size:13.5px;font-weight:600;cursor:pointer;transition:opacity .15s
+  }
+  button:hover{opacity:.88}
+  button:disabled{opacity:.45;cursor:not-allowed}
+  button.secondary{background:var(--panel2);border:1px solid var(--border);color:var(--text)}
+  button.ghost{background:transparent;border:1px solid var(--border);color:var(--muted);padding:6px 10px;font-size:12px}
+  button.danger{background:var(--red)}
+  .actions{margin-top:16px;display:flex;gap:10px;align-items:center}
+  .chips{display:flex;flex-wrap:wrap;gap:6px;max-height:140px;overflow-y:auto;padding:10px;background:var(--panel2);border:1px solid var(--border);border-radius:7px}
+  .chip{display:flex;align-items:center;gap:5px;background:var(--bg);border:1px solid var(--border);border-radius:20px;padding:4px 10px 4px 6px;font-size:12px;cursor:pointer;user-select:none}
+  .chip input{width:auto;margin:0}
+  .hint{color:var(--muted);font-size:11.5px;margin-top:6px}
+  table{width:100%;border-collapse:collapse;font-size:12.8px}
+  th,td{text-align:left;padding:8px 6px;border-bottom:1px solid var(--border)}
+  th{color:var(--muted);font-weight:500;font-size:11.5px;text-transform:uppercase;letter-spacing:.03em}
+  tr:last-child td{border-bottom:none}
+  .badge{display:inline-block;padding:2px 9px;border-radius:20px;font-size:11px;font-weight:600;white-space:nowrap}
+  .badge.success{background:rgba(47,191,113,.15);color:var(--green)}
+  .badge.failure{background:rgba(240,80,110,.15);color:var(--red)}
+  .badge.progress{background:rgba(91,140,255,.15);color:var(--accent2)}
+  .badge.queued{background:rgba(107,114,128,.18);color:var(--gray)}
+  .badge.cancelled{background:rgba(240,166,58,.15);color:var(--orange)}
+  a{color:var(--accent2);text-decoration:none}
+  a:hover{text-decoration:underline}
+  .muted{color:var(--muted)}
+  .token-bar{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+  .token-ok{display:flex;align-items:center;gap:8px;font-size:12.5px}
+  .dot{width:8px;height:8px;border-radius:50%;background:var(--green);display:inline-block}
+  .dot.off{background:var(--red)}
+  .toast{position:fixed;bottom:20px;right:20px;background:var(--panel2);border:1px solid var(--border);
+    border-radius:8px;padding:12px 16px;font-size:13px;max-width:340px;box-shadow:0 8px 24px rgba(0,0,0,.4);z-index:50;
+    animation:in .15s ease-out}
+  @keyframes in{from{transform:translateY(8px);opacity:0}to{transform:translateY(0);opacity:1}}
+  .toast.error{border-color:var(--red)}
+  .toast.ok{border-color:var(--green)}
+  .modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.72);display:none;align-items:center;justify-content:center;z-index:100;padding:20px}
+  .modal-bg.open{display:flex}
+  .modal{background:var(--panel);border:1px solid var(--border);border-radius:12px;width:100%;height:100%;max-width:1400px;display:flex;flex-direction:column;overflow:hidden}
+  .modal-head{display:flex;justify-content:space-between;align-items:center;padding:12px 16px;border-bottom:1px solid var(--border)}
+  .modal-head b{font-size:13px}
+  iframe{flex:1;width:100%;border:none;background:#fff}
+  .empty{color:var(--muted);font-size:12.5px;padding:16px 0;text-align:center}
+  .reports-list{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
+  @media (max-width:640px){.reports-list{grid-template-columns:1fr}}
+  .report-item{background:var(--panel2);border:1px solid var(--border);border-radius:8px;padding:12px}
+  .report-item .name{font-weight:600;font-size:13px;margin-bottom:2px}
+  .report-item .date{color:var(--muted);font-size:11.5px;margin-bottom:10px}
+  .spinner{display:inline-block;width:12px;height:12px;border:2px solid var(--border);border-top-color:var(--accent2);border-radius:50%;animation:spin .7s linear infinite;vertical-align:-2px}
+  @keyframes spin{to{transform:rotate(360deg)}}
+</style>
+</head>
+<body>
+
+<header>
+  <div>
+    <h1>Regresión Visual — Dashboard</h1>
+    <div class="sub">amansillaARTEAR/regre-visual-artear</div>
+  </div>
+  <div class="token-bar" id="tokenBar"></div>
+</header>
+
+<main>
+
+  <div class="card" id="tokenCard" style="display:none">
+    <h2>Configurar acceso</h2>
+    <p class="muted" style="margin-top:0">
+      Este dashboard corre 100% en tu navegador (GitHub Pages no tiene backend), así que necesita un token de GitHub
+      para poder disparar workflows y leer los reportes de un repo privado. El token se guarda únicamente en el
+      <code>localStorage</code> de tu navegador — nunca sale de acá salvo hacia <code>api.github.com</code>.
+    </p>
+    <label>Personal Access Token</label>
+    <input type="password" id="tokenInput" placeholder="github_pat_...">
+    <div class="hint">
+      Crealo en <a href="https://github.com/settings/personal-access-tokens/new" target="_blank">GitHub → Settings → Developer settings → Fine-grained tokens</a>,
+      con acceso limitado a <b>solo este repositorio</b> (regre-visual-artear) y permisos:
+      <b>Actions: Read and write</b>, <b>Contents: Read and write</b>. Sin esos dos permisos el dashboard no puede disparar corridas ni leer los reportes.
+    </div>
+    <div class="actions">
+      <button onclick="saveToken()">Guardar token</button>
+    </div>
+  </div>
+
+  <div class="grid">
+
+    <div class="card">
+      <h2>Disparar regresión</h2>
+      <label>Producto</label>
+      <select id="producto" onchange="onProductoChange()">
+        <option value="tn">TN</option>
+        <option value="eltrece">El Trece</option>
+        <option value="eldoce">El Doce</option>
+        <option value="ciudad">Ciudad Magazine</option>
+      </select>
+
+      <div class="row">
+        <div>
+          <label>Versión</label>
+          <input type="text" id="version" placeholder="ej: 721">
+        </div>
+        <div>
+          <label>Modo</label>
+          <select id="modo">
+            <option value="ambos">Ambos (desktop + mobile)</option>
+            <option value="desktop">Solo desktop</option>
+            <option value="mobile">Solo mobile</option>
+          </select>
+        </div>
+      </div>
+
+      <label>URLs a testear <span class="muted">(opcional — sin seleccionar ninguna, corren todas)</span></label>
+      <div class="chips" id="urlChips"></div>
+
+      <div class="row">
+        <div>
+          <label>Tolerancia (px)</label>
+          <input type="number" id="tolerancia" value="3" min="0">
+        </div>
+      </div>
+
+      <div class="actions">
+        <button onclick="dispatchRegresion()" id="btnDispatch">Disparar corrida</button>
+        <button class="secondary" onclick="clearUrlChips()">Limpiar selección de URLs</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Limpieza de artifacts</h2>
+      <p class="muted" style="margin-top:0">
+        Corre semanalmente sola (domingos 06:00 UTC) y borra artifacts viejos de Actions para no llenar el storage.
+        Desde acá podés dispararla manualmente cuando quieras.
+      </p>
+      <label>Borrar artifacts con más de N días</label>
+      <input type="number" id="diasLimpieza" value="7" min="1">
+      <div class="actions">
+        <button class="secondary" onclick="dispatchLimpieza()" id="btnLimpieza">Disparar limpieza ahora</button>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="card">
+    <h2>
+      Corridas recientes
+      <button class="ghost" style="float:right" onclick="loadRuns()">↻ Actualizar</button>
+    </h2>
+    <div id="runsTableWrap"><div class="empty">Configurá el token para ver las corridas.</div></div>
+  </div>
+
+  <div class="card">
+    <h2>
+      Reportes publicados
+      <button class="ghost" style="float:right" onclick="loadReportBranches()">↻ Actualizar</button>
+    </h2>
+    <p class="muted" style="margin-top:0">
+      Cada corrida publica su reporte HTML (con capturas incluidas) en una rama dedicada del repo, sin depender de la
+      descarga de artifacts. Elegí uno para verlo acá mismo.
+    </p>
+    <div id="reportsWrap"><div class="empty">Configurá el token para ver los reportes.</div></div>
+  </div>
+
+</main>
+
+<div class="modal-bg" id="modalBg">
+  <div class="modal">
+    <div class="modal-head">
+      <b id="modalTitle">Reporte</b>
+      <button class="ghost" onclick="closeModal()">✕ Cerrar</button>
+    </div>
+    <iframe id="modalFrame"></iframe>
+  </div>
+</div>
+
+<script>
+const OWNER = "amansillaARTEAR";
+const REPO = "regre-visual-artear";
+const WORKFLOW_FILE = "regresion-visual.yml";
+const CLEANUP_WORKFLOW_FILE = "limpiar-artifacts.yml";
+const API = "https://api.github.com";
+
+const PRODUCTOS = {
+  tn: ["Homepage","Listado","Videos","Vivo","Clima","Economia","Divisas","Podcast","deportivo",
+       "Estadisticas","Quinielas","Juegos","Elecciones","Internacional","Article","Video",
+       "Longform c/fondo","Longform s/fondo","Liveblogging"],
+  eltrece: ["Homepage","Listado","Videos","Vivo","Programas","ProgramasSeccion","PortadaDeUnPrograma",
+       "Capitulos","CapitulosSeccion","Convocatorias","Shorts","Article","AMP","Video",
+       "Longform c/fondo","Liveblogging","Historia","Portada Cucinare","Cuccinare Temporada",
+       "Listado Cuccinare","Portada Recetas Cuccinare","Capitulos Cuccinare","Busqueda por palabra clave Cuccinare"],
+  eldoce: ["Homepage","Cuartetenado","Videos","Vivo","Agenda","Deportes","Estadísticas deportes",
+       "Torneo deportes","Horóscopo","Horóscopo signo","Article","AMP","Video","Cuarteteando",
+       "Video cuarteteando","Longform c/fondo","Longform s/fondo","Liveblogging","Galería"],
+  ciudad: ["Homepage","Cine y series","Listado","Vivo","Article","AMP","Video","Longform"],
+};
+
+const PRODUCTO_LABEL = {tn:"TN", eltrece:"El Trece", eldoce:"El Doce", ciudad:"Ciudad Magazine"};
+
+let TOKEN = localStorage.getItem("gh_pat") || "";
+let runsPoll = null;
+
+function toast(msg, kind){
+  const el = document.createElement("div");
+  el.className = "toast" + (kind ? " " + kind : "");
+  el.textContent = msg;
+  document.body.appendChild(el);
+  setTimeout(()=>el.remove(), 5000);
+}
+
+async function gh(path, opts={}){
+  const res = await fetch(API + path, {
+    ...opts,
+    headers: {
+      "Authorization": "Bearer " + TOKEN,
+      "Accept": "application/vnd.github+json",
+      ...(opts.body ? {"Content-Type":"application/json"} : {}),
+      ...(opts.headers||{})
+    }
+  });
+  if(!res.ok){
+    let detail = "";
+    try { detail = (await res.json()).message; } catch(e){}
+    throw new Error(`${res.status} ${res.statusText}${detail ? " — " + detail : ""}`);
+  }
+  return res;
+}
+
+async function ghJson(path, opts){ return (await gh(path, opts)).json(); }
+
+async function ghRaw(path, ref, binary){
+  const res = await gh(`/repos/${OWNER}/${REPO}/contents/${path}${ref ? "?ref="+encodeURIComponent(ref) : ""}`, {
+    headers: {"Accept":"application/vnd.github.raw"}
+  });
+  return binary ? res.blob() : res.text();
+}
+
+// ---------- Token ----------
+function renderTokenBar(){
+  const bar = document.getElementById("tokenBar");
+  const card = document.getElementById("tokenCard");
+  if(TOKEN){
+    bar.innerHTML = `<div class="token-ok"><span class="dot"></span> Token configurado <button class="ghost" onclick="forgetToken()">Olvidar token</button></div>`;
+    card.style.display = "none";
+  } else {
+    bar.innerHTML = `<div class="token-ok"><span class="dot off"></span> Sin token</div>`;
+    card.style.display = "block";
+  }
+}
+function saveToken(){
+  const v = document.getElementById("tokenInput").value.trim();
+  if(!v){ toast("Pegá un token primero", "error"); return; }
+  TOKEN = v;
+  localStorage.setItem("gh_pat", v);
+  renderTokenBar();
+  toast("Token guardado", "ok");
+  loadRuns();
+  loadReportBranches();
+}
+function forgetToken(){
+  TOKEN = "";
+  localStorage.removeItem("gh_pat");
+  renderTokenBar();
+  document.getElementById("runsTableWrap").innerHTML = `<div class="empty">Configurá el token para ver las corridas.</div>`;
+  document.getElementById("reportsWrap").innerHTML = `<div class="empty">Configurá el token para ver los reportes.</div>`;
+}
+
+// ---------- Dispatch form ----------
+function onProductoChange(){ renderUrlChips(); }
+function renderUrlChips(){
+  const producto = document.getElementById("producto").value;
+  const wrap = document.getElementById("urlChips");
+  wrap.innerHTML = PRODUCTOS[producto].map(name =>
+    `<label class="chip"><input type="checkbox" value="${name.replace(/"/g,'&quot;')}">${name}</label>`
+  ).join("");
+}
+function clearUrlChips(){
+  document.querySelectorAll("#urlChips input[type=checkbox]").forEach(cb => cb.checked = false);
+}
+function selectedUrls(){
+  return Array.from(document.querySelectorAll("#urlChips input:checked")).map(cb => cb.value).join(",");
+}
+
+async function dispatchRegresion(){
+  if(!TOKEN){ toast("Configurá el token primero", "error"); return; }
+  const producto = document.getElementById("producto").value;
+  const version = document.getElementById("version").value.trim();
+  const modo = document.getElementById("modo").value;
+  const tolerancia = document.getElementById("tolerancia").value || "3";
+  const urls = selectedUrls();
+  if(!version){ toast("Falta la versión", "error"); return; }
+
+  const btn = document.getElementById("btnDispatch");
+  btn.disabled = true; btn.innerHTML = `<span class="spinner"></span> Disparando…`;
+  try{
+    await gh(`/repos/${OWNER}/${REPO}/actions/workflows/${WORKFLOW_FILE}/dispatches`, {
+      method: "POST",
+      body: JSON.stringify({ ref: "main", inputs: { producto, version, modo, urls, tolerancia } })
+    });
+    toast(`Corrida disparada: ${PRODUCTO_LABEL[producto]} v${version} (${modo})`, "ok");
+    setTimeout(loadRuns, 2500);
+  } catch(e){
+    toast("Error al disparar: " + e.message, "error");
+  } finally {
+    btn.disabled = false; btn.textContent = "Disparar corrida";
+  }
+}
+
+async function dispatchLimpieza(){
+  if(!TOKEN){ toast("Configurá el token primero", "error"); return; }
+  const dias = document.getElementById("diasLimpieza").value || "7";
+  const btn = document.getElementById("btnLimpieza");
+  btn.disabled = true; btn.innerHTML = `<span class="spinner"></span> Disparando…`;
+  try{
+    await gh(`/repos/${OWNER}/${REPO}/actions/workflows/${CLEANUP_WORKFLOW_FILE}/dispatches`, {
+      method: "POST",
+      body: JSON.stringify({ ref: "main", inputs: { dias } })
+    });
+    toast(`Limpieza disparada (> ${dias} días)`, "ok");
+    setTimeout(loadRuns, 2500);
+  } catch(e){
+    toast("Error al disparar limpieza: " + e.message, "error");
+  } finally {
+    btn.disabled = false; btn.textContent = "Disparar limpieza ahora";
+  }
+}
+
+// ---------- Runs list ----------
+function badge(status, conclusion){
+  if(status === "completed"){
+    if(conclusion === "success") return `<span class="badge success">✓ success</span>`;
+    if(conclusion === "cancelled") return `<span class="badge cancelled">cancelled</span>`;
+    return `<span class="badge failure">✕ ${conclusion||"failure"}</span>`;
+  }
+  if(status === "in_progress") return `<span class="badge progress"><span class="spinner"></span> en curso</span>`;
+  return `<span class="badge queued">queued</span>`;
+}
+function fmtDate(iso){
+  const d = new Date(iso);
+  return d.toLocaleString("es-AR", {day:"2-digit",month:"2-digit",hour:"2-digit",minute:"2-digit"});
+}
+
+async function loadRuns(){
+  if(!TOKEN) return;
+  const wrap = document.getElementById("runsTableWrap");
+  try{
+    const data = await ghJson(`/repos/${OWNER}/${REPO}/actions/runs?per_page=20`);
+    const runs = data.workflow_runs.filter(r =>
+      r.path.endsWith(WORKFLOW_FILE) || r.path.endsWith(CLEANUP_WORKFLOW_FILE));
+    if(!runs.length){ wrap.innerHTML = `<div class="empty">Todavía no hay corridas.</div>`; return; }
+    wrap.innerHTML = `
+      <table>
+        <thead><tr><th>Run</th><th>Estado</th><th>Disparado</th><th></th></tr></thead>
+        <tbody>
+          ${runs.map(r => `
+            <tr>
+              <td>${r.display_title || r.name}</td>
+              <td>${badge(r.status, r.conclusion)}</td>
+              <td class="muted">${fmtDate(r.created_at)}</td>
+              <td><a href="${r.html_url}" target="_blank">ver en GitHub →</a></td>
+            </tr>
+          `).join("")}
+        </tbody>
+      </table>`;
+    const anyRunning = runs.some(r => r.status !== "completed");
+    if(anyRunning && !runsPoll){
+      runsPoll = setInterval(loadRuns, 20000);
+    } else if(!anyRunning && runsPoll){
+      clearInterval(runsPoll); runsPoll = null;
+    }
+  } catch(e){
+    wrap.innerHTML = `<div class="empty">Error cargando corridas: ${e.message}</div>`;
+  }
+}
+
+// ---------- Report branches ----------
+async function loadReportBranches(){
+  if(!TOKEN) return;
+  const wrap = document.getElementById("reportsWrap");
+  wrap.innerHTML = `<div class="empty"><span class="spinner"></span> Cargando…</div>`;
+  const combos = [];
+  Object.keys(PRODUCTOS).forEach(p => ["desktop","mobile"].forEach(m => combos.push([p,m])));
+  try{
+    const results = await Promise.all(combos.map(async ([producto, modo]) => {
+      const branch = `reportes-${producto}-${modo}`;
+      try{
+        const b = await ghJson(`/repos/${OWNER}/${REPO}/branches/${branch}`);
+        return { producto, modo, branch, date: b.commit.commit.author.date, msg: b.commit.commit.message, ok:true };
+      } catch(e){
+        return { producto, modo, branch, ok:false };
+      }
+    }));
+    const found = results.filter(r => r.ok);
+    if(!found.length){ wrap.innerHTML = `<div class="empty">Todavía no hay reportes publicados.</div>`; return; }
+    wrap.innerHTML = `<div class="reports-list">${found.map(r => `
+      <div class="report-item">
+        <div class="name">${PRODUCTO_LABEL[r.producto]} — ${r.modo}</div>
+        <div class="date">${fmtDate(r.date)}</div>
+        <button class="secondary" onclick="verReporte('${r.producto}','${r.modo}')">Ver reporte</button>
+      </div>
+    `).join("")}</div>`;
+  } catch(e){
+    wrap.innerHTML = `<div class="empty">Error cargando reportes: ${e.message}</div>`;
+  }
+}
+
+async function verReporte(producto, modo){
+  const branch = `reportes-${producto}-${modo}`;
+  const modalBg = document.getElementById("modalBg");
+  const frame = document.getElementById("modalFrame");
+  document.getElementById("modalTitle").textContent = `${PRODUCTO_LABEL[producto]} — ${modo}`;
+  frame.srcdoc = `<body style="font-family:sans-serif;padding:40px;color:#666">Cargando reporte…</body>`;
+  modalBg.classList.add("open");
+  try{
+    const dirPath = `reportes/${producto}/${modo}`;
+    const listing = await ghJson(`/repos/${OWNER}/${REPO}/contents/${dirPath}?ref=${branch}`);
+    const htmlFile = listing.find(f => f.name.endsWith(".html"));
+    if(!htmlFile) throw new Error("no se encontró el .html en la rama");
+    let html = await ghRaw(htmlFile.path, branch, false);
+    const pngFiles = listing.filter(f => f.name.endsWith(".png"));
+    await Promise.all(pngFiles.map(async f => {
+      const blob = await ghRaw(f.path, branch, true);
+      const url = URL.createObjectURL(blob);
+      html = html.split(f.name).join(url);
+    }));
+    frame.srcdoc = html;
+  } catch(e){
+    frame.srcdoc = `<body style="font-family:sans-serif;padding:40px;color:#c00">Error cargando el reporte: ${e.message}</body>`;
+  }
+}
+function closeModal(){
+  document.getElementById("modalBg").classList.remove("open");
+  document.getElementById("modalFrame").srcdoc = "";
+}
+document.getElementById("modalBg").addEventListener("click", e => {
+  if(e.target.id === "modalBg") closeModal();
+});
+
+// ---------- Init ----------
+renderTokenBar();
+renderUrlChips();
+if(TOKEN){ loadRuns(); loadReportBranches(); }
+</script>
+</body>
+</html>
