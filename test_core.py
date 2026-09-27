@@ -384,6 +384,10 @@ def test_cascada_de_estilo_agrupa_cambio_global_de_fontsize():
     assert len(cascadas_estilo) == 1, f"Debería colapsar en 1 cascada de estilo, obtuve: {cascadas_estilo}"
     assert cascadas_estilo[0]['cantidad'] == 5
     assert cascadas_estilo[0]['v1'] == '36px' and cascadas_estilo[0]['v2'] == '44px'
+    # Pedido explícito del usuario: un cambio de estilo real (fontSize,
+    # padding, margin) es SIEMPRE grave, aunque se agrupe para legibilidad —
+    # nunca se degrada a "revisar" como las cascadas geométricas.
+    assert cascadas_estilo[0]['grave'] is True, "Una cascada de estilo debe marcarse como GRAVE (rojo)"
 
     sueltas_fontsize = [f for f in sueltas if f['tipo'] == 'DIFERENCIA ESTILO (FONTSIZE)']
     assert len(sueltas_fontsize) == 0, "No debería quedar ningún FONTSIZE suelto fuera de la cascada"
