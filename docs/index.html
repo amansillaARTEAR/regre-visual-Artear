@@ -809,9 +809,13 @@ function onJiraArchivoSeleccionado(ev){
   }
   const reader = new FileReader();
   reader.onload = () => {
-    const contenido = reader.result;
-    if(!contenido.trim().startsWith("<")){
-      toast("El archivo no parece contener XML válido.", "error");
+    // Algunos XML guardados desde el navegador o exportados con ciertos encodings traen un
+    // BOM (caracter invisible) al principio del archivo, que rompe un chequeo simple de
+    // startsWith("<") aunque el contenido sea XML perfectamente válido. Lo sacamos antes de validar.
+    const contenido = reader.result.replace(/^﻿/, "").trim();
+    if(!contenido.startsWith("<")){
+      const preview = contenido.slice(0, 80).replace(/[\r\n\t]+/g, " ") || "(archivo vacío)";
+      toast(`El archivo no parece XML — empieza con: "${preview}". Probá abrirlo con el Bloc de notas y guardarlo como UTF-8, o pegá el texto a mano.`, "error");
       nombreWrap.textContent = "";
       ev.target.value = "";
       return;
