@@ -292,13 +292,10 @@
             <p class="muted" style="margin-top:0">
               Corre la suite de Appium (Android) contra el celular conectado por USB a la PC del runner.
             </p>
-            <label>Casos a correr <span class="muted">(sin marcar ninguno = suite completa)</span></label>
-            <div class="chips" id="wmCasosChips"></div>
             <div class="actions">
               <button onclick="dispatchWebmobile()" id="btnWmDispatch">Disparar corrida</button>
-              <button class="secondary" onclick="clearCasosChips('wmCasosChips')">Limpiar selección</button>
             </div>
-            <div class="hint">Necesita que la PC con el runner esté prendida y el Android conectado con depuración USB habilitada.</div>
+            <div class="hint">Corre los casos tildados en "Casos de prueba" más abajo (ninguno tildado = suite completa). Necesita que la PC con el runner esté prendida y el Android conectado con depuración USB habilitada.</div>
           </div>
 
           <div class="card">
@@ -327,14 +324,27 @@
             </ol>
             <label>URL del endpoint de Appium</label>
             <input type="text" id="wmIosEndpoint" placeholder="https://...devicefarm...amazonaws.com/wd/hub/...">
-            <label>Casos a correr <span class="muted">(sin marcar ninguno = suite completa)</span></label>
-            <div class="chips" id="wmIosCasosChips"></div>
             <div class="actions">
               <button onclick="dispatchWebmobileIos()" id="btnWmIosDispatch">Disparar corrida iOS</button>
-              <button class="secondary" onclick="clearCasosChips('wmIosCasosChips')">Limpiar selección</button>
             </div>
+            <div class="hint">Corre los casos tildados en "Casos de prueba" más abajo (ninguno tildado = suite completa).</div>
           </div>
 
+        </div>
+
+        <div class="card">
+          <h2>
+            Casos de prueba
+            <button class="ghost" onclick="clearCasosSeleccionados()">Limpiar selección</button>
+          </h2>
+          <p class="muted" style="margin-top:0">
+            Tildá los casos que querés correr (aplica tanto a Android como a iOS). Para editar la lógica de un caso,
+            el ícono de lápiz abre el archivo directo en el editor de GitHub (github.dev) en esa línea.
+          </p>
+          <table>
+            <thead><tr><th style="width:36px"></th><th>Caso</th><th>Qué valida</th><th style="width:90px"></th></tr></thead>
+            <tbody id="wmCasosTableBody"></tbody>
+          </table>
         </div>
 
         <div class="card">
@@ -384,21 +394,22 @@ const WEBMOBILE_REPO = "Mobile-Artear";
 const WEBMOBILE_WORKFLOW = "webmobile.yml";
 const WEBMOBILE_IOS_WORKFLOW = "webmobile-ios.yml";
 
+const WEBMOBILE_TEST_FILE = "appium-mobile-web-qa/tests/test_tnarc4366.py";
 const WEBMOBILE_CASOS = [
-  {id:"test_00_version", label:"00 · Versión promovida"},
-  {id:"ca01", label:"CA1 · Colecciones"},
-  {id:"ca02", label:"CA2 · Lo importante (orden)"},
-  {id:"ca03", label:"CA3 · Lo último (cronológico)"},
-  {id:"ca04", label:"CA4 · Videos 9:16"},
-  {id:"ca05", label:"CA5 · Autoplay / play-pause"},
-  {id:"ca06", label:"CA6 · Siguiente automático"},
-  {id:"ca07", label:"CA7 · Scroll intenso"},
-  {id:"ca08", label:"CA8 · Paginación"},
-  {id:"ca09", label:"CA9 · Conserva video por pestaña"},
-  {id:"ca10", label:"CA10 · Barra de progreso"},
-  {id:"ca11", label:"CA11 · Controles"},
-  {id:"ca12", label:"CA12 · Cerrar redirige a home"},
-  {id:"ca13", label:"CA13 · Sin placeholders"},
+  {id:"test_00_version", nombre:"00 · Versión",     desc:"Precondición: la versión promovida en DEV es la esperada.", linea:28},
+  {id:"ca01",            nombre:"CA1 · Colecciones", desc:"Recupera los videos de las colecciones configuradas en PageBuilder.", linea:44},
+  {id:"ca02",            nombre:"CA2 · Orden",       desc:"«Lo importante» respeta el orden de la colección.", linea:63},
+  {id:"ca03",            nombre:"CA3 · Cronológico", desc:"«Lo último» muestra del más reciente al más antiguo.", linea:95},
+  {id:"ca04",            nombre:"CA4 · Aspecto 9:16",desc:"Solo se renderizan videos verticales 9:16.", linea:126},
+  {id:"ca05",            nombre:"CA5 · Autoplay",    desc:"Los videos se reproducen solos y permiten play/pause.", linea:144},
+  {id:"ca06",            nombre:"CA6 · Auto-siguiente",desc:"Al terminar un video, arranca el siguiente automáticamente.", linea:166},
+  {id:"ca07",            nombre:"CA7 · Scroll",      desc:"El scroll avanza de a un video, sin importar la intensidad del gesto.", linea:180},
+  {id:"ca08",            nombre:"CA8 · Paginación",  desc:"Se cargan más videos al acercarse al final, sin cortes.", linea:201},
+  {id:"ca09",            nombre:"CA9 · Por pestaña", desc:"Cada pestaña conserva el último video visto.", linea:235},
+  {id:"ca10",            nombre:"CA10 · Progreso",   desc:"La barra de progreso refleja el avance real del video.", linea:260},
+  {id:"ca11",            nombre:"CA11 · Controles",  desc:"Cerrar, mostrar/ocultar, compartir y sonido siguen disponibles.", linea:278},
+  {id:"ca12",            nombre:"CA12 · Cerrar",     desc:"Al cerrar el player, redirige a la portada principal.", linea:336},
+  {id:"ca13",            nombre:"CA13 · Skeleton",   desc:"No quedan placeholders del skeleton visibles.", linea:322},
 ];
 
 const PRODUCTOS = {
@@ -656,24 +667,32 @@ async function loadRuns(){
   }
 }
 
-// ---------- WebMobile ----------
-function renderCasosChips(containerId){
-  const wrap = document.getElementById(containerId);
-  wrap.innerHTML = WEBMOBILE_CASOS.map(c =>
-    `<label class="chip"><input type="checkbox" value="${c.id}">${c.label}</label>`
-  ).join("");
+// ---------- WebMobile: tabla de casos de prueba ----------
+function renderCasosTable(){
+  const body = document.getElementById("wmCasosTableBody");
+  body.innerHTML = WEBMOBILE_CASOS.map(c => `
+    <tr>
+      <td><input type="checkbox" class="casoCheck" value="${c.id}"></td>
+      <td><b>${c.nombre}</b></td>
+      <td class="muted">${c.desc}</td>
+      <td>
+        <a href="https://github.dev/${WEBMOBILE_OWNER}/${WEBMOBILE_REPO}/blob/main/${WEBMOBILE_TEST_FILE}#L${c.linea}"
+           target="_blank" title="Editar código en github.dev">✎ Editar</a>
+      </td>
+    </tr>
+  `).join("");
 }
-function clearCasosChips(containerId){
-  document.querySelectorAll(`#${containerId} input[type=checkbox]`).forEach(cb => cb.checked = false);
+function clearCasosSeleccionados(){
+  document.querySelectorAll(".casoCheck").forEach(cb => cb.checked = false);
 }
-function selectedCasosFiltro(containerId){
-  const ids = Array.from(document.querySelectorAll(`#${containerId} input:checked`)).map(cb => cb.value);
+function selectedCasosFiltro(){
+  const ids = Array.from(document.querySelectorAll(".casoCheck:checked")).map(cb => cb.value);
   return ids.join(" or ");
 }
 
 async function dispatchWebmobile(){
   if(!TOKEN){ toast("Configurá el token primero", "error"); return; }
-  const filtro = selectedCasosFiltro("wmCasosChips");
+  const filtro = selectedCasosFiltro();
   const btn = document.getElementById("btnWmDispatch");
   btn.disabled = true; btn.innerHTML = `<span class="spinner"></span> Disparando…`;
   try{
@@ -693,7 +712,7 @@ async function dispatchWebmobile(){
 async function dispatchWebmobileIos(){
   if(!TOKEN){ toast("Configurá el token primero", "error"); return; }
   const endpoint = document.getElementById("wmIosEndpoint").value.trim();
-  const filtro = selectedCasosFiltro("wmIosCasosChips");
+  const filtro = selectedCasosFiltro();
   if(!endpoint){ toast("Pegá la URL del endpoint de AWS Device Farm primero", "error"); return; }
 
   const btn = document.getElementById("btnWmIosDispatch");
@@ -836,8 +855,7 @@ document.getElementById("modalBg").addEventListener("click", e => {
 // ---------- Init ----------
 renderTokenBar();
 renderUrlChips();
-renderCasosChips("wmCasosChips");
-renderCasosChips("wmIosCasosChips");
+renderCasosTable();
 if(TOKEN){ loadRuns(); loadReportBranches(); }
 const savedView = localStorage.getItem("qa_tools_view");
 if(savedView && VIEW_META[savedView]) showView(savedView);
