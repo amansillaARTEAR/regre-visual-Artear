@@ -95,6 +95,18 @@ jobs:
           git add -f "reportes/${{ inputs.producto }}/desktop"
           git commit -m "Reporte ${{ inputs.producto }} desktop v${{ inputs.version }} - $(date -u +%Y-%m-%dT%H:%M:%SZ)"
           git push origin "HEAD:$BRANCH" --force
+      - name: Notificar a Slack
+        if: always()
+        env:
+          SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
+          SLACK_CHANNEL_ID: ${{ secrets.SLACK_CHANNEL_ID }}
+        run: |
+          python scripts/enviar_slack.py \
+            --report-dir "reportes/${{ inputs.producto }}/desktop" \
+            --producto "${{ inputs.producto }}" \
+            --modo desktop \
+            --version "${{ inputs.version }}" \
+            --urls "${{ inputs.urls }}"
 
   regresion-mobile:
     needs: tests-offline
@@ -132,3 +144,15 @@ jobs:
           git add -f "reportes/${{ inputs.producto }}/mobile"
           git commit -m "Reporte ${{ inputs.producto }} mobile v${{ inputs.version }} - $(date -u +%Y-%m-%dT%H:%M:%SZ)"
           git push origin "HEAD:$BRANCH" --force
+      - name: Notificar a Slack
+        if: always()
+        env:
+          SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
+          SLACK_CHANNEL_ID: ${{ secrets.SLACK_CHANNEL_ID }}
+        run: |
+          python scripts/enviar_slack.py \
+            --report-dir "reportes/${{ inputs.producto }}/mobile" \
+            --producto "${{ inputs.producto }}" \
+            --modo mobile \
+            --version "${{ inputs.version }}" \
+            --urls "${{ inputs.urls }}"
