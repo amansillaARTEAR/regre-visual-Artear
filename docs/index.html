@@ -3,24 +3,56 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Regresión Visual — Dashboard</title>
+<title>QA Tools — Artear</title>
 <style>
   :root{
-    --bg:#0f1115; --panel:#161923; --panel2:#1d2130; --border:#2a2f42;
-    --text:#e7e9ee; --muted:#9198ab; --accent:#5b8cff; --accent2:#7aa2ff;
+    --bg:#0b0d12; --sidebar:#0f1218; --panel:#161923; --panel2:#1d2130; --border:#262b3a;
+    --text:#e7e9ee; --muted:#8b93a8; --accent:#5b8cff; --accent2:#7aa2ff;
     --green:#2fbf71; --red:#f0506e; --orange:#f0a63a; --gray:#6b7280;
     --radius:10px;
   }
   *{box-sizing:border-box}
   body{margin:0;background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;font-size:14px;line-height:1.5}
-  header{padding:22px 28px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px}
-  header h1{font-size:18px;margin:0;font-weight:600}
-  header .sub{color:var(--muted);font-size:12.5px;margin-top:2px}
-  main{max-width:1180px;margin:0 auto;padding:24px 20px 60px}
-  .grid{display:grid;grid-template-columns:1fr 1fr;gap:20px}
+  a{color:var(--accent2);text-decoration:none}
+  a:hover{text-decoration:underline}
+  .muted{color:var(--muted)}
+
+  /* ---------- Layout ---------- */
+  .app{display:flex;min-height:100vh}
+  .sidebar{
+    width:250px;flex:0 0 250px;background:var(--sidebar);border-right:1px solid var(--border);
+    padding:20px 14px;display:flex;flex-direction:column;gap:2px
+  }
+  .brand{padding:6px 10px 20px;display:flex;flex-direction:column;gap:2px}
+  .brand .logo{font-size:15px;font-weight:700;letter-spacing:.01em}
+  .brand .org{color:var(--muted);font-size:11.5px}
+  .nav-section-label{color:var(--muted);font-size:10.5px;text-transform:uppercase;letter-spacing:.06em;padding:14px 10px 6px}
+  .nav-item{
+    display:flex;align-items:center;gap:10px;padding:9px 10px;border-radius:8px;cursor:pointer;
+    color:var(--muted);font-size:13.5px;font-weight:500;user-select:none;transition:background .12s,color .12s
+  }
+  .nav-item .ic{width:18px;height:18px;flex:0 0 18px;display:flex;align-items:center;justify-content:center;font-size:14px}
+  .nav-item:hover{background:var(--panel);color:var(--text)}
+  .nav-item.active{background:rgba(91,140,255,.14);color:var(--accent2)}
+  .nav-item .soon{margin-left:auto;font-size:9.5px;text-transform:uppercase;letter-spacing:.03em;background:var(--panel2);color:var(--muted);padding:2px 6px;border-radius:20px}
+  .sidebar-footer{margin-top:auto;padding:10px;color:var(--muted);font-size:11px}
+
+  .content{flex:1;min-width:0;display:flex;flex-direction:column}
+  header{
+    padding:20px 32px;border-bottom:1px solid var(--border);display:flex;align-items:center;
+    justify-content:space-between;flex-wrap:wrap;gap:12px;background:var(--bg);position:sticky;top:0;z-index:10
+  }
+  header h1{font-size:17px;margin:0;font-weight:600}
+  header .sub{color:var(--muted);font-size:12px;margin-top:2px}
+  main{max-width:1180px;width:100%;margin:0 auto;padding:24px 28px 60px}
+  .view{display:none}
+  .view.active{display:block}
+
+  /* ---------- Cards / forms ---------- */
+  .grid{display:grid;grid-template-columns:1fr 1fr;gap:18px}
   @media (max-width:900px){.grid{grid-template-columns:1fr}}
-  .card{background:var(--panel);border:1px solid var(--border);border-radius:var(--radius);padding:18px 20px;margin-bottom:20px}
-  .card h2{font-size:14px;margin:0 0 14px;text-transform:uppercase;letter-spacing:.04em;color:var(--accent2);font-weight:600}
+  .card{background:var(--panel);border:1px solid var(--border);border-radius:var(--radius);padding:18px 20px;margin-bottom:18px}
+  .card h2{font-size:13px;margin:0 0 14px;text-transform:uppercase;letter-spacing:.04em;color:var(--accent2);font-weight:600;display:flex;align-items:center;justify-content:space-between}
   label{display:block;font-size:12.5px;color:var(--muted);margin-bottom:5px;margin-top:12px}
   label:first-of-type{margin-top:0}
   select,input[type=text],input[type=number],input[type=password]{
@@ -39,14 +71,16 @@
   button.secondary{background:var(--panel2);border:1px solid var(--border);color:var(--text)}
   button.ghost{background:transparent;border:1px solid var(--border);color:var(--muted);padding:6px 10px;font-size:12px}
   button.danger{background:var(--red)}
-  .actions{margin-top:16px;display:flex;gap:10px;align-items:center}
+  .actions{margin-top:16px;display:flex;gap:10px;align-items:center;flex-wrap:wrap}
   .chips{display:flex;flex-wrap:wrap;gap:6px;max-height:140px;overflow-y:auto;padding:10px;background:var(--panel2);border:1px solid var(--border);border-radius:7px}
   .chip{display:flex;align-items:center;gap:5px;background:var(--bg);border:1px solid var(--border);border-radius:20px;padding:4px 10px 4px 6px;font-size:12px;cursor:pointer;user-select:none}
   .chip input{width:auto;margin:0}
   .hint{color:var(--muted);font-size:11.5px;margin-top:6px}
+  .divider{margin-top:18px;padding-top:16px;border-top:1px solid var(--border)}
+
   table{width:100%;border-collapse:collapse;font-size:12.8px}
-  th,td{text-align:left;padding:8px 6px;border-bottom:1px solid var(--border)}
-  th{color:var(--muted);font-weight:500;font-size:11.5px;text-transform:uppercase;letter-spacing:.03em}
+  th,td{text-align:left;padding:9px 6px;border-bottom:1px solid var(--border)}
+  th{color:var(--muted);font-weight:500;font-size:11px;text-transform:uppercase;letter-spacing:.03em}
   tr:last-child td{border-bottom:none}
   .badge{display:inline-block;padding:2px 9px;border-radius:20px;font-size:11px;font-weight:600;white-space:nowrap}
   .badge.success{background:rgba(47,191,113,.15);color:var(--green)}
@@ -54,9 +88,7 @@
   .badge.progress{background:rgba(91,140,255,.15);color:var(--accent2)}
   .badge.queued{background:rgba(107,114,128,.18);color:var(--gray)}
   .badge.cancelled{background:rgba(240,166,58,.15);color:var(--orange)}
-  a{color:var(--accent2);text-decoration:none}
-  a:hover{text-decoration:underline}
-  .muted{color:var(--muted)}
+
   .token-bar{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
   .token-ok{display:flex;align-items:center;gap:8px;font-size:12.5px}
   .dot{width:8px;height:8px;border-radius:50%;background:var(--green);display:inline-block}
@@ -81,129 +113,200 @@
   .report-item .date{color:var(--muted);font-size:11.5px;margin-bottom:10px}
   .spinner{display:inline-block;width:12px;height:12px;border:2px solid var(--border);border-top-color:var(--accent2);border-radius:50%;animation:spin .7s linear infinite;vertical-align:-2px}
   @keyframes spin{to{transform:rotate(360deg)}}
+
+  /* ---------- Coming soon ---------- */
+  .soon-card{
+    background:var(--panel);border:1px dashed var(--border);border-radius:14px;
+    padding:48px 32px;text-align:center;color:var(--muted)
+  }
+  .soon-card .ic{font-size:34px;margin-bottom:14px}
+  .soon-card h3{color:var(--text);font-size:16px;margin:0 0 8px}
+  .soon-card p{max-width:440px;margin:0 auto 4px;font-size:13px}
+  .soon-card .tag{display:inline-block;margin-top:16px;font-size:11px;text-transform:uppercase;letter-spacing:.04em;background:var(--panel2);border:1px solid var(--border);padding:4px 12px;border-radius:20px;color:var(--orange)}
+
+  /* mobile: collapse sidebar to a top bar */
+  @media (max-width:760px){
+    .app{flex-direction:column}
+    .sidebar{width:100%;flex:none;flex-direction:row;flex-wrap:wrap;padding:12px;border-right:none;border-bottom:1px solid var(--border);align-items:center}
+    .brand{padding:4px 8px;flex:0 0 auto}
+    .nav-section-label{display:none}
+    .sidebar-footer{display:none}
+    .nav-item{padding:7px 10px}
+  }
 </style>
 </head>
 <body>
 
-<header>
-  <div>
-    <h1>Regresión Visual — Dashboard</h1>
-    <div class="sub">amansillaARTEAR/regre-visual-artear</div>
-  </div>
-  <div class="token-bar" id="tokenBar"></div>
-</header>
-
-<main>
-
-  <div class="card" id="tokenCard" style="display:none">
-    <h2>Configurar acceso</h2>
-    <p class="muted" style="margin-top:0">
-      Este dashboard corre 100% en tu navegador (GitHub Pages no tiene backend), así que necesita un token de GitHub
-      para poder disparar workflows y leer los reportes de un repo privado. El token se guarda únicamente en el
-      <code>localStorage</code> de tu navegador — nunca sale de acá salvo hacia <code>api.github.com</code>.
-    </p>
-    <label>Personal Access Token</label>
-    <input type="password" id="tokenInput" placeholder="github_pat_...">
-    <div class="hint">
-      Crealo en <a href="https://github.com/settings/personal-access-tokens/new" target="_blank">GitHub → Settings → Developer settings → Fine-grained tokens</a>,
-      con acceso limitado a <b>solo este repositorio</b> (regre-visual-artear) y permisos:
-      <b>Actions: Read and write</b>, <b>Contents: Read and write</b>. Sin esos dos permisos el dashboard no puede disparar corridas ni leer los reportes.
+<div class="app">
+  <nav class="sidebar">
+    <div class="brand">
+      <div class="logo">QA Tools</div>
+      <div class="org">Artear</div>
     </div>
-    <div class="actions">
-      <button onclick="saveToken()">Guardar token</button>
+
+    <div class="nav-section-label">Herramientas</div>
+    <div class="nav-item active" data-view="regresion" onclick="showView('regresion')">
+      <span class="ic">🖼️</span> Regresión Visual
     </div>
-  </div>
+    <div class="nav-item" data-view="webmobile" onclick="showView('webmobile')">
+      <span class="ic">📱</span> WebMobile <span class="soon">Pronto</span>
+    </div>
+    <div class="nav-item" data-view="appnativa" onclick="showView('appnativa')">
+      <span class="ic">🤖</span> App Nativa <span class="soon">Pronto</span>
+    </div>
 
-  <div class="grid">
+    <div class="sidebar-footer">amansillaARTEAR/regre-visual-artear</div>
+  </nav>
 
-    <div class="card">
-      <h2>Disparar regresión</h2>
-      <label>Producto</label>
-      <select id="producto" onchange="onProductoChange()">
-        <option value="tn">TN</option>
-        <option value="eltrece">El Trece</option>
-        <option value="eldoce">El Doce</option>
-        <option value="ciudad">Ciudad Magazine</option>
-      </select>
+  <div class="content">
+    <header>
+      <div>
+        <h1 id="viewTitle">Regresión Visual</h1>
+        <div class="sub" id="viewSub">Comparación pixel a pixel y estructural entre dos versiones de un sitio</div>
+      </div>
+      <div class="token-bar" id="tokenBar"></div>
+    </header>
 
-      <div class="row">
-        <div>
-          <label>Versión</label>
-          <input type="text" id="version" placeholder="ej: 721">
+    <main>
+
+      <!-- ===================== VISTA: Regresión Visual ===================== -->
+      <div class="view active" id="view-regresion">
+
+        <div class="card" id="tokenCard" style="display:none">
+          <h2>Configurar acceso</h2>
+          <p class="muted" style="margin-top:0">
+            Este dashboard corre 100% en tu navegador (GitHub Pages no tiene backend), así que necesita un token de GitHub
+            para poder disparar workflows y leer los reportes de un repo privado. El token se guarda únicamente en el
+            <code>localStorage</code> de tu navegador — nunca sale de acá salvo hacia <code>api.github.com</code>.
+          </p>
+          <label>Personal Access Token</label>
+          <input type="password" id="tokenInput" placeholder="github_pat_...">
+          <div class="hint">
+            Crealo en <a href="https://github.com/settings/personal-access-tokens/new" target="_blank">GitHub → Settings → Developer settings → Fine-grained tokens</a>,
+            con acceso limitado a <b>solo este repositorio</b> (regre-visual-artear) y permisos:
+            <b>Actions: Read and write</b>, <b>Contents: Read and write</b>. Sin esos dos permisos el dashboard no puede disparar corridas ni leer los reportes.
+          </div>
+          <div class="actions">
+            <button onclick="saveToken()">Guardar token</button>
+          </div>
         </div>
-        <div>
-          <label>Modo</label>
-          <select id="modo">
-            <option value="ambos">Ambos (desktop + mobile)</option>
-            <option value="desktop">Solo desktop</option>
-            <option value="mobile">Solo mobile</option>
-          </select>
+
+        <div class="grid">
+
+          <div class="card">
+            <h2>Disparar regresión</h2>
+            <label>Producto</label>
+            <select id="producto" onchange="onProductoChange()">
+              <option value="tn">TN</option>
+              <option value="eltrece">El Trece</option>
+              <option value="eldoce">El Doce</option>
+              <option value="ciudad">Ciudad Magazine</option>
+            </select>
+
+            <div class="row">
+              <div>
+                <label>Versión</label>
+                <input type="text" id="version" placeholder="ej: 721">
+              </div>
+              <div>
+                <label>Modo</label>
+                <select id="modo">
+                  <option value="ambos">Ambos (desktop + mobile)</option>
+                  <option value="desktop">Solo desktop</option>
+                  <option value="mobile">Solo mobile</option>
+                </select>
+              </div>
+            </div>
+
+            <label>URLs a testear <span class="muted">(opcional — sin seleccionar ninguna, corren todas)</span></label>
+            <div class="chips" id="urlChips"></div>
+
+            <div class="row">
+              <div>
+                <label>Tolerancia (px)</label>
+                <input type="number" id="tolerancia" value="3" min="0">
+              </div>
+            </div>
+
+            <div class="actions">
+              <button onclick="dispatchRegresion()" id="btnDispatch">Disparar corrida</button>
+              <button class="secondary" onclick="clearUrlChips()">Limpiar selección de URLs</button>
+            </div>
+
+            <div class="divider">
+              <label style="margin-top:0">Disparar los 4 productos a la vez</label>
+              <p class="hint" style="margin-top:0;margin-bottom:10px">
+                Usa la misma versión, modo y tolerancia de arriba, y corre las URLs completas de cada producto
+                (la selección de URLs de arriba no aplica acá — es sólo para un producto puntual).
+              </p>
+              <button class="secondary" onclick="dispatchTodas()" id="btnTodas" style="width:100%">
+                Disparar TN + El Trece + El Doce + Ciudad
+              </button>
+            </div>
+          </div>
+
+          <div class="card">
+            <h2>Limpieza de artifacts</h2>
+            <p class="muted" style="margin-top:0">
+              Corre semanalmente sola (domingos 06:00 UTC) y borra artifacts viejos de Actions para no llenar el storage.
+              Desde acá podés dispararla manualmente cuando quieras.
+            </p>
+            <label>Borrar artifacts con más de N días</label>
+            <input type="number" id="diasLimpieza" value="7" min="1">
+            <div class="actions">
+              <button class="secondary" onclick="dispatchLimpieza()" id="btnLimpieza">Disparar limpieza ahora</button>
+            </div>
+          </div>
+
+        </div>
+
+        <div class="card">
+          <h2>
+            Corridas recientes
+            <button class="ghost" onclick="loadRuns()">↻ Actualizar</button>
+          </h2>
+          <div id="runsTableWrap"><div class="empty">Configurá el token para ver las corridas.</div></div>
+        </div>
+
+        <div class="card">
+          <h2>
+            Reportes publicados
+            <button class="ghost" onclick="loadReportBranches()">↻ Actualizar</button>
+          </h2>
+          <p class="muted" style="margin-top:0">
+            Cada corrida publica su reporte HTML (con capturas incluidas) en una rama dedicada del repo, sin depender de la
+            descarga de artifacts. Elegí uno para verlo acá mismo.
+          </p>
+          <div id="reportsWrap"><div class="empty">Configurá el token para ver los reportes.</div></div>
+        </div>
+
+      </div>
+
+      <!-- ===================== VISTA: WebMobile ===================== -->
+      <div class="view" id="view-webmobile">
+        <div class="soon-card">
+          <div class="ic">📱</div>
+          <h3>WebMobile</h3>
+          <p>Automatización de pruebas web mobile. Todavía no tiene repo en GitHub — cuando esté publicado,
+            esta sección va a sumar su propio disparador de corridas y su historial, igual que Regresión Visual.</p>
+          <div class="tag">Próximamente</div>
         </div>
       </div>
 
-      <label>URLs a testear <span class="muted">(opcional — sin seleccionar ninguna, corren todas)</span></label>
-      <div class="chips" id="urlChips"></div>
-
-      <div class="row">
-        <div>
-          <label>Tolerancia (px)</label>
-          <input type="number" id="tolerancia" value="3" min="0">
+      <!-- ===================== VISTA: App Nativa ===================== -->
+      <div class="view" id="view-appnativa">
+        <div class="soon-card">
+          <div class="ic">🤖</div>
+          <h3>App Nativa</h3>
+          <p>Suite de automatización con Appium + Python para apps nativas Android/iOS en dispositivo físico.
+            Se va a integrar acá una vez que el proyecto esté versionado en GitHub.</p>
+          <div class="tag">Próximamente</div>
         </div>
       </div>
 
-      <div class="actions">
-        <button onclick="dispatchRegresion()" id="btnDispatch">Disparar corrida</button>
-        <button class="secondary" onclick="clearUrlChips()">Limpiar selección de URLs</button>
-      </div>
-
-      <div style="margin-top:18px;padding-top:16px;border-top:1px solid var(--border)">
-        <label style="margin-top:0">Disparar los 4 productos a la vez</label>
-        <p class="hint" style="margin-top:0;margin-bottom:10px">
-          Usa la misma versión, modo y tolerancia de arriba, y corre las URLs completas de cada producto
-          (la selección de URLs de arriba no aplica acá — es sólo para un producto puntual).
-        </p>
-        <button class="secondary" onclick="dispatchTodas()" id="btnTodas" style="width:100%">
-          Disparar TN + El Trece + El Doce + Ciudad
-        </button>
-      </div>
-    </div>
-
-    <div class="card">
-      <h2>Limpieza de artifacts</h2>
-      <p class="muted" style="margin-top:0">
-        Corre semanalmente sola (domingos 06:00 UTC) y borra artifacts viejos de Actions para no llenar el storage.
-        Desde acá podés dispararla manualmente cuando quieras.
-      </p>
-      <label>Borrar artifacts con más de N días</label>
-      <input type="number" id="diasLimpieza" value="7" min="1">
-      <div class="actions">
-        <button class="secondary" onclick="dispatchLimpieza()" id="btnLimpieza">Disparar limpieza ahora</button>
-      </div>
-    </div>
-
+    </main>
   </div>
-
-  <div class="card">
-    <h2>
-      Corridas recientes
-      <button class="ghost" style="float:right" onclick="loadRuns()">↻ Actualizar</button>
-    </h2>
-    <div id="runsTableWrap"><div class="empty">Configurá el token para ver las corridas.</div></div>
-  </div>
-
-  <div class="card">
-    <h2>
-      Reportes publicados
-      <button class="ghost" style="float:right" onclick="loadReportBranches()">↻ Actualizar</button>
-    </h2>
-    <p class="muted" style="margin-top:0">
-      Cada corrida publica su reporte HTML (con capturas incluidas) en una rama dedicada del repo, sin depender de la
-      descarga de artifacts. Elegí uno para verlo acá mismo.
-    </p>
-    <div id="reportsWrap"><div class="empty">Configurá el token para ver los reportes.</div></div>
-  </div>
-
-</main>
+</div>
 
 <div class="modal-bg" id="modalBg">
   <div class="modal">
@@ -238,8 +341,24 @@ const PRODUCTOS = {
 
 const PRODUCTO_LABEL = {tn:"TN", eltrece:"El Trece", eldoce:"El Doce", ciudad:"Ciudad Magazine"};
 
+const VIEW_META = {
+  regresion: {title:"Regresión Visual", sub:"Comparación pixel a pixel y estructural entre dos versiones de un sitio"},
+  webmobile: {title:"WebMobile", sub:"Automatización de pruebas web mobile — próximamente"},
+  appnativa: {title:"App Nativa", sub:"Suite Appium para apps nativas Android/iOS — próximamente"},
+};
+
 let TOKEN = localStorage.getItem("gh_pat") || "";
 let runsPoll = null;
+
+// ---------- Navegación ----------
+function showView(view){
+  document.querySelectorAll(".view").forEach(v => v.classList.remove("active"));
+  document.getElementById("view-" + view).classList.add("active");
+  document.querySelectorAll(".nav-item").forEach(n => n.classList.toggle("active", n.dataset.view === view));
+  document.getElementById("viewTitle").textContent = VIEW_META[view].title;
+  document.getElementById("viewSub").textContent = VIEW_META[view].sub;
+  localStorage.setItem("qa_tools_view", view);
+}
 
 function toast(msg, kind){
   const el = document.createElement("div");
@@ -524,6 +643,8 @@ document.getElementById("modalBg").addEventListener("click", e => {
 renderTokenBar();
 renderUrlChips();
 if(TOKEN){ loadRuns(); loadReportBranches(); }
+const savedView = localStorage.getItem("qa_tools_view");
+if(savedView && VIEW_META[savedView]) showView(savedView);
 </script>
 </body>
 </html>
