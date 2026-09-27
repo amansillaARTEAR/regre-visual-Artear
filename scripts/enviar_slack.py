@@ -25,6 +25,7 @@ import os
 import re
 import sys
 import time
+import urllib.parse
 
 import requests
 
@@ -100,16 +101,32 @@ def resolve_channel(token, channel_id):
     return data["channel"]["id"]
 
 
+def team_url_and_bot_id(token):
+    """Datos necesarios para armar el permalink de Slack a mano (mismo formato
+    que devuelve la API: https://<team>.slack.com/files/<bot_id>/<file_id>/<name>)."""
+    r = requests.get(
+        f"{SLACK_API}/auth.test",
+        headers={"Authorization": f"Bearer {token}"},
+        timeout=30,
+    )
+    r.raise_for_status()
+    data = r.json()
+    if not data.get("ok"):
+        raise RuntimeError(f"auth.test falló: {data}")
+    return data["url"].rstrip("/"), data["user_id"]
+
+
 def slack_post(token, channel, message, file_path, file_title):
     headers = {"Authorization": f"Bearer {token}"}
 
     channel = resolve_channel(token, channel)
 
+    filename = os.path.basename(file_path)
     size = os.path.getsize(file_path)
     r = requests.post(
         f"{SLACK_API}/files.getUploadURLExternal",
         headers=headers,
-        data={"filename": os.path.basename(file_path), "length": size},
+        data={"filename": filename, "length": size},
         timeout=30,
     )
     r.raise_for_status()
@@ -123,12 +140,20 @@ def slack_post(token, channel, message, file_path, file_title):
         r = requests.post(upload_url, files={"file": f}, timeout=120)
     r.raise_for_status()
 
+    # Armamos el link al reporte ANTES de subirlo, para poder incluirlo en el
+    # mismo mensaje (initial_comment) y no tener que postear un segundo mensaje
+    # aparte, que Slack termina mostrando duplicado (mensaje + preview del link).
+    team_url, bot_id = team_url_and_bot_id(token)
+    permalink = f"{team_url}/files/{bot_id}/{file_id}/{urllib.parse.quote(filename)}"
+    texto_final = f"{message}\n🔗 Ver reporte: {permalink}"
+
     r = requests.post(
         f"{SLACK_API}/files.completeUploadExternal",
         headers={**headers, "Content-Type": "application/json; charset=utf-8"},
         json={
             "files": [{"id": file_id, "title": file_title}],
             "channel_id": channel,
+            "initial_comment": texto_final,
         },
         timeout=30,
     )
@@ -136,27 +161,6 @@ def slack_post(token, channel, message, file_path, file_title):
     data = r.json()
     if not data.get("ok"):
         raise RuntimeError(f"files.completeUploadExternal falló: {data}")
-
-    permalink = None
-    try:
-        permalink = data["files"][0]["permalink"]
-    except (KeyError, IndexError, TypeError):
-        pass
-
-    texto_final = message
-    if permalink:
-        texto_final = f"{message}\n🔗 Ver reporte: {permalink}"
-
-    r = requests.post(
-        f"{SLACK_API}/chat.postMessage",
-        headers={**headers, "Content-Type": "application/json; charset=utf-8"},
-        json={"channel": channel, "text": texto_final, "unfurl_links": False},
-        timeout=30,
-    )
-    r.raise_for_status()
-    data = r.json()
-    if not data.get("ok"):
-        raise RuntimeError(f"chat.postMessage falló: {data}")
     log("Mensaje + reporte enviados a Slack correctamente.")
 
 
