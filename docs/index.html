@@ -49,12 +49,17 @@
   .view.active{display:block}
 
   /* ---------- Cards / forms ---------- */
-  .grid{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+  .grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+  .grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
+  @media (max-width:1000px){.grid3{grid-template-columns:1fr 1fr}}
   @media (max-width:900px){.grid{grid-template-columns:1fr}}
-  .card{background:var(--panel);border:1px solid var(--border);border-radius:var(--radius);padding:18px 20px;margin-bottom:18px}
-  .card h2{font-size:13px;margin:0 0 14px;text-transform:uppercase;letter-spacing:.04em;color:var(--accent2);font-weight:600;display:flex;align-items:center;justify-content:space-between}
-  label{display:block;font-size:12.5px;color:var(--muted);margin-bottom:5px;margin-top:12px}
+  @media (max-width:640px){.grid3{grid-template-columns:1fr}}
+  .card{background:var(--panel);border:1px solid var(--border);border-radius:var(--radius);padding:14px 16px;margin-bottom:14px}
+  .card h2{font-size:12.5px;margin:0 0 10px;text-transform:uppercase;letter-spacing:.04em;color:var(--accent2);font-weight:600;display:flex;align-items:center;justify-content:space-between}
+  .card p.muted{font-size:12.5px;line-height:1.45}
+  label{display:block;font-size:12.5px;color:var(--muted);margin-bottom:4px;margin-top:9px}
   label:first-of-type{margin-top:0}
+  .scroll-y{max-height:280px;overflow-y:auto}
   select,input[type=text],input[type=number],input[type=password]{
     width:100%;padding:9px 10px;background:var(--panel2);border:1px solid var(--border);
     border-radius:7px;color:var(--text);font-size:13.5px
@@ -288,69 +293,57 @@
         <div class="card">
           <h2>Generar caso de prueba desde un ticket de Jira</h2>
           <p class="muted" style="margin-top:0">
-            Subí el XML del ticket exportado de Jira (o pegá el texto a mano si no tenés el archivo). Claude va a
-            proponer un caso nuevo, siguiendo el estilo de los casos existentes y usando solo las acciones que el
-            Player ya sabe hacer. No se activa solo: abre un <b>Pull Request</b> para que lo revises antes de
-            sumarlo a la suite — puede necesitar ajustes si el ticket pide algo que ningún caso probó antes.
+            Subí el <b>.xml</b> del ticket (o pegá el texto). Claude propone un caso nuevo con el estilo de los
+            existentes y abre un <b>Pull Request</b> para revisar antes de sumarlo — no se activa solo.
           </p>
-          <label>Archivo XML del ticket</label>
-          <input type="file" id="jiraTicketArchivo" accept=".xml,text/xml" onchange="onJiraArchivoSeleccionado(event)">
-          <div class="hint" id="jiraArchivoNombre" style="margin-top:6px"></div>
-          <label style="margin-top:16px">o pegá el texto manualmente <span class="muted">(si no tenés el XML a mano)</span></label>
-          <textarea id="jiraTicketTexto" rows="5" placeholder="Resumen + criterios de aceptación del ticket..."
-            style="width:100%;padding:9px 10px;background:var(--panel2);border:1px solid var(--border);border-radius:7px;color:var(--text);font-size:13.5px;font-family:inherit;resize:vertical"></textarea>
+          <div class="row">
+            <div>
+              <label>Archivo XML del ticket</label>
+              <input type="file" id="jiraTicketArchivo" accept=".xml,text/xml" onchange="onJiraArchivoSeleccionado(event)">
+              <div class="hint" id="jiraArchivoNombre" style="margin-top:6px"></div>
+            </div>
+            <div>
+              <label>o pegá el texto manualmente</label>
+              <textarea id="jiraTicketTexto" rows="2" placeholder="Resumen + criterios de aceptación..."
+                style="width:100%;padding:9px 10px;background:var(--panel2);border:1px solid var(--border);border-radius:7px;color:var(--text);font-size:13.5px;font-family:inherit;resize:vertical"></textarea>
+            </div>
+          </div>
           <div class="actions">
             <button onclick="generarCasoDesdeJira()" id="btnGenerarCaso">Generar caso de prueba</button>
           </div>
-          <div class="hint">
-            Corre en un runner normal de GitHub (no hace falta tu PC prendida para esto). Cuando termine, el link
-            al Pull Request va a aparecer en "Corridas recientes" más abajo → "ver en GitHub".
-          </div>
+          <div class="hint">No hace falta tu PC prendida. El link al PR aparece en "Corridas recientes" → "ver en GitHub".</div>
         </div>
 
-        <div class="grid">
+        <div class="grid3">
 
           <div class="card">
-            <h2>Disparar corrida — Android</h2>
-            <p class="muted" style="margin-top:0">
-              Corre la suite de Appium (Android) contra el celular conectado por USB a la PC del runner.
-            </p>
+            <h2>Disparar — Android</h2>
+            <p class="muted" style="margin-top:0">Contra el celular USB de la PC del runner.</p>
             <div class="actions">
               <button onclick="dispatchWebmobile()" id="btnWmDispatch">Disparar corrida</button>
             </div>
-            <div class="hint">Corre los casos tildados en "Casos de prueba" más abajo (ninguno tildado = suite completa). Necesita que la PC con el runner esté prendida y el Android conectado con depuración USB habilitada.</div>
+            <div class="hint">Usa los casos tildados abajo (ninguno = suite completa). Requiere runner prendido + Android por USB.</div>
           </div>
 
           <div class="card">
             <h2>Estado del runner</h2>
-            <p class="muted" style="margin-top:0">
-              El runner self-hosted corre en la PC de Alejandro (necesario porque requiere el dispositivo Android físico
-              y porque la corrida de iOS también se ejecuta desde ahí, aunque el iPhone esté en AWS).
-            </p>
-            <div id="wmRunnerStatus"><div class="empty">Configurá el token para ver el estado.</div></div>
+            <p class="muted" style="margin-top:0">PC de Alejandro (corre Android y también dispara iOS hacia AWS).</p>
+            <div id="wmRunnerStatus"><div class="empty">Configurá el token.</div></div>
             <div class="actions">
-              <button class="ghost" onclick="loadRunnerStatusWebmobile()">↻ Actualizar estado</button>
+              <button class="ghost" onclick="loadRunnerStatusWebmobile()">↻ Actualizar</button>
             </div>
           </div>
 
           <div class="card">
-            <h2>Disparar corrida — iOS (AWS Device Farm)</h2>
+            <h2>Disparar — iOS (Device Farm)</h2>
             <p class="muted" style="margin-top:0">
-              Corre la suite contra un iPhone real de AWS Device Farm. Requiere crear la sesión a mano primero
-              (no se puede automatizar esa parte: la cuenta de AWS no tiene una Access Key habilitada).
+              Requiere crear la sesión a mano en <a href="https://us-west-2.console.aws.amazon.com/devicefarm/home?region=us-west-2#/mobile/projects" target="_blank">Device Farm</a> (proyecto "Ale M" → "Remote access") y pegar acá el Appium endpoint.
             </p>
-            <ol class="hint" style="margin:0 0 12px;padding-left:18px">
-              <li>Andá a <a href="https://us-west-2.console.aws.amazon.com/devicefarm/home?region=us-west-2#/mobile/projects" target="_blank">la consola de Device Farm</a> → proyecto "Ale M" → pestaña "Remote access".</li>
-              <li>Creá una sesión nueva ("Create remote access session") con un iPhone.</li>
-              <li>Una vez que arranca, copiá la URL del <b>Appium endpoint</b> de esa sesión.</li>
-              <li>Pegala acá abajo y disparás. La sesión de AWS sigue corriendo mientras dure el test (se cobra por minuto).</li>
-            </ol>
-            <label>URL del endpoint de Appium</label>
             <input type="text" id="wmIosEndpoint" placeholder="https://...devicefarm...amazonaws.com/wd/hub/...">
             <div class="actions">
               <button onclick="dispatchWebmobileIos()" id="btnWmIosDispatch">Disparar corrida iOS</button>
             </div>
-            <div class="hint">Corre los casos tildados en "Casos de prueba" más abajo (ninguno tildado = suite completa).</div>
+            <div class="hint">Usa los casos tildados abajo (ninguno = suite completa).</div>
           </div>
 
         </div>
@@ -361,13 +354,14 @@
             <button class="ghost" onclick="clearCasosSeleccionados()">Limpiar selección</button>
           </h2>
           <p class="muted" style="margin-top:0">
-            Tildá los casos que querés correr (aplica tanto a Android como a iOS). Para editar la lógica de un caso,
-            el ícono de lápiz abre el archivo directo en el editor de GitHub (github.dev) en esa línea.
+            Tildá los casos a correr (aplica a Android e iOS). El lápiz abre el código en github.dev en esa línea.
           </p>
-          <table>
-            <thead><tr><th style="width:36px"></th><th>Caso</th><th>Qué valida</th><th style="width:90px"></th></tr></thead>
-            <tbody id="wmCasosTableBody"></tbody>
-          </table>
+          <div class="scroll-y">
+            <table>
+              <thead><tr><th style="width:36px"></th><th>Caso</th><th>Qué valida</th><th style="width:90px"></th></tr></thead>
+              <tbody id="wmCasosTableBody"></tbody>
+            </table>
+          </div>
         </div>
 
         <div class="card">
@@ -759,13 +753,27 @@ let jiraXmlContenido = "";
 function onJiraArchivoSeleccionado(ev){
   const file = ev.target.files[0];
   const nombreWrap = document.getElementById("jiraArchivoNombre");
-  if(!file){ jiraXmlContenido = ""; nombreWrap.textContent = ""; return; }
+  jiraXmlContenido = "";
+  if(!file){ nombreWrap.textContent = ""; return; }
+  if(!file.name.toLowerCase().endsWith(".xml")){
+    toast("Ese archivo no es un .xml (" + file.name + "). Exportá el ticket como XML desde Jira.", "error");
+    nombreWrap.textContent = "";
+    ev.target.value = "";
+    return;
+  }
   const reader = new FileReader();
   reader.onload = () => {
-    jiraXmlContenido = reader.result;
+    const contenido = reader.result;
+    if(!contenido.trim().startsWith("<")){
+      toast("El archivo no parece contener XML válido.", "error");
+      nombreWrap.textContent = "";
+      ev.target.value = "";
+      return;
+    }
+    jiraXmlContenido = contenido;
     nombreWrap.textContent = `✓ ${file.name} cargado (${(file.size/1024).toFixed(1)} KB)`;
   };
-  reader.onerror = () => { toast("No se pudo leer el archivo", "error"); jiraXmlContenido = ""; };
+  reader.onerror = () => { toast("No se pudo leer el archivo", "error"); };
   reader.readAsText(file);
 }
 
