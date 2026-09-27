@@ -73,7 +73,7 @@ jobs:
           python "regre_visual_${{ inputs.producto }}.py" "${{ inputs.version }}" \
             --modo desktop \
             --tolerancia "${{ inputs.tolerancia }}" \
-            ${{ inputs.urls != '' && format('--urls {0}', inputs.urls) || '' }}
+            ${{ inputs.urls != '' && format('--urls "{0}"', inputs.urls) || '' }}
       - name: Subir reporte como artifact
         uses: actions/upload-artifact@v4
         with:
@@ -99,7 +99,7 @@ jobs:
           python "regre_visual_${{ inputs.producto }}.py" "${{ inputs.version }}" \
             --modo mobile \
             --tolerancia "${{ inputs.tolerancia }}" \
-            ${{ inputs.urls != '' && format('--urls {0}', inputs.urls) || '' }}
+            ${{ inputs.urls != '' && format('--urls "{0}"', inputs.urls) || '' }}
       - name: Subir reporte como artifact
         uses: actions/upload-artifact@v4
         with:
