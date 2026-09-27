@@ -1,8 +1,18 @@
-name: Regresión Visual TN
+name: Regresión Visual
 
 on:
   workflow_dispatch:
     inputs:
+      producto:
+        description: "Qué producto testear"
+        required: true
+        type: choice
+        options:
+          - tn
+          - eltrece
+          - eldoce
+          - ciudad
+        default: tn
       version:
         description: "Número de versión a testear (se arma como ?d=VERSION)"
         required: true
@@ -60,15 +70,15 @@ jobs:
         run: pip install -r requirements.txt
       - name: Correr regresión desktop
         run: |
-          python regre_visual_tn.py "${{ inputs.version }}" \
+          python "regre_visual_${{ inputs.producto }}.py" "${{ inputs.version }}" \
             --modo desktop \
             --tolerancia "${{ inputs.tolerancia }}" \
             ${{ inputs.urls != '' && format('--urls {0}', inputs.urls) || '' }}
       - name: Subir reporte como artifact
         uses: actions/upload-artifact@v4
         with:
-          name: reporte-desktop-v${{ inputs.version }}
-          path: reportes/desktop/
+          name: reporte-${{ inputs.producto }}-desktop-v${{ inputs.version }}
+          path: reportes/${{ inputs.producto }}/desktop/
           retention-days: 30
 
   regresion-mobile:
@@ -86,13 +96,13 @@ jobs:
         run: pip install -r requirements.txt
       - name: Correr regresión mobile
         run: |
-          python regre_visual_tn.py "${{ inputs.version }}" \
+          python "regre_visual_${{ inputs.producto }}.py" "${{ inputs.version }}" \
             --modo mobile \
             --tolerancia "${{ inputs.tolerancia }}" \
             ${{ inputs.urls != '' && format('--urls {0}', inputs.urls) || '' }}
       - name: Subir reporte como artifact
         uses: actions/upload-artifact@v4
         with:
-          name: reporte-mobile-v${{ inputs.version }}
-          path: reportes/mobile/
+          name: reporte-${{ inputs.producto }}-mobile-v${{ inputs.version }}
+          path: reportes/${{ inputs.producto }}/mobile/
           retention-days: 30

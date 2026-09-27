@@ -1,9 +1,21 @@
-# Regresión Visual TN
+# Regresión Visual — TN / El Trece / El Doce / Ciudad Magazine
 
 Herramienta de regresión visual/estructural que compara dos versiones de una
-misma página de TN (ej: `https://tn.com.ar/` vs `https://tn.com.ar/?d=VERSION`)
+misma página (ej: `https://tn.com.ar/` vs `https://tn.com.ar/?d=VERSION`)
 y detecta diferencias reales de layout, tamaño y estilo — filtrando los
 falsos positivos que generaban los scripts anteriores.
+
+Cubre 4 productos, cada uno con su propio script de entrada pero
+compartiendo el mismo motor (`regre_visual_motor.py`) y la misma lógica de
+comparación (`regre_visual_tn_core.py`), para que un fix beneficie a los
+cuatro a la vez:
+
+| Producto         | Script                     | Dominio                |
+|------------------|-----------------------------|-------------------------|
+| TN               | `regre_visual_tn.py`        | tn.com.ar               |
+| El Trece         | `regre_visual_eltrece.py`   | eltrecetv.com.ar        |
+| El Doce          | `regre_visual_eldoce.py`    | eldoce.tv               |
+| Ciudad Magazine  | `regre_visual_ciudad.py`    | ciudad.com.ar           |
 
 ## Qué mejora respecto a la versión anterior
 
@@ -21,10 +33,11 @@ Los dos scripts previos (`regre_visual_tn_desk_prod2.py` y
 - Comparación de estilos por string exacto, sin normalizar `rgb()` vs
   `rgba()`, `font-weight: normal` vs `400`, etc.
 
-Este script (`regre_visual_tn.py`, con la lógica en `regre_visual_tn_core.py`)
-soluciona cada uno de esos puntos. El detalle completo está en los
-comentarios de `regre_visual_tn_core.py` y en los tests de `test_core.py`
-(18 casos, cada uno reproduce un patrón real visto en corridas anteriores).
+El motor (`regre_visual_motor.py`, con la lógica pura en
+`regre_visual_tn_core.py`) soluciona cada uno de esos puntos para los 4
+productos. El detalle completo está en los comentarios de
+`regre_visual_tn_core.py` y en los tests de `test_core.py` (31 casos, cada
+uno reproduce un patrón real visto en corridas anteriores).
 
 La agrupación en cascada (`agrupar_cascadas`) cubre los 4 tipos de diferencia
 que pueden ser causa raíz de un efecto dominó: posición (Y), posición (X),
@@ -49,10 +62,15 @@ python regre_visual_tn.py 719 --modo desktop
 python regre_visual_tn.py 719 --modo mobile
 python regre_visual_tn.py 719 --modo desktop --urls Homepage,Listado,Juegos
 python regre_visual_tn.py 719 --modo desktop --tolerancia 4 --sin-confirmacion-visual
+
+# Mismo uso para los otros productos:
+python regre_visual_eltrece.py 719 --modo desktop
+python regre_visual_eldoce.py 719 --modo mobile
+python regre_visual_ciudad.py 719 --modo desktop --urls Homepage,Vivo
 ```
 
-El reporte HTML y las capturas quedan en `reportes/desktop/` o
-`reportes/mobile/`.
+El reporte HTML y las capturas quedan en `reportes/<producto>/desktop/` o
+`reportes/<producto>/mobile/` (ej. `reportes/eltrece/desktop/`).
 
 ## Tests offline (sin Selenium, sin red)
 
@@ -68,6 +86,7 @@ sintéticos. Correrlos antes de tocar `regre_visual_tn_core.py`.
 El workflow `.github/workflows/regresion-visual.yml` se dispara a mano
 desde la pestaña **Actions** del repo (`Run workflow`), pidiendo:
 
+- **producto**: `tn`, `eltrece`, `eldoce` o `ciudad`.
 - **version**: el número de versión a testear.
 - **modo**: `desktop`, `mobile` o `ambos`.
 - **urls** (opcional): subconjunto de páginas a testear.
@@ -80,10 +99,14 @@ el reporte + capturas como *artifact* descargable desde la misma corrida
 ## Estructura
 
 ```
-regre_visual_tn.py         # orquestación con Selenium (captura, screenshots, reporte HTML)
+regre_visual_tn.py         # config de producto: BASE_URLS_MAP de TN
+regre_visual_eltrece.py    # config de producto: BASE_URLS_MAP de El Trece
+regre_visual_eldoce.py     # config de producto: BASE_URLS_MAP de El Doce
+regre_visual_ciudad.py     # config de producto: BASE_URLS_MAP de Ciudad Magazine
+regre_visual_motor.py      # motor compartido: Selenium, extracción, marcado, reporte HTML
 regre_visual_tn_core.py    # lógica pura de comparación (sin Selenium, testeable offline)
-test_core.py               # 18 tests offline de la lógica de comparación
+test_core.py               # 31 tests offline de la lógica de comparación
 requirements.txt
 .github/workflows/regresion-visual.yml
-reportes/                  # salida (gitignoreada, salvo la carpeta)
+reportes/                  # salida por producto (gitignoreada, salvo la carpeta)
 ```
