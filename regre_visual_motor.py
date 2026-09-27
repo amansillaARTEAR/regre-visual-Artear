@@ -843,13 +843,29 @@ def generar_reporte(all_results, version_number, output_dir, timestamp, umbral_p
         const screenshot = document.getElementById(`screenshot-${{urlId}}`);
         const highlightBox = document.getElementById(`highlight-box-${{urlId}}`);
         if (!screenshot || !highlightBox) return;
-        const [origX, origY, origW, origH] = coordsStr.split(',').map(Number);
-        const scaleFactor = screenshot.clientWidth / screenshot.naturalWidth;
-        highlightBox.style.display = 'block';
-        highlightBox.style.left = (origX * scaleFactor + (origW * scaleFactor / 2)) + "px";
-        highlightBox.style.top = (origY * scaleFactor - 35) + "px";
-        const rect = screenshot.getBoundingClientRect();
-        window.scrollTo({{ top: window.pageYOffset + rect.top + (origY * scaleFactor) - 200, behavior: 'smooth' }});
+        const doHighlight = () => {{
+            // Guard contra clientWidth/naturalWidth en 0 (imagen todavía no
+            // terminó de cargar/decodificar cuando se hizo click): sin esto
+            // scaleFactor da NaN, las coordenadas del recuadro y del scroll
+            // también dan NaN, y window.scrollTo({{top: NaN}}) hace que el
+            // navegador interprete NaN como 0 y salte al principio de la
+            // página en vez de a la falla clickeada. Bug real reportado por
+            // el usuario (El Doce desktop v721): click en una falla grave
+            // scrolleaba siempre hacia arriba.
+            if (!screenshot.naturalWidth || !screenshot.clientWidth) return;
+            const [origX, origY, origW, origH] = coordsStr.split(',').map(Number);
+            const scaleFactor = screenshot.clientWidth / screenshot.naturalWidth;
+            highlightBox.style.display = 'block';
+            highlightBox.style.left = (origX * scaleFactor + (origW * scaleFactor / 2)) + "px";
+            highlightBox.style.top = (origY * scaleFactor - 35) + "px";
+            const rect = screenshot.getBoundingClientRect();
+            window.scrollTo({{ top: window.pageYOffset + rect.top + (origY * scaleFactor) - 200, behavior: 'smooth' }});
+        }};
+        if (screenshot.complete) {{
+            doHighlight();
+        }} else {{
+            screenshot.addEventListener('load', doHighlight, {{ once: true }});
+        }}
     }}
     </script>
     </body></html>
