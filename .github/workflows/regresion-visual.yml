@@ -43,6 +43,9 @@ env:
   # en el log de Actions hasta que el proceso termina (parecía "colgado").
   PYTHONUNBUFFERED: "1"
 
+permissions:
+  contents: write
+
 jobs:
   tests-offline:
     runs-on: ubuntu-latest
@@ -81,6 +84,17 @@ jobs:
           name: reporte-${{ inputs.producto }}-desktop-v${{ inputs.version }}
           path: reportes/${{ inputs.producto }}/desktop/
           retention-days: 7
+      - name: Publicar reporte en rama del repo (para lectura directa vía git)
+        if: always()
+        run: |
+          BRANCH="reportes-${{ inputs.producto }}-desktop"
+          git config user.email "actions@github.com"
+          git config user.name "github-actions[bot]"
+          git checkout --orphan "$BRANCH-tmp"
+          git rm -rf --cached . > /dev/null 2>&1 || true
+          git add -f "reportes/${{ inputs.producto }}/desktop"
+          git commit -m "Reporte ${{ inputs.producto }} desktop v${{ inputs.version }} - $(date -u +%Y-%m-%dT%H:%M:%SZ)"
+          git push origin "HEAD:$BRANCH" --force
 
   regresion-mobile:
     needs: tests-offline
@@ -107,3 +121,14 @@ jobs:
           name: reporte-${{ inputs.producto }}-mobile-v${{ inputs.version }}
           path: reportes/${{ inputs.producto }}/mobile/
           retention-days: 7
+      - name: Publicar reporte en rama del repo (para lectura directa vía git)
+        if: always()
+        run: |
+          BRANCH="reportes-${{ inputs.producto }}-mobile"
+          git config user.email "actions@github.com"
+          git config user.name "github-actions[bot]"
+          git checkout --orphan "$BRANCH-tmp"
+          git rm -rf --cached . > /dev/null 2>&1 || true
+          git add -f "reportes/${{ inputs.producto }}/mobile"
+          git commit -m "Reporte ${{ inputs.producto }} mobile v${{ inputs.version }} - $(date -u +%Y-%m-%dT%H:%M:%SZ)"
+          git push origin "HEAD:$BRANCH" --force
