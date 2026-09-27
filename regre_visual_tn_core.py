@@ -84,6 +84,34 @@ _PATRONES_EXCLUSION_RE = re.compile(
 )
 
 
+def elemento_fuera_de_pantalla(item):
+    """
+    True si el elemento está posicionado completamente fuera del área
+    visible por el propio sitio — patrón común de accesibilidad/UI para
+    ocultar contenido sin sacarlo del DOM (ej. `left:-9999px` en un panel
+    de búsqueda o un menú colapsado, siempre con offsets de varios miles
+    de píxeles). No tiene sentido comparar geometría/estilo de algo que
+    nunca es visible, ni en V1 ni en V2.
+
+    Caso real: El Doce desktop v721, Deportes y Estadísticas deportes —
+    un G1 en X/Y ≈ -10000 en ambas versiones, tamaño levemente distinto
+    (ej. 41.20px -> 34.41px), bloqueando el veredicto de PROD por un
+    elemento que ningún usuario real llega a ver. Pedido explícito del
+    usuario: excluir estos casos de la comparación, igual que ya se hace
+    con ads/contenido de terceros (PATRONES_EXCLUSION).
+
+    Se usa "completamente afuera" (x+width<0 o y+height<0), no un umbral
+    arbitrario de píxeles, para no descartar por error un elemento
+    apenas cortado en el borde (ej. x=-2, width=5 sigue siendo
+    parcialmente visible).
+    """
+    x = item.get('x', 0) or 0
+    y = item.get('y', 0) or 0
+    width = item.get('width', 0) or 0
+    height = item.get('height', 0) or 0
+    return (x + width) < 0 or (y + height) < 0
+
+
 def elemento_excluido(item):
     """
     True si el id o clase del elemento matchea algún patrón de masking total
@@ -513,6 +541,13 @@ def comparar_estructura_dom(data_v1, data_v2, umbral_pixeles=UMBRAL_PIXELES_TOLE
         if debil and _contenido_distinto(item1, item2):
             continue
 
+        # Ambas versiones tienen el elemento oculto fuera de pantalla por el
+        # propio sitio (ver elemento_fuera_de_pantalla): no se compara, sea
+        # cual sea la diferencia de tamaño/posición entre esos dos offsets
+        # invisibles.
+        if elemento_fuera_de_pantalla(item1) and elemento_fuera_de_pantalla(item2):
+            continue
+
         selector = item2.get('selector') or item1.get('selector')
         coords_v2 = {'x': item2['x'], 'y': item2['y'], 'width': item2['width'], 'height': item2['height']}
         coords_v1 = {'x': item1['x'], 'y': item1['y'], 'width': item1['width'], 'height': item1['height']}
@@ -552,11 +587,15 @@ def comparar_estructura_dom(data_v1, data_v2, umbral_pixeles=UMBRAL_PIXELES_TOLE
                                           val1, val2, coords_v2, coords_v1, order_index))
 
     for item1 in solo_v1:
+        if elemento_fuera_de_pantalla(item1):
+            continue
         coords_v1 = {'x': item1['x'], 'y': item1['y'], 'width': item1['width'], 'height': item1['height']}
         fallas.append(_falla(item1.get('selector'), 'AUSENTE V2', 'N/A', 'N/A', 'N/A',
                               coords_v1, coords_v1, item1.get('order_index', 0)))
 
     for item2 in solo_v2:
+        if elemento_fuera_de_pantalla(item2):
+            continue
         coords_v2 = {'x': item2['x'], 'y': item2['y'], 'width': item2['width'], 'height': item2['height']}
         fallas.append(_falla(item2.get('selector'), 'NUEVO EN V2', 'N/A', 'N/A', 'N/A',
                               coords_v2, coords_v2, item2.get('order_index', 0)))
