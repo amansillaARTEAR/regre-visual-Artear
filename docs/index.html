@@ -288,7 +288,7 @@
         <div class="grid">
 
           <div class="card">
-            <h2>Disparar corrida</h2>
+            <h2>Disparar corrida — Android</h2>
             <p class="muted" style="margin-top:0">
               Corre la suite de Appium (Android) contra el celular conectado por USB a la PC del runner.
             </p>
@@ -303,11 +303,33 @@
           <div class="card">
             <h2>Estado del runner</h2>
             <p class="muted" style="margin-top:0">
-              El runner self-hosted corre en la PC de Alejandro (necesario porque requiere el dispositivo Android físico).
+              El runner self-hosted corre en la PC de Alejandro (necesario porque requiere el dispositivo Android físico
+              y porque la corrida de iOS también se ejecuta desde ahí, aunque el iPhone esté en AWS).
             </p>
             <div id="wmRunnerStatus"><div class="empty">Configurá el token para ver el estado.</div></div>
             <div class="actions">
               <button class="ghost" onclick="loadRunnerStatusWebmobile()">↻ Actualizar estado</button>
+            </div>
+          </div>
+
+          <div class="card">
+            <h2>Disparar corrida — iOS (AWS Device Farm)</h2>
+            <p class="muted" style="margin-top:0">
+              Corre la suite contra un iPhone real de AWS Device Farm. Requiere crear la sesión a mano primero
+              (no se puede automatizar esa parte: la cuenta de AWS no tiene una Access Key habilitada).
+            </p>
+            <ol class="hint" style="margin:0 0 12px;padding-left:18px">
+              <li>Andá a <a href="https://us-west-2.console.aws.amazon.com/devicefarm/home?region=us-west-2#/mobile/projects" target="_blank">la consola de Device Farm</a> → proyecto "Ale M" → pestaña "Remote access".</li>
+              <li>Creá una sesión nueva ("Create remote access session") con un iPhone.</li>
+              <li>Una vez que arranca, copiá la URL del <b>Appium endpoint</b> de esa sesión.</li>
+              <li>Pegala acá abajo y disparás. La sesión de AWS sigue corriendo mientras dure el test (se cobra por minuto).</li>
+            </ol>
+            <label>URL del endpoint de Appium</label>
+            <input type="text" id="wmIosEndpoint" placeholder="https://...devicefarm...amazonaws.com/wd/hub/...">
+            <label>Filtro de casos <span class="muted">(opcional)</span></label>
+            <input type="text" id="wmIosFiltro" placeholder="vacío = suite completa">
+            <div class="actions">
+              <button onclick="dispatchWebmobileIos()" id="btnWmIosDispatch">Disparar corrida iOS</button>
             </div>
           </div>
 
@@ -358,6 +380,7 @@ const API = "https://api.github.com";
 const WEBMOBILE_OWNER = "amansillaARTEAR";
 const WEBMOBILE_REPO = "Mobile-Artear";
 const WEBMOBILE_WORKFLOW = "webmobile.yml";
+const WEBMOBILE_IOS_WORKFLOW = "webmobile-ios.yml";
 
 const PRODUCTOS = {
   tn: ["Homepage","Listado","Videos","Vivo","Clima","Economia","Divisas","Podcast","deportivo",
@@ -634,6 +657,28 @@ async function dispatchWebmobile(){
   }
 }
 
+async function dispatchWebmobileIos(){
+  if(!TOKEN){ toast("Configurá el token primero", "error"); return; }
+  const endpoint = document.getElementById("wmIosEndpoint").value.trim();
+  const filtro = document.getElementById("wmIosFiltro").value.trim();
+  if(!endpoint){ toast("Pegá la URL del endpoint de AWS Device Farm primero", "error"); return; }
+
+  const btn = document.getElementById("btnWmIosDispatch");
+  btn.disabled = true; btn.innerHTML = `<span class="spinner"></span> Disparando…`;
+  try{
+    await gh(`/repos/${WEBMOBILE_OWNER}/${WEBMOBILE_REPO}/actions/workflows/${WEBMOBILE_IOS_WORKFLOW}/dispatches`, {
+      method: "POST",
+      body: JSON.stringify({ ref: "main", inputs: { appium_endpoint: endpoint, filtro } })
+    });
+    toast("Corrida iOS disparada", "ok");
+    setTimeout(loadRunsWebmobile, 2500);
+  } catch(e){
+    toast("Error al disparar: " + e.message, "error");
+  } finally {
+    btn.disabled = false; btn.textContent = "Disparar corrida iOS";
+  }
+}
+
 async function loadRunnerStatusWebmobile(){
   if(!TOKEN) return;
   const wrap = document.getElementById("wmRunnerStatus");
@@ -662,14 +707,16 @@ async function loadRunsWebmobile(){
   const wrap = document.getElementById("wmRunsTableWrap");
   try{
     const data = await ghJson(`/repos/${WEBMOBILE_OWNER}/${WEBMOBILE_REPO}/actions/runs?per_page=20`);
-    const runs = data.workflow_runs.filter(r => r.path.endsWith(WEBMOBILE_WORKFLOW));
+    const runs = data.workflow_runs.filter(r =>
+      r.path.endsWith(WEBMOBILE_WORKFLOW) || r.path.endsWith(WEBMOBILE_IOS_WORKFLOW));
     if(!runs.length){ wrap.innerHTML = `<div class="empty">Todavía no hay corridas.</div>`; return; }
     wrap.innerHTML = `
       <table>
-        <thead><tr><th>Run</th><th>Estado</th><th>Duración</th><th>Disparado</th><th></th></tr></thead>
+        <thead><tr><th>Plataforma</th><th>Run</th><th>Estado</th><th>Duración</th><th>Disparado</th><th></th></tr></thead>
         <tbody>
           ${runs.map(r => `
             <tr>
+              <td class="muted">${r.path.endsWith(WEBMOBILE_IOS_WORKFLOW) ? "iOS" : "Android"}</td>
               <td>${r.display_title || r.name}</td>
               <td>${badge(r.status, r.conclusion)}</td>
               <td class="muted">${fmtDuracion(r)}</td>
