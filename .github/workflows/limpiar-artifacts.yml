@@ -1,0 +1,54 @@
+name: Limpiar Artifacts Viejos
+
+on:
+  # Corre todos los domingos a las 06:00 UTC (03:00 hora Argentina).
+  schedule:
+    - cron: "0 6 * * 0"
+  # Permite dispararlo manualmente también, por si hay que limpiar antes de tiempo.
+  workflow_dispatch:
+    inputs:
+      dias:
+        description: "Borrar artifacts con más de N días de antigüedad"
+        required: false
+        type: string
+        default: "7"
+
+jobs:
+  limpiar:
+    runs-on: ubuntu-latest
+    permissions:
+      actions: write
+    steps:
+      - name: Borrar artifacts más viejos que N días
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
+          DIAS: ${{ inputs.dias || '7' }}
+        run: |
+          echo "Borrando artifacts con más de $DIAS día(s) de antigüedad en $REPO..."
+          LIMITE=$(date -d "-$DIAS days" +%s)
+          PAGE=1
+          TOTAL_BORRADOS=0
+          while : ; do
+            RESPONSE=$(curl -s -H "Authorization: Bearer $GH_TOKEN" \
+              -H "Accept: application/vnd.github+json" \
+              "https://api.github.com/repos/$REPO/actions/artifacts?per_page=100&page=$PAGE")
+            COUNT=$(echo "$RESPONSE" | jq '.artifacts | length')
+            if [ "$COUNT" -eq 0 ]; then
+              break
+            fi
+            echo "$RESPONSE" | jq -c '.artifacts[] | {id, name, created_at, size_in_bytes}' | while read -r ART; do
+              ID=$(echo "$ART" | jq -r '.id')
+              NAME=$(echo "$ART" | jq -r '.name')
+              CREATED=$(echo "$ART" | jq -r '.created_at')
+              CREATED_TS=$(date -d "$CREATED" +%s)
+              if [ "$CREATED_TS" -lt "$LIMITE" ]; then
+                echo "Borrando artifact #$ID ($NAME, creado $CREATED)..."
+                curl -s -X DELETE -H "Authorization: Bearer $GH_TOKEN" \
+                  -H "Accept: application/vnd.github+json" \
+                  "https://api.github.com/repos/$REPO/actions/artifacts/$ID"
+              fi
+            done
+            PAGE=$((PAGE+1))
+          done
+          echo "Listo."
