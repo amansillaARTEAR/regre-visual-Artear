@@ -129,7 +129,6 @@ def slack_post(token, channel, message, file_path, file_title):
         json={
             "files": [{"id": file_id, "title": file_title}],
             "channel_id": channel,
-            "initial_comment": message,
         },
         timeout=30,
     )
@@ -137,6 +136,27 @@ def slack_post(token, channel, message, file_path, file_title):
     data = r.json()
     if not data.get("ok"):
         raise RuntimeError(f"files.completeUploadExternal falló: {data}")
+
+    permalink = None
+    try:
+        permalink = data["files"][0]["permalink"]
+    except (KeyError, IndexError, TypeError):
+        pass
+
+    texto_final = message
+    if permalink:
+        texto_final = f"{message}\n🔗 Ver reporte: {permalink}"
+
+    r = requests.post(
+        f"{SLACK_API}/chat.postMessage",
+        headers={**headers, "Content-Type": "application/json; charset=utf-8"},
+        json={"channel": channel, "text": texto_final, "unfurl_links": False},
+        timeout=30,
+    )
+    r.raise_for_status()
+    data = r.json()
+    if not data.get("ok"):
+        raise RuntimeError(f"chat.postMessage falló: {data}")
     log("Mensaje + reporte enviados a Slack correctamente.")
 
 
