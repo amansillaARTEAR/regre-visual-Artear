@@ -750,6 +750,57 @@ async function dispatchWebmobileIos(){
 }
 
 let jiraXmlContenido = "";
+
+// El XML de un ticket de Jira exportado como "Export XML" trae, además del resumen y la
+// descripción, todo el historial de cambios, watchers y adjuntos en base64 — puede pesar
+// cientos de KB aunque sea un solo ticket. GitHub Actions limita el total de inputs de un
+// workflow_dispatch a 65.535 caracteres, así que en vez de mandar el XML crudo, lo parseamos
+// acá y nos quedamos solo con lo que le sirve a Claude para escribir el caso de prueba.
+function extraerTicketDeXml(xmlText){
+  let doc;
+  try{ doc = new DOMParser().parseFromString(xmlText, "text/xml"); } catch(e){ return null; }
+  if(doc.querySelector("parsererror")) return null;
+  const item = doc.querySelector("item");
+  if(!item) return null;
+
+  const texto = sel => { const el = item.querySelector(sel); return el ? (el.textContent || "").trim() : ""; };
+  const limpiarHtml = html => html.replace(/<[^>]+>/g, " ").replace(/&nbsp;/g, " ").replace(/\s+/g, " ").trim();
+
+  const key = texto("key") || texto("title");
+  const summary = texto("summary");
+  const tipo = texto("type");
+  const prioridad = texto("priority");
+  const estado = texto("status");
+  const descripcion = limpiarHtml(texto("description"));
+
+  let criterios = "";
+  item.querySelectorAll("customfields > customfield").forEach(cf => {
+    const nombreCampo = (cf.querySelector("customfieldname")?.textContent || "").trim();
+    if(/criteri|acceptance|aceptaci/i.test(nombreCampo)){
+      const valores = Array.from(cf.querySelectorAll("customfieldvalues customfieldvalue"))
+        .map(v => limpiarHtml(v.textContent || "")).filter(Boolean).join("\n");
+      if(valores) criterios += `${nombreCampo}:\n${valores}\n\n`;
+    }
+  });
+
+  const comentarios = Array.from(item.querySelectorAll("comments > comment"))
+    .map(c => limpiarHtml(c.textContent || "")).filter(Boolean).slice(-3); // últimos 3, por si acotan el pedido
+
+  const partes = [
+    key && `Ticket: ${key}`,
+    summary && `Resumen: ${summary}`,
+    tipo && `Tipo: ${tipo}`,
+    prioridad && `Prioridad: ${prioridad}`,
+    estado && `Estado: ${estado}`,
+    descripcion && `Descripción:\n${descripcion}`,
+    criterios.trim(),
+    comentarios.length && `Comentarios recientes:\n${comentarios.join("\n---\n")}`
+  ].filter(Boolean);
+
+  const resultado = partes.join("\n\n").trim();
+  return resultado || null;
+}
+
 function onJiraArchivoSeleccionado(ev){
   const file = ev.target.files[0];
   const nombreWrap = document.getElementById("jiraArchivoNombre");
@@ -770,8 +821,18 @@ function onJiraArchivoSeleccionado(ev){
       ev.target.value = "";
       return;
     }
-    jiraXmlContenido = contenido;
-    nombreWrap.textContent = `✓ ${file.name} cargado (${(file.size/1024).toFixed(1)} KB)`;
+    const extraido = extraerTicketDeXml(contenido);
+    if(extraido){
+      jiraXmlContenido = extraido;
+      nombreWrap.textContent = `✓ ${file.name} (${(file.size/1024).toFixed(1)} KB) → ticket extraído (${(extraido.length/1024).toFixed(1)} KB)`;
+    } else {
+      // No pudimos parsearlo como XML de Jira (formato distinto) — mandamos el crudo y avisamos si es grande.
+      jiraXmlContenido = contenido;
+      nombreWrap.textContent = `✓ ${file.name} cargado (${(file.size/1024).toFixed(1)} KB) — no reconocí el formato de Jira, se manda tal cual`;
+      if(contenido.length > 55000){
+        toast("No pude extraer el contenido puntual del XML y el archivo completo es grande — puede que GitHub lo rechace. Si falla, pegá el texto a mano.", "error");
+      }
+    }
   };
   reader.onerror = () => { toast("No se pudo leer el archivo", "error"); };
   reader.readAsText(file);
@@ -782,7 +843,7 @@ async function generarCasoDesdeJira(){
   const ticket = jiraXmlContenido || document.getElementById("jiraTicketTexto").value.trim();
   if(!ticket){ toast("Subí el XML del ticket o pegá el texto primero", "error"); return; }
   if(ticket.length > 60000){
-    toast("El XML es muy grande (" + ticket.length + " caracteres) — GitHub Actions puede rechazarlo. Probá exportar solo el ticket puntual, sin el proyecto completo.", "error");
+    toast("El contenido es muy grande (" + ticket.length + " caracteres) — GitHub Actions puede rechazarlo. Pegá solo el resumen y los criterios de aceptación a mano.", "error");
     return;
   }
 
