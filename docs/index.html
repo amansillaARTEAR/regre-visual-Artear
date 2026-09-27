@@ -155,6 +155,17 @@
         <button onclick="dispatchRegresion()" id="btnDispatch">Disparar corrida</button>
         <button class="secondary" onclick="clearUrlChips()">Limpiar selección de URLs</button>
       </div>
+
+      <div style="margin-top:18px;padding-top:16px;border-top:1px solid var(--border)">
+        <label style="margin-top:0">Disparar los 4 productos a la vez</label>
+        <p class="hint" style="margin-top:0;margin-bottom:10px">
+          Usa la misma versión, modo y tolerancia de arriba, y corre las URLs completas de cada producto
+          (la selección de URLs de arriba no aplica acá — es sólo para un producto puntual).
+        </p>
+        <button class="secondary" onclick="dispatchTodas()" id="btnTodas" style="width:100%">
+          Disparar TN + El Trece + El Doce + Ciudad
+        </button>
+      </div>
     </div>
 
     <div class="card">
@@ -334,6 +345,38 @@ async function dispatchRegresion(){
   } finally {
     btn.disabled = false; btn.textContent = "Disparar corrida";
   }
+}
+
+async function dispatchTodas(){
+  if(!TOKEN){ toast("Configurá el token primero", "error"); return; }
+  const version = document.getElementById("version").value.trim();
+  const modo = document.getElementById("modo").value;
+  const tolerancia = document.getElementById("tolerancia").value || "3";
+  if(!version){ toast("Falta la versión", "error"); return; }
+
+  const btn = document.getElementById("btnTodas");
+  btn.disabled = true;
+  const productos = Object.keys(PRODUCTOS);
+  const fallidos = [];
+  for(const producto of productos){
+    btn.innerHTML = `<span class="spinner"></span> Disparando ${PRODUCTO_LABEL[producto]}…`;
+    try{
+      await gh(`/repos/${OWNER}/${REPO}/actions/workflows/${WORKFLOW_FILE}/dispatches`, {
+        method: "POST",
+        body: JSON.stringify({ ref: "main", inputs: { producto, version, modo, urls: "", tolerancia } })
+      });
+    } catch(e){
+      fallidos.push(`${PRODUCTO_LABEL[producto]} (${e.message})`);
+    }
+  }
+  btn.disabled = false;
+  btn.textContent = "Disparar TN + El Trece + El Doce + Ciudad";
+  if(fallidos.length){
+    toast("Fallaron: " + fallidos.join(", "), "error");
+  } else {
+    toast(`Disparadas las 4 corridas — v${version} (${modo})`, "ok");
+  }
+  setTimeout(loadRuns, 2500);
 }
 
 async function dispatchLimpieza(){
