@@ -3,3 +3,4 @@ webdriver-manager>=4.0
 opencv-python-headless>=4.9
 numpy>=1.26
 Pillow>=10.0
+requests>=2.31
