@@ -597,7 +597,10 @@ def marcar_fallas_en_captura(png_data, consolidado, cascadas):
     for item in consolidado:
         dibujar(item['coords_v2'], item['gravedad'], item.get('_num', ''))
     for cascada in cascadas:
-        dibujar(cascada['coords_v2'], 'cascada', cascada.get('_num', ''))
+        # Cascada de ESTILO (fontSize/padding/margin) = GRAVE real (rojo),
+        # no "revisar" (violeta) — a diferencia de una cascada geométrica.
+        color_key = 'grave' if cascada.get('grave') else 'cascada'
+        dibujar(cascada['coords_v2'], color_key, cascada.get('_num', ''))
 
     is_success, buffer = cv2.imencode(".png", img)
     return buffer.tobytes() if is_success else None
@@ -635,31 +638,41 @@ def construir_html_fallas(consolidado, cascadas, data_v2_por_selector, url_id):
     if cascadas:
         for c in cascadas:
             es_estilo = c.get('tipo', '').startswith('DIFERENCIA ESTILO')
+            es_grave = bool(c.get('grave'))
             coords = c['coords_v2']
             coords_str = f"{int(coords['x'])},{int(coords['y'])},{int(coords['width'])},{int(coords['height'])}"
+            # Cascada de ESTILO (fontSize/padding/margin, fix #23) = GRAVE
+            # real (rojo): a diferencia de una cascada geométrica (violeta,
+            # "revisar" — suele ser efecto dominó benigno de contenido
+            # dinámico), un cambio de estilo repetido SÍ es una diferencia
+            # de diseño real. Se agrupa solo por legibilidad (1 hallazgo en
+            # vez de N), nunca se degrada a "revisar". Pedido explícito del
+            # usuario.
+            color = 'red' if es_grave else '#7c3aed'
+            etiqueta_color = '#dc2626' if es_grave else '#7c3aed'
             if es_estilo:
-                # Cascada de ESTILO (fix #23): mismo tipo+V1+V2 repetido en
-                # muchos selectores -> probablemente 1 sola causa raíz (un
-                # cambio de CSS global), no N cambios de estilo sueltos.
                 nombre_estilo = c['tipo'].replace('DIFERENCIA ESTILO (', '').rstrip(')')
                 resumen = (f"{c['cantidad']} elementos cambiaron su {nombre_estilo} "
                            f"de {c['v1']} a {c['v2']}")
                 causa = (f"Causa probable: un cambio de CSS global (ej: una clase compartida) "
                          f"afectó a los {c['cantidad']} elementos por igual — no son {c['cantidad']} "
                          f"regresiones de estilo independientes, es 1 sola causa raíz "
-                         f"(primer elemento afectado: <code>{c['primer_selector'][:60]}</code>).")
+                         f"(primer elemento afectado: <code>{c['primer_selector'][:60]}</code>). "
+                         f"Es un cambio de diseño real: revisar si fue intencional antes de deployar.")
+                titulo = "❌ GRAVE — cambio de estilo repetido:"
             else:
                 verbo, eje = DESC_CASCADA.get(c.get('tipo'), ('se movieron', 'en Y'))
                 resumen = f"{c['cantidad']} elementos {verbo} {c['delta_y']:.0f}px {eje}"
                 causa = (f"Causa probable: un solo elemento anterior del DOM cambió de tamaño y arrastró a los "
                          f"{c['cantidad']} de abajo — no son {c['cantidad']} regresiones independientes, es 1 sola causa raíz "
                          f"(empezando por <code>{c['primer_selector'][:60]}</code>).")
+                titulo = "⚠️ Revisar — desplazamiento en cascada:"
             html += f"""
-            <li class='diff-item' style='color: #7c3aed; border-bottom: 1px dotted #ccc; padding: 5px 0; cursor: pointer;'
+            <li class='diff-item' style='color: {color}; border-bottom: 1px dotted #ccc; padding: 5px 0; cursor: pointer;'
                 onclick="highlightElement('{url_id}', '{coords_str}', this)"
                 data-coords="{coords_str}">
-                <span style="background:#7c3aed; color:#fff; border-radius:3px; padding:1px 6px; font-size:0.8em; font-weight:bold; margin-right:6px;">{c.get('_num', '')}</span>
-                <span style="font-weight: bold;">⚠️ Revisar — {'cambio de estilo repetido' if es_estilo else 'desplazamiento en cascada'}:</span>
+                <span style="background:{etiqueta_color}; color:#fff; border-radius:3px; padding:1px 6px; font-size:0.8em; font-weight:bold; margin-right:6px;">{c.get('_num', '')}</span>
+                <span style="font-weight: bold;">{titulo}</span>
                 {resumen}
                 <span style="font-size: 0.8em; color: #888;">(click para verlo resaltado en la imagen)</span>.
                 <br><span style="font-size: 0.85em; color: #666;">
@@ -713,6 +726,14 @@ def generar_reporte(all_results, version_number, output_dir, timestamp, umbral_p
     for r in all_results:
         graves = [c for c in r['consolidado'] if c['gravedad'] == 'grave']
         cascadas = r.get('cascadas') or []
+        # Las cascadas de ESTILO (fontSize/padding/margin, fix #23) son
+        # GRAVES reales (rojo) aunque se agrupen para legibilidad — a
+        # diferencia de las cascadas geométricas (Y/X/H/W), que quedan como
+        # "revisar" (naranja/violeta) porque suelen ser efecto dominó
+        # benigno de contenido dinámico. Pedido explícito del usuario.
+        cascadas_grave = [c for c in cascadas if c.get('grave')]
+        cascadas_revisar = [c for c in cascadas if not c.get('grave')]
+        total_graves = len(graves) + len(cascadas_grave)
 
         # Etiqueta numerada compartida entre la imagen (marcar_fallas_en_captura,
         # que dibuja esta misma etiqueta al lado del recuadro) y la lista de
@@ -725,15 +746,17 @@ def generar_reporte(all_results, version_number, output_dir, timestamp, umbral_p
             pref = _prefijo.get(item['gravedad'], '?')
             _contador[pref] += 1
             item['_num'] = f"{pref}{_contador[pref]}"
-        for i, c in enumerate(cascadas, start=1):
+        for i, c in enumerate(cascadas_grave, start=1):
+            c['_num'] = f"CG{i}"
+        for i, c in enumerate(cascadas_revisar, start=1):
             c['_num'] = f"C{i}"
-        # Una cascada sigue siendo una diferencia geométrica real entre V1 y
+        # Una cascada geométrica sigue siendo una diferencia real entre V1 y
         # V2 (se agrupa para no listarla como N fallas repetidas, pero eso no
         # la vuelve invisible): si hay cascadas y ninguna falla grave, la
         # página queda en un estado intermedio "revisar" en vez de "✅ todo
         # igual", que es lo que generaba la confusión de por qué el reporte
         # decía que estaba todo bien y después mostraba desplazamientos.
-        alert = 'red' if (r['fatal'] or graves) else ('orange' if cascadas else 'green')
+        alert = 'red' if (r['fatal'] or total_graves) else ('orange' if cascadas_revisar else 'green')
         if alert == 'red':
             sites_con_grave += 1
         elif alert == 'orange':
@@ -741,10 +764,10 @@ def generar_reporte(all_results, version_number, output_dir, timestamp, umbral_p
 
         if r['fatal']:
             resumen_texto = "❌ Error grave en la ejecución de Selenium (ver logs)."
-        elif graves:
-            resumen_texto = f"❌ Se detectaron {len(graves)} diferencias graves."
-        elif cascadas:
-            resumen_texto = (f"⚠️ Sin diferencias graves, pero hay {len(cascadas)} desplazamiento(s) en cascada "
+        elif total_graves:
+            resumen_texto = f"❌ Se detectaron {total_graves} diferencias graves."
+        elif cascadas_revisar:
+            resumen_texto = (f"⚠️ Sin diferencias graves, pero hay {len(cascadas_revisar)} desplazamiento(s) en cascada "
                               f"para revisar (ver detalle) — puede ser contenido que legítimamente cambió de "
                               f"tamaño, o un bug de layout real.")
         else:
@@ -917,7 +940,11 @@ def main():
                 r['filename2_diff'] = filename2
 
             graves = [c for c in r['consolidado'] if c['gravedad'] == 'grave']
-            print(f"  {'❌' if graves else '✅'} {len(graves)} fallas graves | {len(r['cascadas'])} cascadas agrupadas")
+            cascadas_grave = [c for c in (r['cascadas'] or []) if c.get('grave')]
+            cascadas_revisar = [c for c in (r['cascadas'] or []) if not c.get('grave')]
+            total_graves = len(graves) + len(cascadas_grave)
+            print(f"  {'❌' if total_graves else '✅'} {total_graves} fallas graves "
+                  f"({len(cascadas_grave)} en cascadas de estilo) | {len(cascadas_revisar)} cascadas geométricas para revisar")
         else:
             print("  ❌ FATAL ERROR tras reintentos")
 

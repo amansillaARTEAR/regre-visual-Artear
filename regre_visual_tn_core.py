@@ -754,6 +754,14 @@ def agrupar_cascadas(fallas):
                 'primer_selector': primero['selector'],
                 'selectores': [f['selector'] for f in items_ordenados],
                 'coords_v2': primero['coords_v2'],
+                # A diferencia de las cascadas geométricas (Y/X/H/W), que
+                # suelen ser efecto dominó benigno de contenido dinámico y
+                # se muestran como "revisar" (naranja/violeta), un cambio de
+                # ESTILO (fontSize/padding/margin) es siempre un cambio de
+                # diseño real -> se agrupa para legibilidad (1 hallazgo en
+                # vez de N) pero se sigue tratando como GRAVE (rojo), no se
+                # degrada a "revisar". Pedido explícito del usuario.
+                'grave': True,
             })
             selectores_absorbidos.update(f['selector'] for f in items)
         else:
