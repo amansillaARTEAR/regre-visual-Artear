@@ -834,8 +834,20 @@ def generar_reporte(all_results, version_number, output_dir, timestamp, umbral_p
     {LEYENDA_HTML}
     <hr/>
     {all_details_html}
+    <div id="offscreen-toast" style="display:none; position:fixed; bottom:20px; left:50%; transform:translateX(-50%);
+        background:#1e293b; color:#fff; padding:10px 18px; border-radius:6px; font-size:0.85em; z-index:2000;
+        box-shadow:0 4px 12px rgba(0,0,0,0.3); max-width:600px; text-align:center;"></div>
     <script>
     let lastHighlightedItem = null;
+    let offscreenToastTimer = null;
+    function showOffscreenToast(msg) {{
+        const toast = document.getElementById('offscreen-toast');
+        if (!toast) return;
+        toast.textContent = msg;
+        toast.style.display = 'block';
+        if (offscreenToastTimer) clearTimeout(offscreenToastTimer);
+        offscreenToastTimer = setTimeout(() => {{ toast.style.display = 'none'; }}, 4000);
+    }}
     function highlightElement(urlId, coordsStr, clickedItem) {{
         if (lastHighlightedItem) lastHighlightedItem.style.backgroundColor = 'transparent';
         clickedItem.style.backgroundColor = '#fffacd';
@@ -854,6 +866,26 @@ def generar_reporte(all_results, version_number, output_dir, timestamp, umbral_p
             // scrolleaba siempre hacia arriba.
             if (!screenshot.naturalWidth || !screenshot.clientWidth) return;
             const [origX, origY, origW, origH] = coordsStr.split(',').map(Number);
+            // Elementos posicionados fuera de pantalla por el propio sitio
+            // (patrón común para ocultar visualmente contenido, ej. un panel
+            // de búsqueda o un menú colapsado: left:-9999px o similar) no
+            // tienen ninguna posición real dentro de la captura. Sin este
+            // guard, el scroll se calculaba igual con esas coordenadas
+            // negativas/absurdas y terminaba en un punto arbitrario de la
+            // imagen (ni arriba de todo ni cerca de nada relevante) —
+            // confuso para quien hace click esperando ver la falla resaltada.
+            // Bug real reportado por el usuario sobre El Doce desktop v721
+            // (Deportes / Estadísticas deportes), con el fix anterior (NaN
+            // → scroll a 0) ya desplegado: el click seguía sin llevar a un
+            // lugar útil, solo que ahora a un punto random en vez de arriba.
+            const fueraDePantalla = origX < 0 || origY < 0 ||
+                origX > screenshot.naturalWidth || origY > screenshot.naturalHeight;
+            if (fueraDePantalla) {{
+                highlightBox.style.display = 'none';
+                screenshot.scrollIntoView({{ behavior: 'smooth', block: 'start' }});
+                showOffscreenToast('⚠️ Este elemento está posicionado fuera de la pantalla visible por el propio sitio (oculto por CSS) — no aparece en la captura, por eso no se puede resaltar.');
+                return;
+            }}
             const scaleFactor = screenshot.clientWidth / screenshot.naturalWidth;
             highlightBox.style.display = 'block';
             highlightBox.style.left = (origX * scaleFactor + (origW * scaleFactor / 2)) + "px";
