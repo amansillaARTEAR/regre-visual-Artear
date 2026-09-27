@@ -705,6 +705,63 @@ def test_renderer_interno_del_ad_sigue_excluido():
     print("OK: el renderer interno del ad (google_ads_iframe/dfp-ad/aniBox) sigue excluido de la comparación")
 
 
+def test_elemento_oculto_fuera_de_pantalla_no_se_compara():
+    """
+    Caso real: El Doce desktop v721, Deportes y Estadísticas deportes -- un
+    elemento posicionado fuera de pantalla por el propio sitio (patrón de
+    accesibilidad/UI, ej. un panel de búsqueda colapsado con left:-9999px)
+    en ambas versiones, con un tamaño levemente distinto entre V1 y V2.
+    Nunca es visible para un usuario real, así que no debería generar
+    ninguna falla -- pedido explícito del usuario, mismo criterio que ya
+    se aplica a ads/contenido de terceros.
+    """
+    v1 = [
+        item('div', 'div#buscador-oculto', -10004.60, -9999.60, 41.20, 41.20,
+             id_attr='buscador-oculto', order_index=0),
+    ]
+    v2 = [
+        item('div', 'div#buscador-oculto', -10001.21, -9996.21, 34.41, 34.41,
+             id_attr='buscador-oculto', order_index=0),
+    ]
+    fallas = core.comparar_estructura_dom(v1, v2, umbral_pixeles=3, comparar_estilos=False)
+    assert fallas == [], f"un elemento oculto fuera de pantalla en ambas versiones no debería compararse: {fallas}"
+    print("OK: elemento oculto fuera de pantalla en ambas versiones no genera fallas")
+
+
+def test_elemento_fuera_de_pantalla_que_aparece_no_se_reporta_ausente_nuevo():
+    """Si el elemento oculto fuera de pantalla solo existe en una versión
+    (ej. cambió de fingerprint/selector), tampoco debería reportarse como
+    AUSENTE V2 / NUEVO EN V2 -- sigue sin ser visible para nadie."""
+    v1 = [
+        item('div', 'div#buscador-viejo', -10004.60, -9999.60, 41.20, 41.20,
+             id_attr='buscador-viejo', order_index=0),
+    ]
+    v2 = [
+        item('div', 'div#buscador-nuevo', -10001.21, -9996.21, 34.41, 34.41,
+             id_attr='buscador-nuevo', order_index=0),
+    ]
+    fallas = core.comparar_estructura_dom(v1, v2, umbral_pixeles=3, comparar_estilos=False)
+    assert fallas == [], f"un elemento fuera de pantalla que aparece/desaparece no debería reportarse: {fallas}"
+    print("OK: elemento fuera de pantalla que aparece/desaparece entre versiones tampoco se reporta")
+
+
+def test_elemento_parcialmente_visible_en_el_borde_si_se_compara():
+    """Un elemento apenas cortado en el borde (ej. x=-2, width=5: todavía
+    asoma 3px dentro de la pantalla) NO debería tratarse como 'fuera de
+    pantalla' -- sigue siendo parcialmente visible, a diferencia del patrón
+    de ocultamiento total (offsets de miles de píxeles)."""
+    v1 = [
+        item('div', 'div.borde', -2, 100, 5, 40, class_attr='borde', order_index=0),
+    ]
+    v2 = [
+        item('div', 'div.borde', -2, 100, 20, 40, class_attr='borde', order_index=0),
+    ]
+    fallas = core.comparar_estructura_dom(v1, v2, umbral_pixeles=3, comparar_estilos=False)
+    tipos = [f['tipo'] for f in fallas]
+    assert 'DIFERENCIA ANCHO (W)' in tipos, f"un elemento apenas cortado en el borde sigue siendo visible y debe compararse: {tipos}"
+    print("OK: un elemento apenas cortado en el borde (no oculto del todo) se sigue comparando normalmente")
+
+
 if __name__ == '__main__':
     tests = [v for k, v in list(globals().items()) if k.startswith('test_')]
     fallidos = 0
