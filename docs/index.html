@@ -121,6 +121,7 @@
   .badge.progress{background:rgba(91,140,255,.15);color:var(--accent2)}
   .badge.queued{background:rgba(107,114,128,.18);color:var(--gray)}
   .badge.cancelled{background:rgba(240,166,58,.15);color:var(--orange)}
+  .badge.ticket{background:rgba(91,140,255,.12);color:var(--accent2);font-weight:500;margin-left:4px}
 
   .token-bar{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
   .token-ok{display:flex;align-items:center;gap:8px;font-size:12.5px}
@@ -776,6 +777,11 @@ function parseCasosDeArchivo(texto, ruta){
   // mano antes de que existiera este tag), va todo a un grupo genérico.
   const mComponente = texto.slice(0, 400).match(/^#\s*Componente:\s*(.+)$/mi);
   const componente = mComponente ? mComponente[1].trim() : "Videos Verticales";
+  // El generador también escribe "# Ticket: X" cuando pudo identificar el ticket de Jira de
+  // origen (ver extraer_ticket_key en generar_caso.py) -- sirve para identificar de qué ticket
+  // salió cada caso generado. La suite oficial no lo tiene, y queda vacío ("Sin ticket").
+  const mTicket = texto.slice(0, 400).match(/^#\s*Ticket:\s*(.+)$/mi);
+  const ticket = mTicket ? mTicket[1].trim() : "";
   const reDef = /^\s*def (test_\w+)\(player\s*,\s*registro\)\s*:/;
   for(let i = 0; i < lineas.length; i++){
     const m = lineas[i].match(reDef);
@@ -805,7 +811,7 @@ function parseCasosDeArchivo(texto, ruta){
         desc = doc.slice(idx + 1).trim();
       }
     }
-    casos.push({id, nombre, desc, linea: numeroLinea, archivo: ruta, componente});
+    casos.push({id, nombre, desc, linea: numeroLinea, archivo: ruta, componente, ticket});
   }
   return casos;
 }
@@ -881,7 +887,7 @@ function renderCasosTable(){
       <tr>
         <td><input type="checkbox" class="casoCheck" value="${c.id}" ${casosSeleccionados.has(c.id) ? "checked" : ""}
               onchange="toggleCasoSeleccionado('${c.id}', this.checked)"></td>
-        <td class="caso-nombre"><b>${c.nombre}</b></td>
+        <td class="caso-nombre"><b>${c.nombre}</b>${c.ticket ? ` <span class="badge ticket">${c.ticket}</span>` : ""}</td>
         <td class="muted">${c.desc}</td>
         <td>
           <a href="https://github.dev/${WEBMOBILE_OWNER}/${WEBMOBILE_REPO}/blob/main/${c.archivo || WEBMOBILE_TEST_FILE}#L${c.linea}"
