@@ -390,27 +390,20 @@
           </div>
         </div>
 
-        <div class="card">
-          <h2>Ambiente</h2>
-          <p class="muted" style="margin-top:0">
-            Contra qué ambiente de TN corre la suite (aplica a Android e iOS). Por defecto SBX.
-          </p>
-          <div class="actions" style="align-items:center">
-            <select id="wmAmbiente" onchange="onCambioAmbienteWebmobile()">
-              <option value="sbx" selected>SBX (sandbox)</option>
-              <option value="dev">DEV</option>
-              <option value="vnp">VNP (mirror de PROD)</option>
-            </select>
-            <input type="text" id="wmVersion" placeholder="Versión (ej: 721)" style="display:none;max-width:160px">
-          </div>
-          <div class="hint" id="wmAmbienteHint">SBX no usa número de versión.</div>
-        </div>
-
         <div class="grid">
 
           <div class="card">
             <h2>Disparar — Android</h2>
             <p class="muted" style="margin-top:0">Contra el celular USB de la PC del runner.</p>
+            <div class="actions" style="align-items:center">
+              <select id="wmAmbiente-android" onchange="onCambioAmbienteWebmobile('android')">
+                <option value="sbx" selected>SBX (sandbox)</option>
+                <option value="dev">DEV</option>
+                <option value="vnp">VNP (mirror de PROD)</option>
+              </select>
+              <input type="text" id="wmVersion-android" placeholder="Versión (ej: 721)" style="display:none;max-width:140px">
+            </div>
+            <div class="hint" id="wmAmbienteHint-android">SBX no usa número de versión.</div>
             <div class="actions">
               <button onclick="dispatchWebmobile()" id="btnWmDispatch">Disparar corrida</button>
             </div>
@@ -423,6 +416,15 @@
               Requiere crear la sesión a mano en <a href="https://us-west-2.console.aws.amazon.com/devicefarm/home?region=us-west-2#/mobile/projects" target="_blank">Device Farm</a> (proyecto "Ale M" → "Remote access") y pegar acá el Appium endpoint.
             </p>
             <input type="text" id="wmIosEndpoint" placeholder="https://...devicefarm...amazonaws.com/wd/hub/...">
+            <div class="actions" style="align-items:center">
+              <select id="wmAmbiente-ios" onchange="onCambioAmbienteWebmobile('ios')">
+                <option value="sbx" selected>SBX (sandbox)</option>
+                <option value="dev">DEV</option>
+                <option value="vnp">VNP (mirror de PROD)</option>
+              </select>
+              <input type="text" id="wmVersion-ios" placeholder="Versión (ej: 721)" style="display:none;max-width:140px">
+            </div>
+            <div class="hint" id="wmAmbienteHint-ios">SBX no usa número de versión.</div>
             <div class="actions">
               <button onclick="dispatchWebmobileIos()" id="btnWmIosDispatch">Disparar corrida iOS</button>
             </div>
@@ -436,7 +438,7 @@
             Corridas recientes
             <button class="ghost" onclick="loadRunsWebmobile()">↻ Actualizar</button>
           </h2>
-          <div id="wmRunsTableWrap"><div class="empty">Configurá el token para ver las corridas.</div></div>
+          <div class="scroll-y" id="wmRunsTableWrap"><div class="empty">Configurá el token para ver las corridas.</div></div>
         </div>
 
       </div>
@@ -946,10 +948,13 @@ function selectedCasosFiltro(){
 // SBX no lleva número de versión (se cambia "dev" por "sandbox" en el dominio); DEV y VNP sí
 // (?d=<version>), armado del lado del workflow a partir de estos dos inputs -- ver
 // "Armar URL del ambiente" en webmobile.yml / webmobile-ios.yml.
-function onCambioAmbienteWebmobile(){
-  const ambiente = document.getElementById("wmAmbiente").value;
-  const version = document.getElementById("wmVersion");
-  const hint = document.getElementById("wmAmbienteHint");
+// El selector va duplicado (uno en la card de Android, otro en la de iOS) porque cada corrida
+// se dispara independiente y puede querer apuntar a un ambiente distinto -- "sufijo" es
+// "android" o "ios", según qué card cambió.
+function onCambioAmbienteWebmobile(sufijo){
+  const ambiente = document.getElementById(`wmAmbiente-${sufijo}`).value;
+  const version = document.getElementById(`wmVersion-${sufijo}`);
+  const hint = document.getElementById(`wmAmbienteHint-${sufijo}`);
   if(ambiente === "sbx"){
     version.style.display = "none";
     hint.textContent = "SBX no usa número de versión.";
@@ -963,9 +968,9 @@ function onCambioAmbienteWebmobile(){
 
 // Devuelve {ambiente, version} listo para mandar como inputs, o null (+ toast) si falta la
 // versión en un ambiente que la necesita.
-function leerAmbienteWebmobile(){
-  const ambiente = document.getElementById("wmAmbiente").value;
-  const version = document.getElementById("wmVersion").value.trim();
+function leerAmbienteWebmobile(sufijo){
+  const ambiente = document.getElementById(`wmAmbiente-${sufijo}`).value;
+  const version = document.getElementById(`wmVersion-${sufijo}`).value.trim();
   if(ambiente !== "sbx" && !version){
     toast(`El ambiente ${ambiente.toUpperCase()} necesita el número de versión`, "error");
     return null;
@@ -975,7 +980,7 @@ function leerAmbienteWebmobile(){
 
 async function dispatchWebmobile(){
   if(!TOKEN){ toast("Configurá el token primero", "error"); return; }
-  const amb = leerAmbienteWebmobile();
+  const amb = leerAmbienteWebmobile("android");
   if(!amb) return;
   const filtro = selectedCasosFiltro();
   const btn = document.getElementById("btnWmDispatch");
@@ -996,7 +1001,7 @@ async function dispatchWebmobile(){
 
 async function dispatchWebmobileIos(){
   if(!TOKEN){ toast("Configurá el token primero", "error"); return; }
-  const amb = leerAmbienteWebmobile();
+  const amb = leerAmbienteWebmobile("ios");
   if(!amb) return;
   const endpoint = document.getElementById("wmIosEndpoint").value.trim();
   const filtro = selectedCasosFiltro();
