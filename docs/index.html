@@ -81,8 +81,12 @@
   /* Corridas recientes: mucho más bajo que el scroll-y genérico y con filas angostas,
      para que la card no empuje todo lo de abajo aunque haya varias corridas listadas. */
   .runs-scroll{max-height:160px}
-  .runs-scroll table{font-size:11.8px}
-  .runs-scroll th, .runs-scroll td{padding:4px 6px}
+  .runs-scroll table{font-size:11.8px;table-layout:fixed}
+  .runs-scroll th, .runs-scroll td{padding:4px 6px;white-space:nowrap}
+  /* La columna del nombre de la corrida es la única que puede ser larga -- se trunca con
+     "..." en vez de forzar el resto de las columnas (Estado, Duración, Disparado, link) a
+     achicarse o pasar a una segunda línea, que era lo que hacía ver la tabla "ancha". */
+  .runs-scroll .run-title{overflow:hidden;text-overflow:ellipsis;width:100%}
   .scroll-y::after{
     content:"";display:block;position:sticky;bottom:0;left:0;right:0;
     height:28px;margin-top:-28px;pointer-events:none;
@@ -750,7 +754,9 @@ function badge(status, conclusion){
 }
 function fmtDate(iso){
   const d = new Date(iso);
-  return d.toLocaleString("es-AR", {day:"2-digit",month:"2-digit",hour:"2-digit",minute:"2-digit"});
+  // hour12:false para "15:40" en vez de "03:40 p. m." -- ese sufijo era lo que hacía que la
+  // columna "Disparado" se fuera a una segunda línea y ensanchara toda la tabla.
+  return d.toLocaleString("es-AR", {day:"2-digit",month:"2-digit",hour:"2-digit",minute:"2-digit",hour12:false});
 }
 function fmtDuracion(run){
   if(run.status !== "completed") return `<span class="muted">—</span>`;
@@ -773,11 +779,11 @@ async function loadRuns(){
     if(!runs.length){ wrap.innerHTML = `<div class="empty">Todavía no hay corridas.</div>`; return; }
     wrap.innerHTML = `
       <table>
-        <thead><tr><th>Run</th><th>Estado</th><th>Duración</th><th>Disparado</th><th></th></tr></thead>
+        <thead><tr><th>Run</th><th style="width:78px">Estado</th><th style="width:56px">Duración</th><th style="width:78px">Disparado</th><th style="width:92px"></th></tr></thead>
         <tbody>
           ${runs.map(r => `
             <tr>
-              <td>${r.display_title || r.name}</td>
+              <td class="run-title" title="${r.display_title || r.name}">${r.display_title || r.name}</td>
               <td>${badge(r.status, r.conclusion)}</td>
               <td class="muted">${fmtDuracion(r)}</td>
               <td class="muted">${fmtDate(r.created_at)}</td>
@@ -1195,12 +1201,12 @@ async function loadRunsWebmobile(){
       : r.path.endsWith(WEBMOBILE_GENERAR_WORKFLOW) ? "Generador" : "Android";
     wrap.innerHTML = `
       <table>
-        <thead><tr><th>Plataforma</th><th>Run</th><th>Estado</th><th>Duración</th><th>Disparado</th><th></th></tr></thead>
+        <thead><tr><th style="width:66px">Plataforma</th><th>Run</th><th style="width:78px">Estado</th><th style="width:56px">Duración</th><th style="width:78px">Disparado</th><th style="width:92px"></th></tr></thead>
         <tbody>
           ${runs.map(r => `
             <tr>
               <td class="muted">${etiquetaPlataforma(r)}</td>
-              <td>${r.display_title || r.name}</td>
+              <td class="run-title" title="${r.display_title || r.name}">${r.display_title || r.name}</td>
               <td>${badge(r.status, r.conclusion)}</td>
               <td class="muted">${fmtDuracion(r)}</td>
               <td class="muted">${fmtDate(r.created_at)}</td>
