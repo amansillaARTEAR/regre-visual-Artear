@@ -34,9 +34,6 @@ BASE_URLS_MAP = {
     "https://tn.com.ar/deportes/estadisticas/": "Estadisticas",
     "https://tn.com.ar/quinielas-loterias/": "Quinielas",
     "https://tn.com.ar/juegos/": "Juegos",
-    # "Elecciones" reincorporada el 28/09 a pedido explícito del usuario,
-    # para poder validar en una corrida real el fix #32 (corte antes del
-    # footer real, ver claude/hallazgos-por-portada.md -- fixes #28 a #32).
     "https://tn.com.ar/elecciones-2025/": "Elecciones",
     "https://tn.com.ar/internacional/": "Internacional",
     "https://tn.com.ar/deportes/automovilismo/2025/11/07/el-posteo-que-williams-le-dedico-a-colapinto-despues-de-ser-confirmado-en-alpine-para-la-temporada-2026-de-f1/": "Article",
