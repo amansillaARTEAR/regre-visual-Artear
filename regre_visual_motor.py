@@ -255,6 +255,52 @@ def expandir_scroll_infinito(driver, max_iteraciones=12, espera=1.2):
     return alturas
 
 
+def esperar_altura_estable(driver, intentos=5, espera=2.5):
+    """A diferencia de expandir_scroll_infinito() (que dispara crecimiento
+    haciendo scroll-al-fondo, pensado para paginación real), esta función
+    espera crecimiento por TIEMPO: re-mide document.body.scrollHeight cada
+    `espera` segundos, SIN tocar el scroll, hasta que el valor se repite en
+    dos mediciones seguidas (o se agotan los intentos).
+
+    Por qué hace falta además de expandir_scroll_infinito(): esa función da
+    por estable una altura apenas se repite en dos lecturas separadas por
+    ~1.2s (una sola vuelta de scroll). Eso alcanza para paginación
+    disparada por scroll, pero no cubre contenido que se sigue montando de
+    forma asincrónica DESPUÉS de terminar de scrollear -- polling, widgets
+    embebidos (ej. mapas/resultados en vivo), iframes que tardan en
+    expandir -- nada de lo cual necesita un scroll adicional para terminar
+    de cargar, solo tiempo.
+
+    Confirmado con datos reales (Elecciones v721, debug log de la corrida
+    del 28/09 20:56): expandir_scroll_infinito() midió la MISMA altura en
+    sus dos únicas lecturas tanto en V1 ([21074, 21074]) como en V2
+    ([22120, 22120]) -- "estable" al toque, en ~1.2s -- y sin embargo V1 y
+    V2 de la MISMA página en la MISMA corrida dieron alturas totales
+    distintas entre sí (diferencia de ~1046px). Si el contenido ya hubiera
+    terminado de cargar del todo en los dos casos, no habría motivo para
+    que difieran tanto entre sí. Apunta a una carrera de timing: la
+    medición de altura se hace antes de que algo termine de montarse de
+    forma asincrónica, y cuánto le falta varía de corrida en corrida (a
+    veces más, a veces menos) -- consistente con lo que se ve en video: la
+    captura corta justo después del último artículo destacado, antes de
+    llegar al footer real, un corte que se mueve de lugar entre V1 y V2."""
+    alturas = []
+    altura_anterior = None
+    estables_seguidas = 0
+    for _ in range(intentos):
+        altura_actual = driver.execute_script("return document.body.scrollHeight;")
+        alturas.append(altura_actual)
+        if altura_actual == altura_anterior:
+            estables_seguidas += 1
+            if estables_seguidas >= 2:
+                break
+        else:
+            estables_seguidas = 0
+        altura_anterior = altura_actual
+        time.sleep(espera)
+    return alturas
+
+
 # =====================================================================
 # EXTRACCIÓN DEL DOM (con fingerprint: tag, clases, data-*, texto)
 # =====================================================================
@@ -453,8 +499,18 @@ def obtener_estructura_dom(driver, incluir_texto=True, espera_scroll=2, etiqueta
         forzar_carga_contenido(driver, espera_scroll=espera_scroll)
         altura_post_forzar = driver.execute_script("return document.body.scrollHeight;")
         alturas_expandir = expandir_scroll_infinito(driver)
+        # expandir_scroll_infinito() da por estable una altura con solo ~1.2s
+        # entre mediciones (ver docstring) -- no alcanza a detectar contenido
+        # que se sigue montando de forma asincrónica sin necesidad de scroll.
+        # esperar_altura_estable() vuelve a medir con más tiempo real entre
+        # lecturas (2.5s) para no cortar la página antes de que termine de
+        # crecer por esa vía. Se corre siempre (no solo para Elecciones) por
+        # las dudas de que el mismo patrón afecte otras páginas con widgets
+        # pesados; el costo (unos segundos más por URL) es aceptable.
+        alturas_estables = esperar_altura_estable(driver)
         log_debug(f"[{tag}] altura tras forzar_carga_contenido: {altura_post_forzar}px | "
-                  f"alturas en expandir_scroll_infinito: {alturas_expandir}")
+                  f"alturas en expandir_scroll_infinito: {alturas_expandir} | "
+                  f"alturas en esperar_altura_estable: {alturas_estables}")
 
         total_height = driver.execute_script(
             "return Math.max(document.body.scrollHeight, document.body.offsetHeight, "
@@ -488,17 +544,33 @@ def obtener_estructura_dom(driver, incluir_texto=True, espera_scroll=2, etiqueta
         # corta); si `existe` es false, el footer directamente no está montado
         # en el DOM en este momento (no es un problema de altura/scroll en
         # absoluto, sino de que el componente no cargó).
+        #
+        # BUG encontrado en la primera versión de este chequeo (corrida del
+        # 28/09 20:56): usaba document.querySelector('footer'), que devuelve
+        # el PRIMER <footer> del DOM -- en TN, un <footer> chico (26px de
+        # alto) anidado dentro de la primera tarjeta de artículo, no el
+        # footer global del sitio. El log resultante (offsetTop:361,
+        # rectTop:~6472 sobre una página de >21000px) no tenía nada que ver
+        # con la posición real del footer visible al final de la página.
+        # Fix: tomar, de TODOS los <footer> del DOM, el que tenga el
+        # rectBottom más grande (el más cercano al final visual de la
+        # página) -- ese sí es candidato a ser el footer global real.
         try:
             info_footer = driver.execute_script(
-                "var f = document.querySelector('footer');"
-                "if (!f) return {existe: false};"
-                "var r = f.getBoundingClientRect();"
-                "return {existe: true, offsetTop: f.offsetTop, offsetHeight: f.offsetHeight, "
-                "rectTop: r.top, rectBottom: r.bottom};"
+                "var fs = document.querySelectorAll('footer');"
+                "if (!fs.length) return {existe: false, cantidad: 0};"
+                "var mejor = fs[0], mejorBottom = fs[0].getBoundingClientRect().bottom;"
+                "for (var i = 1; i < fs.length; i++) {"
+                "  var b = fs[i].getBoundingClientRect().bottom;"
+                "  if (b > mejorBottom) { mejorBottom = b; mejor = fs[i]; }"
+                "}"
+                "var r = mejor.getBoundingClientRect();"
+                "return {existe: true, cantidad: fs.length, offsetTop: mejor.offsetTop, "
+                "offsetHeight: mejor.offsetHeight, rectTop: r.top, rectBottom: r.bottom};"
             )
         except Exception as e:
             info_footer = {'error': str(e)}
-        log_debug(f"[{tag}] total_height usado para resize: {total_height}px | footer: {info_footer}")
+        log_debug(f"[{tag}] total_height usado para resize: {total_height}px | footer (el de rectBottom más grande, de todos los <footer> del DOM): {info_footer}")
 
         js = JS_EXTRACCION.replace('INCLUIR_TEXTO', 'true' if incluir_texto else 'false')
         result = driver.execute_script(js)
