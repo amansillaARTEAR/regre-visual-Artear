@@ -130,6 +130,29 @@ def ejecutar_js_manipulacion(driver, script):
 
 
 # =====================================================================
+# DEBUG LOG (para diagnosticar casos como "Elecciones" sin depender de
+# los logs de Actions, bloqueados desde el sandbox por la política de
+# red -- ver notas de infraestructura del findings doc. main() apunta
+# _DEBUG_LOG_PATH a un archivo DENTRO de output_dir, así que viaja con
+# el resto del reporte al publicarse a la rama reportes-<producto>-<modo>
+# y se puede leer con git show/cat, sin necesitar la UI de Actions.)
+# =====================================================================
+
+_DEBUG_LOG_PATH = None
+
+
+def log_debug(msg):
+    """Best-effort: nunca debe romper una corrida por un problema de logging."""
+    if not _DEBUG_LOG_PATH:
+        return
+    try:
+        with open(_DEBUG_LOG_PATH, 'a', encoding='utf-8') as f:
+            f.write(msg + "\n")
+    except Exception:
+        pass
+
+
+# =====================================================================
 # LIMPIEZA DE POPUPS (se mantiene: cookies/suscripciones SÍ se eliminan
 # del layout porque son intervenciones nuestras, no contenido dinámico
 # del sitio; el masking de ads/terceros va aparte, a nivel de comparación)
@@ -211,15 +234,25 @@ def expandir_scroll_infinito(driver, max_iteraciones=12, espera=1.2):
     alcanzada hasta ahí como suficientemente representativa y se sigue, en vez
     de bloquear la corrida esperando algo que puede no pasar nunca."""
     altura_anterior = 0
+    alturas = []
+    iteraciones_usadas = 0
     for _ in range(max_iteraciones):
         altura_actual = driver.execute_script("return document.body.scrollHeight;")
+        alturas.append(altura_actual)
         if altura_actual == altura_anterior:
             break
         altura_anterior = altura_actual
         driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
         time.sleep(espera)
+        iteraciones_usadas += 1
     driver.execute_script("window.scrollTo(0, 0);")
     time.sleep(0.5)
+    # Se devuelven las alturas leídas en cada iteración (no solo la final) para
+    # poder diagnosticar sin adivinar: si TODAS son iguales entre sí, la página
+    # ya estaba estable desde el principio y el corte del footer NO es un
+    # problema de scroll/paginación -- hay que buscar la causa en otro lado
+    # (ver `log_debug` en obtener_estructura_dom, más abajo).
+    return alturas
 
 
 # =====================================================================
@@ -401,10 +434,14 @@ def esperar_fuentes(driver, timeout=5):
         pass  # no bloqueamos la corrida por esto; es una mejora best-effort
 
 
-def obtener_estructura_dom(driver, incluir_texto=True, espera_scroll=2):
-    """Devuelve (data, png) para la URL actualmente cargada en el driver."""
+def obtener_estructura_dom(driver, incluir_texto=True, espera_scroll=2, etiqueta=None):
+    """Devuelve (data, png) para la URL actualmente cargada en el driver.
+
+    `etiqueta` (ej. "Elecciones V1") es solo para identificar las líneas de
+    este URL/versión en el debug log (log_debug) -- no afecta el comportamiento."""
     from selenium.webdriver.support.ui import WebDriverWait
 
+    tag = etiqueta or "?"
     data, png = [], None
     try:
         WebDriverWait(driver, 20).until(lambda d: d.execute_script("return document.readyState") == "complete")
@@ -414,7 +451,10 @@ def obtener_estructura_dom(driver, incluir_texto=True, espera_scroll=2):
         time.sleep(1)
         limpiar_entorno(driver)
         forzar_carga_contenido(driver, espera_scroll=espera_scroll)
-        expandir_scroll_infinito(driver)
+        altura_post_forzar = driver.execute_script("return document.body.scrollHeight;")
+        alturas_expandir = expandir_scroll_infinito(driver)
+        log_debug(f"[{tag}] altura tras forzar_carga_contenido: {altura_post_forzar}px | "
+                  f"alturas en expandir_scroll_infinito: {alturas_expandir}")
 
         total_height = driver.execute_script(
             "return Math.max(document.body.scrollHeight, document.body.offsetHeight, "
@@ -439,6 +479,27 @@ def obtener_estructura_dom(driver, incluir_texto=True, espera_scroll=2):
         # de timing, no un cambio del sitio) -> "footer ausente" era un falso positivo.
         limpiar_entorno(driver)
 
+        # Chequeo directo del <footer> justo antes del screenshot final -- para
+        # diagnosticar casos como Elecciones sin adivinar: si existe pero su
+        # offsetTop+offsetHeight es MENOR a total_height, el layout real es más
+        # bajo que lo medido (posible desajuste de timing entre la medición de
+        # altura y el screenshot); si offsetTop+offsetHeight es MAYOR, el footer
+        # cae fuera de la ventana resizeada (la medición de altura se quedó
+        # corta); si `existe` es false, el footer directamente no está montado
+        # en el DOM en este momento (no es un problema de altura/scroll en
+        # absoluto, sino de que el componente no cargó).
+        try:
+            info_footer = driver.execute_script(
+                "var f = document.querySelector('footer');"
+                "if (!f) return {existe: false};"
+                "var r = f.getBoundingClientRect();"
+                "return {existe: true, offsetTop: f.offsetTop, offsetHeight: f.offsetHeight, "
+                "rectTop: r.top, rectBottom: r.bottom};"
+            )
+        except Exception as e:
+            info_footer = {'error': str(e)}
+        log_debug(f"[{tag}] total_height usado para resize: {total_height}px | footer: {info_footer}")
+
         js = JS_EXTRACCION.replace('INCLUIR_TEXTO', 'true' if incluir_texto else 'false')
         result = driver.execute_script(js)
         data = result.get('elements', [])
@@ -448,6 +509,7 @@ def obtener_estructura_dom(driver, incluir_texto=True, espera_scroll=2):
 
     except Exception as e:
         print(f"     ❌ Error en la extracción/captura: {e}")
+        log_debug(f"[{tag}] ❌ Excepción en obtener_estructura_dom: {e}")
         data = [{'selector': 'FATAL ERROR'}]
 
     return data, png
@@ -511,7 +573,7 @@ def ejecutar_selenium_para_estructura(url, modo, config):
         # el estilo comparara igual, es que ese <a> nunca se extraía en
         # desktop, así que ni pasaba por emparejamiento ni por comparación
         # de estilos. Ahora ambos modos extraen los mismos tags.
-        data, png = obtener_estructura_dom(driver, incluir_texto=True)
+        data, png = obtener_estructura_dom(driver, incluir_texto=True, etiqueta=url)
 
     except Exception as e:
         print(f"❌ Error al inicializar/ejecutar Selenium en {url}: {e}")
@@ -988,6 +1050,17 @@ def main(base_urls_map, producto_nombre="Sitio", output_dir_base=os.path.join('r
     config = config_modos(output_dir_base)[args.modo]
     output_dir = config['output_dir']
     os.makedirs(output_dir, exist_ok=True)
+
+    # Debug log dentro de output_dir: viaja con el resto del reporte al
+    # publicarse a la rama reportes-<producto>-<modo> (git add -f de esa
+    # carpeta entera), así se puede leer con git show/cat sin pasar por la
+    # UI de Actions (bloqueada desde el sandbox). Se pisa en cada corrida.
+    global _DEBUG_LOG_PATH
+    _DEBUG_LOG_PATH = os.path.join(output_dir, '_debug.log')
+    try:
+        open(_DEBUG_LOG_PATH, 'w').close()
+    except Exception:
+        _DEBUG_LOG_PATH = None
 
     urls_map = base_urls_map
     if args.urls:
