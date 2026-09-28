@@ -345,7 +345,10 @@
         <div class="card">
           <h2>
             Casos de prueba
-            <button class="ghost" onclick="clearCasosSeleccionados()">Limpiar selección</button>
+            <span>
+              <button class="ghost" onclick="cargarCasosWebmobile()">↻ Actualizar lista</button>
+              <button class="ghost" onclick="clearCasosSeleccionados()">Limpiar selección</button>
+            </span>
           </h2>
           <p class="muted" style="margin-top:0">
             Tildá los casos a correr (aplica a Android e iOS). El lápiz abre el código en github.dev en esa línea.
@@ -407,25 +410,9 @@ const WEBMOBILE_IOS_WORKFLOW = "webmobile-ios.yml";
 const WEBMOBILE_GENERAR_WORKFLOW = "generar-caso-desde-jira.yml";
 
 const WEBMOBILE_TEST_FILE = "appium-mobile-web-qa/tests/test_tnarc4366.py";
-const WEBMOBILE_CASOS = [
-  {id:"test_00_version", nombre:"00 · Versión",     desc:"Precondición: la versión promovida en DEV es la esperada.", linea:28},
-  {id:"ca01",            nombre:"CA1 · Colecciones", desc:"Recupera los videos de las colecciones configuradas en PageBuilder.", linea:44},
-  {id:"ca02",            nombre:"CA2 · Orden",       desc:"«Lo importante» respeta el orden de la colección.", linea:63},
-  {id:"ca03",            nombre:"CA3 · Cronológico", desc:"«Lo último» muestra del más reciente al más antiguo.", linea:95},
-  {id:"ca04",            nombre:"CA4 · Aspecto 9:16",desc:"Solo se renderizan videos verticales 9:16.", linea:126},
-  {id:"ca05",            nombre:"CA5 · Autoplay",    desc:"Los videos se reproducen solos y permiten play/pause.", linea:144},
-  {id:"ca06",            nombre:"CA6 · Auto-siguiente",desc:"Al terminar un video, arranca el siguiente automáticamente.", linea:166},
-  {id:"ca07",            nombre:"CA7 · Scroll",      desc:"El scroll avanza de a un video, sin importar la intensidad del gesto.", linea:180},
-  {id:"ca08",            nombre:"CA8 · Paginación",  desc:"Se cargan más videos al acercarse al final, sin cortes.", linea:201},
-  {id:"ca09",            nombre:"CA9 · Por pestaña", desc:"Cada pestaña conserva el último video visto.", linea:235},
-  {id:"ca10",            nombre:"CA10 · Progreso",   desc:"La barra de progreso refleja el avance real del video.", linea:260},
-  {id:"ca11",            nombre:"CA11 · Controles",  desc:"Cerrar, mostrar/ocultar, compartir y sonido siguen disponibles.", linea:278},
-  {id:"ca12",            nombre:"CA12 · Cerrar",     desc:"Al cerrar el player, redirige a la portada principal.", linea:336},
-  {id:"ca13",            nombre:"CA13 · Skeleton",   desc:"No quedan placeholders del skeleton visibles.", linea:322},
-  {id:"ca14",            nombre:"CA14 · Generado (topbar/navbar)",
-   desc:"Generado por IA desde Jira. TODO: solo verifica que el video carga — no valida posición real de topbar/navbar (Player no tiene método para eso).",
-   linea:3, archivo:"appium-mobile-web-qa/tests/generados/test_ca14_generado.py"},
-];
+const WEBMOBILE_GENERADOS_DIR = "appium-mobile-web-qa/tests/generados";
+// Se completa leyendo el código real del repo (ver cargarCasosWebmobile) — no se edita a mano.
+let WEBMOBILE_CASOS = [];
 
 const PRODUCTOS = {
   tn: ["Homepage","Listado","Videos","Vivo","Clima","Economia","Divisas","Podcast","deportivo",
@@ -461,7 +448,7 @@ function showView(view){
   document.getElementById("viewTitle").textContent = VIEW_META[view].title;
   document.getElementById("viewSub").textContent = VIEW_META[view].sub;
   localStorage.setItem("qa_tools_view", view);
-  if(view === "webmobile" && TOKEN){ loadRunsWebmobile(); loadRunnerStatusWebmobile(); }
+  if(view === "webmobile" && TOKEN){ loadRunsWebmobile(); loadRunnerStatusWebmobile(); cargarCasosWebmobile(); }
   else { document.getElementById("wmRunnerBadge").style.display = "none"; }
 }
 
@@ -684,8 +671,66 @@ async function loadRuns(){
 }
 
 // ---------- WebMobile: tabla de casos de prueba ----------
+// Los casos NO están hardcodeados: se leen del código real en GitHub cada vez que se entra a
+// esta vista, así que un caso nuevo aparece solo apenas su Pull Request se mergea a main
+// (no apenas se genera — hasta que no se mergea, el código todavía no existe en la rama principal).
+function parseCasosDeArchivo(texto, ruta){
+  const lineas = texto.split("\n");
+  const casos = [];
+  const reDef = /^\s*def (test_\w+)\(player\s*,\s*registro\)\s*:/;
+  for(let i = 0; i < lineas.length; i++){
+    const m = lineas[i].match(reDef);
+    if(!m) continue;
+    const id = m[1];
+    const numeroLinea = i + 1; // github usa líneas 1-indexadas
+    let doc = "";
+    for(let j = i + 1; j < Math.min(i + 4, lineas.length); j++){
+      const dm = lineas[j].match(/"""(.*?)"""/);
+      if(dm){ doc = dm[1].trim(); break; }
+      if(lineas[j].trim() !== "" && !lineas[j].includes('"""')) break; // no hay docstring
+    }
+    let nombre = id.replace(/^test_/, "").toUpperCase();
+    let desc = doc || "(sin descripción en el docstring)";
+    const idx = doc.indexOf(":");
+    if(idx > 0 && idx < 20){
+      nombre = doc.slice(0, idx).trim();
+      desc = doc.slice(idx + 1).trim();
+    }
+    casos.push({id, nombre, desc, linea: numeroLinea, archivo: ruta});
+  }
+  return casos;
+}
+
+async function cargarCasosWebmobile(){
+  const body = document.getElementById("wmCasosTableBody");
+  if(!TOKEN){ body.innerHTML = `<tr><td colspan="4" class="empty">Configurá el token para ver los casos.</td></tr>`; return; }
+  body.innerHTML = `<tr><td colspan="4" class="empty"><span class="spinner"></span> Leyendo casos del repo…</td></tr>`;
+  try{
+    const rutas = [WEBMOBILE_TEST_FILE];
+    // La carpeta de generados no siempre existe (recién se crea cuando se mergea el primer PR).
+    try{
+      const listado = await ghJson(`/repos/${WEBMOBILE_OWNER}/${WEBMOBILE_REPO}/contents/${WEBMOBILE_GENERADOS_DIR}`);
+      listado.filter(f => f.type === "file" && f.name.endsWith(".py")).forEach(f => rutas.push(`${WEBMOBILE_GENERADOS_DIR}/${f.name}`));
+    } catch(e) { /* todavía no hay casos generados mergeados — no es un error */ }
+
+    const archivos = await Promise.all(rutas.map(r =>
+      gh(`/repos/${WEBMOBILE_OWNER}/${WEBMOBILE_REPO}/contents/${r}`, {headers:{"Accept":"application/vnd.github.raw"}}).then(r2 => r2.text())
+    ));
+    // Orden natural: los de la suite oficial en el orden en que aparecen en el archivo,
+    // y los generados (si los hay) al final.
+    WEBMOBILE_CASOS = archivos.flatMap((texto, i) => parseCasosDeArchivo(texto, rutas[i]));
+    renderCasosTable();
+  } catch(e){
+    body.innerHTML = `<tr><td colspan="4" class="empty">Error leyendo los casos: ${e.message}</td></tr>`;
+  }
+}
+
 function renderCasosTable(){
   const body = document.getElementById("wmCasosTableBody");
+  if(!WEBMOBILE_CASOS.length){
+    body.innerHTML = `<tr><td colspan="4" class="empty">No se encontraron casos.</td></tr>`;
+    return;
+  }
   body.innerHTML = WEBMOBILE_CASOS.map(c => `
     <tr>
       <td><input type="checkbox" class="casoCheck" value="${c.id}"></td>
@@ -995,7 +1040,6 @@ document.getElementById("modalBg").addEventListener("click", e => {
 // ---------- Init ----------
 renderTokenBar();
 renderUrlChips();
-renderCasosTable();
 if(TOKEN){ loadRuns(); loadReportBranches(); }
 const savedView = localStorage.getItem("qa_tools_view");
 if(savedView && VIEW_META[savedView]) showView(savedView);
