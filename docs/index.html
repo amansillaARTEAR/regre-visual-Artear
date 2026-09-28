@@ -56,6 +56,7 @@
   @media (max-width:640px){.grid3{grid-template-columns:1fr}}
   .card{background:var(--panel);border:1px solid var(--border);border-radius:var(--radius);padding:14px 16px;margin-bottom:14px}
   .card h2{font-size:12.5px;margin:0 0 10px;text-transform:uppercase;letter-spacing:.04em;color:var(--accent2);font-weight:600;display:flex;align-items:center;justify-content:space-between}
+  .paso-badge{background:var(--accent);color:#fff;font-size:10.5px;font-weight:700;padding:2px 8px;border-radius:20px;margin-right:8px;letter-spacing:.02em;text-transform:none}
   .card p.muted{font-size:12.5px;line-height:1.45}
   label{display:block;font-size:12.5px;color:var(--muted);margin-bottom:4px;margin-top:9px}
   label:first-of-type{margin-top:0}
@@ -294,10 +295,9 @@
       <div class="view" id="view-webmobile">
 
         <div class="card">
-          <h2>Generar caso de prueba desde un ticket de Jira</h2>
+          <h2><span><span class="paso-badge">Paso 1</span>Importar ticket de Jira</span></h2>
           <p class="muted" style="margin-top:0">
-            Subí el <b>.xml</b> del ticket (o pegá el texto). Claude propone un caso nuevo con el estilo de los
-            existentes y abre un <b>Pull Request</b> para revisar antes de sumarlo — no se activa solo.
+            Subí el <b>.xml</b> del ticket exportado desde Jira, o pegá el texto (resumen + criterios de aceptación) a mano.
           </p>
           <div class="row">
             <div>
@@ -311,10 +311,25 @@
                 style="width:100%;padding:9px 10px;background:var(--panel2);border:1px solid var(--border);border-radius:7px;color:var(--text);font-size:13.5px;font-family:inherit;resize:vertical"></textarea>
             </div>
           </div>
+        </div>
+
+        <div class="card">
+          <h2><span><span class="paso-badge">Paso 2</span>Generar casos de prueba</span></h2>
+          <p class="muted" style="margin-top:0">
+            Claude analiza el ticket aplicando diseño de casos de QA: deriva el escenario <b>positivo</b> (camino feliz) y,
+            cuando el ticket da pie a ello, un escenario <b>negativo</b> y uno de <b>borde</b> — documentados en formato
+            Given-When-Then. Genera el código automatizado para cada uno y abre un <b>Pull Request</b> para que los
+            revises antes de sumarlos — no se activa solo.
+          </p>
           <div class="actions">
-            <button onclick="generarCasoDesdeJira()" id="btnGenerarCaso">Generar caso de prueba</button>
+            <button onclick="generarCasoDesdeJira()" id="btnGenerarCaso">Generar casos de prueba</button>
           </div>
-          <div class="hint">No hace falta tu PC prendida. El link al PR aparece en "Corridas recientes" → "ver en GitHub".</div>
+          <div class="hint">No hace falta tu PC prendida. El link al PR aparece en "Corridas recientes" → "ver en GitHub". Una vez que mergeás el PR, los casos nuevos aparecen solos en el Paso 3.</div>
+        </div>
+
+        <div class="card">
+          <h2><span><span class="paso-badge">Paso 3</span>Elegir dispositivo y disparar</span></h2>
+          <p class="muted" style="margin-top:0">Tildá abajo los casos que querés correr (ninguno tildado = suite completa) y elegí dónde disparar.</p>
         </div>
 
         <div class="grid">
