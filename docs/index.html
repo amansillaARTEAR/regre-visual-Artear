@@ -85,9 +85,25 @@
   button.ghost{background:transparent;border:1px solid var(--border);color:var(--muted);padding:6px 10px;font-size:12px}
   button.danger{background:var(--red)}
   .actions{margin-top:16px;display:flex;gap:10px;align-items:center;flex-wrap:wrap}
-  .chips{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:7px 12px;max-height:140px;overflow-y:auto;padding:10px;background:var(--panel2);border:1px solid var(--border);border-radius:7px}
-  .chip{display:flex;align-items:center;gap:7px;font-size:12.5px;cursor:pointer;user-select:none;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-  .chip input{width:auto;margin:0;flex:0 0 auto}
+  /* Selector de URLs: buscador con tags removibles en vez de una grilla fija de
+     checkboxes con scroll interno -- se adapta al contenido (0, 1 o 20 URLs elegidas)
+     en vez de reservar siempre el mismo espacio. */
+  .url-picker{background:var(--panel2);border:1px solid var(--border);border-radius:7px;padding:8px 10px;position:relative}
+  .url-picker:focus-within{border-color:var(--accent)}
+  .url-tags{display:flex;flex-wrap:wrap;gap:6px}
+  .url-tags:not(:empty){margin-bottom:6px}
+  .url-tag{display:flex;align-items:center;gap:6px;background:var(--accent);color:#fff;font-size:12px;padding:3px 6px 3px 10px;border-radius:5px;line-height:1.5}
+  .url-tag button{background:none;border:none;color:#fff;cursor:pointer;font-size:14px;line-height:1;padding:0 1px;opacity:.85}
+  .url-tag button:hover{opacity:1}
+  .url-picker input[type=text]{border:none;background:transparent;padding:4px 2px;width:100%}
+  .url-picker input[type=text]:focus{outline:none;border-color:transparent}
+  .url-suggestions{position:absolute;left:0;right:0;top:calc(100% + 4px);background:var(--panel);border:1px solid var(--border);
+    border-radius:7px;max-height:220px;overflow-y:auto;z-index:20;display:none;box-shadow:0 8px 20px rgba(0,0,0,.35)}
+  .url-suggestions.show{display:block}
+  .url-suggestions div{padding:8px 12px;font-size:12.5px;cursor:pointer}
+  .url-suggestions div:hover{background:var(--panel2)}
+  .url-suggestions .empty2{color:var(--muted);cursor:default}
+  .url-suggestions .empty2:hover{background:none}
   .hint{color:var(--muted);font-size:11.5px;margin-top:6px}
   .divider{margin-top:18px;padding-top:16px;border-top:1px solid var(--border)}
 
@@ -235,7 +251,12 @@
             </div>
 
             <label>URLs a testear <span class="muted">(opcional — sin seleccionar ninguna, corren todas)</span></label>
-            <div class="chips" id="urlChips"></div>
+            <div class="url-picker" id="urlPicker">
+              <div class="url-tags" id="urlTags"></div>
+              <input type="text" id="urlSearch" placeholder="Buscar página… (ej: clima, video)" autocomplete="off"
+                oninput="onUrlSearchInput()" onfocus="onUrlSearchInput()">
+              <div class="url-suggestions" id="urlSuggestions"></div>
+            </div>
 
             <div class="row">
               <div>
@@ -541,20 +562,61 @@ function forgetToken(){
   document.getElementById("wmRunnerStatus").innerHTML = `<div class="empty">Configurá el token para ver el estado.</div>`;
 }
 
-// ---------- Dispatch form ----------
+// ---------- Dispatch form: selector de URLs (buscador + tags) ----------
+let urlsSeleccionadas = [];
 function onProductoChange(){ renderUrlChips(); }
 function renderUrlChips(){
-  const producto = document.getElementById("producto").value;
-  const wrap = document.getElementById("urlChips");
-  wrap.innerHTML = PRODUCTOS[producto].map(name =>
-    `<label class="chip"><input type="checkbox" value="${name.replace(/"/g,'&quot;')}">${name}</label>`
+  urlsSeleccionadas = [];
+  document.getElementById("urlSearch").value = "";
+  renderUrlTags();
+  ocultarSugerenciasUrl();
+}
+function renderUrlTags(){
+  const wrap = document.getElementById("urlTags");
+  wrap.innerHTML = urlsSeleccionadas.map((name, i) =>
+    `<span class="url-tag">${name}<button type="button" onclick="quitarUrl(${i})" title="Quitar">×</button></span>`
   ).join("");
 }
+function quitarUrl(i){
+  urlsSeleccionadas.splice(i, 1);
+  renderUrlTags();
+}
+function agregarUrl(name){
+  if(!urlsSeleccionadas.includes(name)) urlsSeleccionadas.push(name);
+  renderUrlTags();
+  const input = document.getElementById("urlSearch");
+  input.value = "";
+  input.focus();
+  onUrlSearchInput();
+}
+function onUrlSearchInput(){
+  const producto = document.getElementById("producto").value;
+  const q = document.getElementById("urlSearch").value.trim().toLowerCase();
+  const disponibles = (PRODUCTOS[producto] || []).filter(name => !urlsSeleccionadas.includes(name));
+  const filtradas = q ? disponibles.filter(name => name.toLowerCase().includes(q)) : disponibles;
+  const box = document.getElementById("urlSuggestions");
+  if(filtradas.length === 0){
+    box.innerHTML = `<div class="empty2">${disponibles.length === 0 ? "Ya seleccionaste todas las URLs" : "Sin resultados"}</div>`;
+  } else {
+    box.innerHTML = filtradas.map(name =>
+      `<div onmousedown="event.preventDefault(); agregarUrl('${name.replace(/'/g,"\\'")}')">${name}</div>`
+    ).join("");
+  }
+  box.classList.add("show");
+}
+function ocultarSugerenciasUrl(){
+  document.getElementById("urlSuggestions").classList.remove("show");
+}
+document.addEventListener("click", (e) => {
+  const picker = document.getElementById("urlPicker");
+  if(picker && !picker.contains(e.target)) ocultarSugerenciasUrl();
+});
 function clearUrlChips(){
-  document.querySelectorAll("#urlChips input[type=checkbox]").forEach(cb => cb.checked = false);
+  urlsSeleccionadas = [];
+  renderUrlTags();
 }
 function selectedUrls(){
-  return Array.from(document.querySelectorAll("#urlChips input:checked")).map(cb => cb.value).join(",");
+  return urlsSeleccionadas.join(",");
 }
 
 async function dispatchRegresion(){
