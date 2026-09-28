@@ -422,6 +422,9 @@ const WEBMOBILE_CASOS = [
   {id:"ca11",            nombre:"CA11 · Controles",  desc:"Cerrar, mostrar/ocultar, compartir y sonido siguen disponibles.", linea:278},
   {id:"ca12",            nombre:"CA12 · Cerrar",     desc:"Al cerrar el player, redirige a la portada principal.", linea:336},
   {id:"ca13",            nombre:"CA13 · Skeleton",   desc:"No quedan placeholders del skeleton visibles.", linea:322},
+  {id:"ca14",            nombre:"CA14 · Generado (topbar/navbar)",
+   desc:"Generado por IA desde Jira. TODO: solo verifica que el video carga — no valida posición real de topbar/navbar (Player no tiene método para eso).",
+   linea:3, archivo:"appium-mobile-web-qa/tests/generados/test_ca14_generado.py"},
 ];
 
 const PRODUCTOS = {
@@ -689,7 +692,7 @@ function renderCasosTable(){
       <td><b>${c.nombre}</b></td>
       <td class="muted">${c.desc}</td>
       <td>
-        <a href="https://github.dev/${WEBMOBILE_OWNER}/${WEBMOBILE_REPO}/blob/main/${WEBMOBILE_TEST_FILE}#L${c.linea}"
+        <a href="https://github.dev/${WEBMOBILE_OWNER}/${WEBMOBILE_REPO}/blob/main/${c.archivo || WEBMOBILE_TEST_FILE}#L${c.linea}"
            target="_blank" title="Editar código en github.dev">✎ Editar</a>
       </td>
     </tr>
