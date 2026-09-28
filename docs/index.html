@@ -63,6 +63,7 @@
   .grid > .card.compact{flex:0 1 300px;max-width:320px}
   .card{background:var(--panel);border:1px solid var(--border);border-radius:var(--radius);padding:14px 16px;margin-bottom:14px}
   .card h2{font-size:12.5px;margin:0 0 10px;text-transform:uppercase;letter-spacing:.04em;color:var(--accent2);font-weight:600;display:flex;align-items:center;justify-content:space-between}
+  .card h3{font-size:13px;margin:0 0 8px;font-weight:600;color:var(--text)}
   tr.caso-grupo td{background:var(--panel2);border-top:1px solid var(--border);padding-top:8px;padding-bottom:8px}
   tr.caso-grupo:first-child td{border-top:none}
   td.caso-nombre{padding-left:22px}
@@ -395,47 +396,50 @@
           </div>
         </div>
 
-        <div class="grid">
+        <div class="card">
+          <h2>Disparar corridas</h2>
+          <div class="grid" style="margin-bottom:0">
 
-          <div class="card">
-            <h2>Disparar — Android</h2>
-            <p class="muted" style="margin-top:0">Contra el celular USB de la PC del runner.</p>
-            <div class="actions" style="align-items:center">
-              <select id="wmAmbiente-android" onchange="onCambioAmbienteWebmobile('android')">
-                <option value="sbx" selected>SBX (sandbox)</option>
-                <option value="dev">DEV</option>
-                <option value="vnp">VNP (mirror de PROD)</option>
-              </select>
-              <input type="text" id="wmVersion-android" placeholder="Versión (ej: 721)" style="display:none;max-width:140px">
+            <div style="flex:1 1 300px">
+              <h3>Android</h3>
+              <p class="muted" style="margin-top:0">Contra el celular USB de la PC del runner.</p>
+              <div class="actions" style="align-items:center">
+                <select id="wmAmbiente-android" onchange="onCambioAmbienteWebmobile('android')">
+                  <option value="sbx" selected>SBX (sandbox)</option>
+                  <option value="dev">DEV</option>
+                  <option value="vnp">VNP (mirror de PROD)</option>
+                </select>
+                <input type="text" id="wmVersion-android" placeholder="Versión (ej: 721)" style="display:none;max-width:140px">
+              </div>
+              <div class="hint" id="wmAmbienteHint-android">SBX no usa número de versión.</div>
+              <div class="actions">
+                <button onclick="dispatchWebmobile()" id="btnWmDispatch">Disparar corrida</button>
+              </div>
+              <div class="hint">Usa los casos tildados arriba (ninguno = suite completa). Requiere runner prendido + Android por USB.</div>
             </div>
-            <div class="hint" id="wmAmbienteHint-android">SBX no usa número de versión.</div>
-            <div class="actions">
-              <button onclick="dispatchWebmobile()" id="btnWmDispatch">Disparar corrida</button>
+
+            <div style="flex:1 1 300px">
+              <h3>iOS (Device Farm)</h3>
+              <p class="muted" style="margin-top:0">
+                Requiere crear la sesión a mano en <a href="https://us-west-2.console.aws.amazon.com/devicefarm/home?region=us-west-2#/mobile/projects" target="_blank">Device Farm</a> (proyecto "Ale M" → "Remote access") y pegar acá el Appium endpoint.
+              </p>
+              <input type="text" id="wmIosEndpoint" placeholder="https://...devicefarm...amazonaws.com/wd/hub/...">
+              <div class="actions" style="align-items:center">
+                <select id="wmAmbiente-ios" onchange="onCambioAmbienteWebmobile('ios')">
+                  <option value="sbx" selected>SBX (sandbox)</option>
+                  <option value="dev">DEV</option>
+                  <option value="vnp">VNP (mirror de PROD)</option>
+                </select>
+                <input type="text" id="wmVersion-ios" placeholder="Versión (ej: 721)" style="display:none;max-width:140px">
+              </div>
+              <div class="hint" id="wmAmbienteHint-ios">SBX no usa número de versión.</div>
+              <div class="actions">
+                <button onclick="dispatchWebmobileIos()" id="btnWmIosDispatch">Disparar corrida iOS</button>
+              </div>
+              <div class="hint">Usa los casos tildados arriba (ninguno = suite completa).</div>
             </div>
-            <div class="hint">Usa los casos tildados arriba (ninguno = suite completa). Requiere runner prendido + Android por USB.</div>
+
           </div>
-
-          <div class="card">
-            <h2>Disparar — iOS (Device Farm)</h2>
-            <p class="muted" style="margin-top:0">
-              Requiere crear la sesión a mano en <a href="https://us-west-2.console.aws.amazon.com/devicefarm/home?region=us-west-2#/mobile/projects" target="_blank">Device Farm</a> (proyecto "Ale M" → "Remote access") y pegar acá el Appium endpoint.
-            </p>
-            <input type="text" id="wmIosEndpoint" placeholder="https://...devicefarm...amazonaws.com/wd/hub/...">
-            <div class="actions" style="align-items:center">
-              <select id="wmAmbiente-ios" onchange="onCambioAmbienteWebmobile('ios')">
-                <option value="sbx" selected>SBX (sandbox)</option>
-                <option value="dev">DEV</option>
-                <option value="vnp">VNP (mirror de PROD)</option>
-              </select>
-              <input type="text" id="wmVersion-ios" placeholder="Versión (ej: 721)" style="display:none;max-width:140px">
-            </div>
-            <div class="hint" id="wmAmbienteHint-ios">SBX no usa número de versión.</div>
-            <div class="actions">
-              <button onclick="dispatchWebmobileIos()" id="btnWmIosDispatch">Disparar corrida iOS</button>
-            </div>
-            <div class="hint">Usa los casos tildados arriba (ninguno = suite completa).</div>
-          </div>
-
         </div>
 
         <div class="card">
