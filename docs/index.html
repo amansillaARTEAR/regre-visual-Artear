@@ -61,6 +61,12 @@
      igualar el ancho de su vecina: se queda en su ancho natural y la card grande (flex:1)
      absorbe todo el espacio restante de la fila. */
   .grid > .card.compact{flex:0 1 300px;max-width:320px}
+  /* Columna derecha "angosta": agrupa Limpieza de artifacts + Reportes publicados
+     uno debajo del otro, en el mismo ancho que antes ocupaba solo Limpieza --
+     pedido explícito del usuario para no dejar ese espacio vacío debajo de
+     Limpieza de artifacts cuando Disparar regresión es más alta. */
+  .grid > .col-angosta{display:flex;flex-direction:column;gap:14px;flex:0 1 300px;max-width:320px}
+  .grid > .col-angosta > .card{margin-bottom:0}
   .card{background:var(--panel);border:1px solid var(--border);border-radius:var(--radius);padding:14px 16px;margin-bottom:14px}
   .card h2{font-size:12.5px;margin:0 0 10px;text-transform:uppercase;letter-spacing:.04em;color:var(--accent2);font-weight:600;display:flex;align-items:center;justify-content:space-between}
   .card h3{font-size:13px;margin:0 0 8px;font-weight:600;color:var(--text)}
@@ -160,8 +166,9 @@
   .modal-head b{font-size:13px}
   iframe{flex:1;width:100%;border:none;background:#fff}
   .empty{color:var(--muted);font-size:12.5px;padding:16px 0;text-align:center}
-  .reports-list{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
-  @media (max-width:640px){.reports-list{grid-template-columns:1fr}}
+  /* 1 columna: esta card ahora vive en la columna angosta (junto a Limpieza de
+     artifacts, ver .col-angosta más arriba), no tiene ancho para 2 columnas. */
+  .reports-list{display:grid;grid-template-columns:1fr;gap:10px}
   .report-item{background:var(--panel2);border:1px solid var(--border);border-radius:8px;padding:12px}
   .report-item .name{font-weight:600;font-size:13px;margin-bottom:2px}
   .report-item .date{color:var(--muted);font-size:11.5px;margin-bottom:10px}
@@ -307,16 +314,30 @@
             </div>
           </div>
 
-          <div class="card compact">
-            <h2>Limpieza de artifacts</h2>
-            <p class="muted" style="margin-top:0">
-              Corre semanalmente sola (domingos 06:00 UTC) y borra artifacts viejos de Actions para no llenar el storage.
-              Desde acá podés dispararla manualmente cuando quieras.
-            </p>
-            <label>Borrar artifacts con más de N días</label>
-            <input type="number" id="diasLimpieza" value="7" min="1">
-            <div class="actions">
-              <button class="secondary" onclick="dispatchLimpieza()" id="btnLimpieza">Disparar limpieza ahora</button>
+          <div class="col-angosta">
+            <div class="card compact">
+              <h2>Limpieza de artifacts</h2>
+              <p class="muted" style="margin-top:0">
+                Corre semanalmente sola (domingos 06:00 UTC) y borra artifacts viejos de Actions para no llenar el storage.
+                Desde acá podés dispararla manualmente cuando quieras.
+              </p>
+              <label>Borrar artifacts con más de N días</label>
+              <input type="number" id="diasLimpieza" value="7" min="1">
+              <div class="actions">
+                <button class="secondary" onclick="dispatchLimpieza()" id="btnLimpieza">Disparar limpieza ahora</button>
+              </div>
+            </div>
+
+            <div class="card compact">
+              <h2>
+                Reportes publicados
+                <button class="ghost" onclick="loadReportBranches()">↻ Actualizar</button>
+              </h2>
+              <p class="muted" style="margin-top:0">
+                Cada corrida publica su reporte HTML (con capturas incluidas) en una rama dedicada del repo, sin depender de la
+                descarga de artifacts. Elegí uno para verlo acá mismo.
+              </p>
+              <div id="reportsWrap"><div class="empty">Configurá el token para ver los reportes.</div></div>
             </div>
           </div>
 
@@ -328,18 +349,6 @@
             <button class="ghost" onclick="loadRuns()">↻ Actualizar</button>
           </h2>
           <div class="scroll-y runs-scroll" id="runsTableWrap"><div class="empty">Configurá el token para ver las corridas.</div></div>
-        </div>
-
-        <div class="card">
-          <h2>
-            Reportes publicados
-            <button class="ghost" onclick="loadReportBranches()">↻ Actualizar</button>
-          </h2>
-          <p class="muted" style="margin-top:0">
-            Cada corrida publica su reporte HTML (con capturas incluidas) en una rama dedicada del repo, sin depender de la
-            descarga de artifacts. Elegí uno para verlo acá mismo.
-          </p>
-          <div id="reportsWrap"><div class="empty">Configurá el token para ver los reportes.</div></div>
         </div>
 
       </div>

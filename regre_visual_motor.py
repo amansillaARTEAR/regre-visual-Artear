@@ -130,29 +130,6 @@ def ejecutar_js_manipulacion(driver, script):
 
 
 # =====================================================================
-# DEBUG LOG (para diagnosticar casos como "Elecciones" sin depender de
-# los logs de Actions, bloqueados desde el sandbox por la política de
-# red -- ver notas de infraestructura del findings doc. main() apunta
-# _DEBUG_LOG_PATH a un archivo DENTRO de output_dir, así que viaja con
-# el resto del reporte al publicarse a la rama reportes-<producto>-<modo>
-# y se puede leer con git show/cat, sin necesitar la UI de Actions.)
-# =====================================================================
-
-_DEBUG_LOG_PATH = None
-
-
-def log_debug(msg):
-    """Best-effort: nunca debe romper una corrida por un problema de logging."""
-    if not _DEBUG_LOG_PATH:
-        return
-    try:
-        with open(_DEBUG_LOG_PATH, 'a', encoding='utf-8') as f:
-            f.write(msg + "\n")
-    except Exception:
-        pass
-
-
-# =====================================================================
 # LIMPIEZA DE POPUPS (se mantiene: cookies/suscripciones SÍ se eliminan
 # del layout porque son intervenciones nuestras, no contenido dinámico
 # del sitio; el masking de ads/terceros va aparte, a nivel de comparación)
@@ -206,99 +183,6 @@ def forzar_carga_contenido(driver, espera_scroll=2):
     time.sleep(espera_scroll)
     driver.execute_script("window.scrollTo(0, 0);")
     time.sleep(espera_scroll)
-
-
-def expandir_scroll_infinito(driver, max_iteraciones=12, espera=1.2):
-    """Repite scroll-al-fondo hasta que scrollHeight deje de crecer (o se llegue
-    al tope de iteraciones), para páginas con paginación por scroll (ej: TN
-    Elecciones -- un hub de cobertura en vivo, "Decisión 25" -- que sigue
-    agregando bloques de contenido cada vez que se llega al fondo, no solo
-    revela imágenes lazy debajo del fold).
-
-    Por qué hace falta además de forzar_carga_contenido(): esa función hace UN
-    solo ciclo de scroll-al-fondo. Alcanza para lazy-loading normal (imágenes,
-    iframes), pero no para paginación infinita real: cada scroll-al-fondo
-    dispara la carga del SIGUIENTE bloque, que a su vez corre el fondo más
-    abajo -- hace falta re-scrollear al nuevo fondo repetidamente hasta que
-    no aparezca contenido nuevo.
-
-    Bug real (TN webmobile, v.next): Elecciones medía document.body.scrollHeight
-    justo después de un solo scroll-al-fondo y devolvía un valor bastante menor
-    al real; la ventana se resizeaba a esa altura y el screenshot final quedaba
-    cortado ANTES del footer real -- en V1 y V2 por igual (footer directamente
-    ausente de la captura en las dos, no una diferencia entre versiones).
-
-    Tope de iteraciones (no un `while True`) porque una página con paginación
-    verdaderamente infinita (o que sigue agregando notas en vivo sin fin) nunca
-    va a "estabilizar" -- después de `max_iteraciones` se toma la altura
-    alcanzada hasta ahí como suficientemente representativa y se sigue, en vez
-    de bloquear la corrida esperando algo que puede no pasar nunca."""
-    altura_anterior = 0
-    alturas = []
-    iteraciones_usadas = 0
-    for _ in range(max_iteraciones):
-        altura_actual = driver.execute_script("return document.body.scrollHeight;")
-        alturas.append(altura_actual)
-        if altura_actual == altura_anterior:
-            break
-        altura_anterior = altura_actual
-        driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
-        time.sleep(espera)
-        iteraciones_usadas += 1
-    driver.execute_script("window.scrollTo(0, 0);")
-    time.sleep(0.5)
-    # Se devuelven las alturas leídas en cada iteración (no solo la final) para
-    # poder diagnosticar sin adivinar: si TODAS son iguales entre sí, la página
-    # ya estaba estable desde el principio y el corte del footer NO es un
-    # problema de scroll/paginación -- hay que buscar la causa en otro lado
-    # (ver `log_debug` en obtener_estructura_dom, más abajo).
-    return alturas
-
-
-def esperar_altura_estable(driver, intentos=5, espera=2.5):
-    """A diferencia de expandir_scroll_infinito() (que dispara crecimiento
-    haciendo scroll-al-fondo, pensado para paginación real), esta función
-    espera crecimiento por TIEMPO: re-mide document.body.scrollHeight cada
-    `espera` segundos, SIN tocar el scroll, hasta que el valor se repite en
-    dos mediciones seguidas (o se agotan los intentos).
-
-    Por qué hace falta además de expandir_scroll_infinito(): esa función da
-    por estable una altura apenas se repite en dos lecturas separadas por
-    ~1.2s (una sola vuelta de scroll). Eso alcanza para paginación
-    disparada por scroll, pero no cubre contenido que se sigue montando de
-    forma asincrónica DESPUÉS de terminar de scrollear -- polling, widgets
-    embebidos (ej. mapas/resultados en vivo), iframes que tardan en
-    expandir -- nada de lo cual necesita un scroll adicional para terminar
-    de cargar, solo tiempo.
-
-    Confirmado con datos reales (Elecciones v721, debug log de la corrida
-    del 28/09 20:56): expandir_scroll_infinito() midió la MISMA altura en
-    sus dos únicas lecturas tanto en V1 ([21074, 21074]) como en V2
-    ([22120, 22120]) -- "estable" al toque, en ~1.2s -- y sin embargo V1 y
-    V2 de la MISMA página en la MISMA corrida dieron alturas totales
-    distintas entre sí (diferencia de ~1046px). Si el contenido ya hubiera
-    terminado de cargar del todo en los dos casos, no habría motivo para
-    que difieran tanto entre sí. Apunta a una carrera de timing: la
-    medición de altura se hace antes de que algo termine de montarse de
-    forma asincrónica, y cuánto le falta varía de corrida en corrida (a
-    veces más, a veces menos) -- consistente con lo que se ve en video: la
-    captura corta justo después del último artículo destacado, antes de
-    llegar al footer real, un corte que se mueve de lugar entre V1 y V2."""
-    alturas = []
-    altura_anterior = None
-    estables_seguidas = 0
-    for _ in range(intentos):
-        altura_actual = driver.execute_script("return document.body.scrollHeight;")
-        alturas.append(altura_actual)
-        if altura_actual == altura_anterior:
-            estables_seguidas += 1
-            if estables_seguidas >= 2:
-                break
-        else:
-            estables_seguidas = 0
-        altura_anterior = altura_actual
-        time.sleep(espera)
-    return alturas
 
 
 # =====================================================================
@@ -480,14 +364,10 @@ def esperar_fuentes(driver, timeout=5):
         pass  # no bloqueamos la corrida por esto; es una mejora best-effort
 
 
-def obtener_estructura_dom(driver, incluir_texto=True, espera_scroll=2, etiqueta=None):
-    """Devuelve (data, png) para la URL actualmente cargada en el driver.
-
-    `etiqueta` (ej. "Elecciones V1") es solo para identificar las líneas de
-    este URL/versión en el debug log (log_debug) -- no afecta el comportamiento."""
+def obtener_estructura_dom(driver, incluir_texto=True, espera_scroll=2):
+    """Devuelve (data, png) para la URL actualmente cargada en el driver."""
     from selenium.webdriver.support.ui import WebDriverWait
 
-    tag = etiqueta or "?"
     data, png = [], None
     try:
         WebDriverWait(driver, 20).until(lambda d: d.execute_script("return document.readyState") == "complete")
@@ -497,69 +377,12 @@ def obtener_estructura_dom(driver, incluir_texto=True, espera_scroll=2, etiqueta
         time.sleep(1)
         limpiar_entorno(driver)
         forzar_carga_contenido(driver, espera_scroll=espera_scroll)
-        altura_post_forzar = driver.execute_script("return document.body.scrollHeight;")
-        alturas_expandir = expandir_scroll_infinito(driver)
-        # expandir_scroll_infinito() da por estable una altura con solo ~1.2s
-        # entre mediciones (ver docstring) -- no alcanza a detectar contenido
-        # que se sigue montando de forma asincrónica sin necesidad de scroll.
-        # esperar_altura_estable() vuelve a medir con más tiempo real entre
-        # lecturas (2.5s) para no cortar la página antes de que termine de
-        # crecer por esa vía. Se corre siempre (no solo para Elecciones) por
-        # las dudas de que el mismo patrón afecte otras páginas con widgets
-        # pesados; el costo (unos segundos más por URL) es aceptable.
-        alturas_estables = esperar_altura_estable(driver)
-        log_debug(f"[{tag}] altura tras forzar_carga_contenido: {altura_post_forzar}px | "
-                  f"alturas en expandir_scroll_infinito: {alturas_expandir} | "
-                  f"alturas en esperar_altura_estable: {alturas_estables}")
 
         total_height = driver.execute_script(
             "return Math.max(document.body.scrollHeight, document.body.offsetHeight, "
             "document.documentElement.clientHeight, document.documentElement.scrollHeight, "
             "document.documentElement.offsetHeight);"
         )
-
-        # CAUSA REAL del corte antes del footer en Elecciones (encontrada con el
-        # debug log corregido de una corrida real, 28/09 21:12): el footer real
-        # del sitio (1106px de alto) arranca en offsetTop=21003 pero
-        # scrollHeight medía apenas 21074px -- solo 71px DENTRO del footer, muy
-        # lejos de su rectBottom real (22108.7px). O sea: el footer existe,
-        # está montado, tiene su tamaño final -- pero por algún motivo de CSS
-        # (position:absolute o similar en el footer o un ancestro, que no hace
-        # crecer document.body.scrollHeight aunque el contenido se vea/ocupe
-        # espacio en pantalla) el Math.max(...scrollHeight...) de arriba no lo
-        # cuenta. La ventana se resizeaba a 21074px y el screenshot cortaba
-        # ~1034px ANTES de terminar el footer -- no es un problema de timing
-        # ni de scroll, es que la medición de altura nunca iba a incluirlo por
-        # esa vía. En la misma corrida, V2 sí dio una scrollHeight que alcanzó
-        # a cubrir el footer casi exacto (22120px vs. rectBottom 22108.7px) --
-        # por eso el bug se veía distinto entre V1 y V2 (y entre corridas):
-        # una coincidencia de layout, no algo garantizado.
-        #
-        # Fix: medir directamente el rectBottom del <footer> real (el de
-        # rectBottom más grande entre todos los <footer> del DOM, mismo
-        # criterio que ya usa el chequeo de diagnóstico de más abajo) y
-        # usarlo como piso para total_height, sea cual sea lo que diga
-        # scrollHeight. Se hace para TODAS las páginas (no solo Elecciones)
-        # por si el mismo patrón de layout afecta otras.
-        try:
-            footer_bottom = driver.execute_script(
-                "var fs = document.querySelectorAll('footer');"
-                "if (!fs.length) return 0;"
-                "var mejor = fs[0].getBoundingClientRect().bottom;"
-                "for (var i = 1; i < fs.length; i++) {"
-                "  var b = fs[i].getBoundingClientRect().bottom;"
-                "  if (b > mejor) mejor = b;"
-                "}"
-                "return mejor + window.scrollY;"
-            )
-            if footer_bottom and footer_bottom > total_height:
-                log_debug(f"[{tag}] total_height ({total_height}px) no alcanzaba a cubrir "
-                          f"el footer real (rectBottom+scrollY: {footer_bottom}px) -- "
-                          f"se sube total_height para incluirlo.")
-                total_height = int(footer_bottom) + 20  # margen chico de sobra
-        except Exception as e:
-            log_debug(f"[{tag}] no se pudo medir footer_bottom: {e}")
-
         original_size = driver.get_window_size()
         driver.set_window_size(original_size['width'], total_height)
         time.sleep(1)
@@ -578,43 +401,6 @@ def obtener_estructura_dom(driver, incluir_texto=True, espera_scroll=2, etiqueta
         # de timing, no un cambio del sitio) -> "footer ausente" era un falso positivo.
         limpiar_entorno(driver)
 
-        # Chequeo directo del <footer> justo antes del screenshot final -- para
-        # diagnosticar casos como Elecciones sin adivinar: si existe pero su
-        # offsetTop+offsetHeight es MENOR a total_height, el layout real es más
-        # bajo que lo medido (posible desajuste de timing entre la medición de
-        # altura y el screenshot); si offsetTop+offsetHeight es MAYOR, el footer
-        # cae fuera de la ventana resizeada (la medición de altura se quedó
-        # corta); si `existe` es false, el footer directamente no está montado
-        # en el DOM en este momento (no es un problema de altura/scroll en
-        # absoluto, sino de que el componente no cargó).
-        #
-        # BUG encontrado en la primera versión de este chequeo (corrida del
-        # 28/09 20:56): usaba document.querySelector('footer'), que devuelve
-        # el PRIMER <footer> del DOM -- en TN, un <footer> chico (26px de
-        # alto) anidado dentro de la primera tarjeta de artículo, no el
-        # footer global del sitio. El log resultante (offsetTop:361,
-        # rectTop:~6472 sobre una página de >21000px) no tenía nada que ver
-        # con la posición real del footer visible al final de la página.
-        # Fix: tomar, de TODOS los <footer> del DOM, el que tenga el
-        # rectBottom más grande (el más cercano al final visual de la
-        # página) -- ese sí es candidato a ser el footer global real.
-        try:
-            info_footer = driver.execute_script(
-                "var fs = document.querySelectorAll('footer');"
-                "if (!fs.length) return {existe: false, cantidad: 0};"
-                "var mejor = fs[0], mejorBottom = fs[0].getBoundingClientRect().bottom;"
-                "for (var i = 1; i < fs.length; i++) {"
-                "  var b = fs[i].getBoundingClientRect().bottom;"
-                "  if (b > mejorBottom) { mejorBottom = b; mejor = fs[i]; }"
-                "}"
-                "var r = mejor.getBoundingClientRect();"
-                "return {existe: true, cantidad: fs.length, offsetTop: mejor.offsetTop, "
-                "offsetHeight: mejor.offsetHeight, rectTop: r.top, rectBottom: r.bottom};"
-            )
-        except Exception as e:
-            info_footer = {'error': str(e)}
-        log_debug(f"[{tag}] total_height usado para resize: {total_height}px | footer (el de rectBottom más grande, de todos los <footer> del DOM): {info_footer}")
-
         js = JS_EXTRACCION.replace('INCLUIR_TEXTO', 'true' if incluir_texto else 'false')
         result = driver.execute_script(js)
         data = result.get('elements', [])
@@ -624,7 +410,6 @@ def obtener_estructura_dom(driver, incluir_texto=True, espera_scroll=2, etiqueta
 
     except Exception as e:
         print(f"     ❌ Error en la extracción/captura: {e}")
-        log_debug(f"[{tag}] ❌ Excepción en obtener_estructura_dom: {e}")
         data = [{'selector': 'FATAL ERROR'}]
 
     return data, png
@@ -688,7 +473,7 @@ def ejecutar_selenium_para_estructura(url, modo, config):
         # el estilo comparara igual, es que ese <a> nunca se extraía en
         # desktop, así que ni pasaba por emparejamiento ni por comparación
         # de estilos. Ahora ambos modos extraen los mismos tags.
-        data, png = obtener_estructura_dom(driver, incluir_texto=True, etiqueta=url)
+        data, png = obtener_estructura_dom(driver, incluir_texto=True)
 
     except Exception as e:
         print(f"❌ Error al inicializar/ejecutar Selenium en {url}: {e}")
@@ -1165,17 +950,6 @@ def main(base_urls_map, producto_nombre="Sitio", output_dir_base=os.path.join('r
     config = config_modos(output_dir_base)[args.modo]
     output_dir = config['output_dir']
     os.makedirs(output_dir, exist_ok=True)
-
-    # Debug log dentro de output_dir: viaja con el resto del reporte al
-    # publicarse a la rama reportes-<producto>-<modo> (git add -f de esa
-    # carpeta entera), así se puede leer con git show/cat sin pasar por la
-    # UI de Actions (bloqueada desde el sandbox). Se pisa en cada corrida.
-    global _DEBUG_LOG_PATH
-    _DEBUG_LOG_PATH = os.path.join(output_dir, '_debug.log')
-    try:
-        open(_DEBUG_LOG_PATH, 'w').close()
-    except Exception:
-        _DEBUG_LOG_PATH = None
 
     urls_map = base_urls_map
     if args.urls:
