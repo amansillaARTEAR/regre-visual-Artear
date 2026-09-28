@@ -390,6 +390,22 @@
           </div>
         </div>
 
+        <div class="card">
+          <h2>Ambiente</h2>
+          <p class="muted" style="margin-top:0">
+            Contra qué ambiente de TN corre la suite (aplica a Android e iOS). Por defecto SBX.
+          </p>
+          <div class="actions" style="align-items:center">
+            <select id="wmAmbiente" onchange="onCambioAmbienteWebmobile()">
+              <option value="sbx" selected>SBX (sandbox)</option>
+              <option value="dev">DEV</option>
+              <option value="vnp">VNP (mirror de PROD)</option>
+            </select>
+            <input type="text" id="wmVersion" placeholder="Versión (ej: 721)" style="display:none;max-width:160px">
+          </div>
+          <div class="hint" id="wmAmbienteHint">SBX no usa número de versión.</div>
+        </div>
+
         <div class="grid">
 
           <div class="card">
@@ -927,17 +943,49 @@ function selectedCasosFiltro(){
   return [...casosSeleccionados].join(" or ");
 }
 
+// SBX no lleva número de versión (se cambia "dev" por "sandbox" en el dominio); DEV y VNP sí
+// (?d=<version>), armado del lado del workflow a partir de estos dos inputs -- ver
+// "Armar URL del ambiente" en webmobile.yml / webmobile-ios.yml.
+function onCambioAmbienteWebmobile(){
+  const ambiente = document.getElementById("wmAmbiente").value;
+  const version = document.getElementById("wmVersion");
+  const hint = document.getElementById("wmAmbienteHint");
+  if(ambiente === "sbx"){
+    version.style.display = "none";
+    hint.textContent = "SBX no usa número de versión.";
+  } else {
+    version.style.display = "";
+    hint.textContent = ambiente === "dev"
+      ? "DEV necesita la versión promovida (número al final de la URL)."
+      : "VNP (mirror de PROD) necesita la versión promovida (número al final de la URL).";
+  }
+}
+
+// Devuelve {ambiente, version} listo para mandar como inputs, o null (+ toast) si falta la
+// versión en un ambiente que la necesita.
+function leerAmbienteWebmobile(){
+  const ambiente = document.getElementById("wmAmbiente").value;
+  const version = document.getElementById("wmVersion").value.trim();
+  if(ambiente !== "sbx" && !version){
+    toast(`El ambiente ${ambiente.toUpperCase()} necesita el número de versión`, "error");
+    return null;
+  }
+  return { ambiente, version };
+}
+
 async function dispatchWebmobile(){
   if(!TOKEN){ toast("Configurá el token primero", "error"); return; }
+  const amb = leerAmbienteWebmobile();
+  if(!amb) return;
   const filtro = selectedCasosFiltro();
   const btn = document.getElementById("btnWmDispatch");
   btn.disabled = true; btn.innerHTML = `<span class="spinner"></span> Disparando…`;
   try{
     await gh(`/repos/${WEBMOBILE_OWNER}/${WEBMOBILE_REPO}/actions/workflows/${WEBMOBILE_WORKFLOW}/dispatches`, {
       method: "POST",
-      body: JSON.stringify({ ref: "main", inputs: { filtro } })
+      body: JSON.stringify({ ref: "main", inputs: { filtro, ambiente: amb.ambiente, version: amb.version } })
     });
-    toast(filtro ? `Corrida disparada (filtro: ${filtro})` : "Corrida disparada (suite completa)", "ok");
+    toast(filtro ? `Corrida disparada (${amb.ambiente.toUpperCase()} · filtro: ${filtro})` : `Corrida disparada (${amb.ambiente.toUpperCase()} · suite completa)`, "ok");
     setTimeout(loadRunsWebmobile, 2500);
   } catch(e){
     toast("Error al disparar: " + e.message, "error");
@@ -948,6 +996,8 @@ async function dispatchWebmobile(){
 
 async function dispatchWebmobileIos(){
   if(!TOKEN){ toast("Configurá el token primero", "error"); return; }
+  const amb = leerAmbienteWebmobile();
+  if(!amb) return;
   const endpoint = document.getElementById("wmIosEndpoint").value.trim();
   const filtro = selectedCasosFiltro();
   if(!endpoint){ toast("Pegá la URL del endpoint de AWS Device Farm primero", "error"); return; }
@@ -957,9 +1007,9 @@ async function dispatchWebmobileIos(){
   try{
     await gh(`/repos/${WEBMOBILE_OWNER}/${WEBMOBILE_REPO}/actions/workflows/${WEBMOBILE_IOS_WORKFLOW}/dispatches`, {
       method: "POST",
-      body: JSON.stringify({ ref: "main", inputs: { appium_endpoint: endpoint, filtro } })
+      body: JSON.stringify({ ref: "main", inputs: { appium_endpoint: endpoint, filtro, ambiente: amb.ambiente, version: amb.version } })
     });
-    toast("Corrida iOS disparada", "ok");
+    toast(`Corrida iOS disparada (${amb.ambiente.toUpperCase()})`, "ok");
     setTimeout(loadRunsWebmobile, 2500);
   } catch(e){
     toast("Error al disparar: " + e.message, "error");
