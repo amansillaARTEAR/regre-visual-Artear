@@ -90,7 +90,7 @@
   /* Reportes publicados: ahora vive en la columna angosta (col-angosta) --
      con scroll interno para no estirar la card mucho más que Limpieza de
      artifacts, que es con la que comparte esa columna. */
-  .reports-scroll{max-height:190px}
+  .reports-scroll{max-height:130px}
   .runs-scroll table{font-size:11.8px;table-layout:fixed}
   .runs-scroll th, .runs-scroll td{padding:4px 6px;white-space:nowrap}
   /* La columna del nombre de la corrida es la única que puede ser larga -- se trunca con
@@ -265,7 +265,7 @@
           </div>
         </div>
 
-        <div class="grid">
+        <div class="grid" style="align-items:stretch">
 
           <div class="card">
             <h2>Disparar regresión</h2>
@@ -328,8 +328,7 @@
             <div class="card compact">
               <h2>Limpieza de artifacts</h2>
               <p class="muted" style="margin-top:0">
-                Corre semanalmente sola (domingos 06:00 UTC) y borra artifacts viejos de Actions para no llenar el storage.
-                Desde acá podés dispararla manualmente cuando quieras.
+                Corre sola los domingos. Desde acá podés dispararla manualmente cuando quieras.
               </p>
               <label>Borrar artifacts con más de N días</label>
               <input type="number" id="diasLimpieza" value="7" min="1">
@@ -344,8 +343,7 @@
                 <button class="ghost" onclick="loadReportBranches()">↻ Actualizar</button>
               </h2>
               <p class="muted" style="margin-top:0">
-                Cada corrida publica su reporte HTML (con capturas incluidas) en una rama dedicada del repo, sin depender de la
-                descarga de artifacts. Elegí uno para verlo acá mismo.
+                Reporte HTML de cada corrida, publicado en una rama del repo. Elegí uno para verlo acá.
               </p>
               <div class="scroll-y reports-scroll" id="reportsWrap"><div class="empty">Configurá el token para ver los reportes.</div></div>
             </div>
