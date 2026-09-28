@@ -66,6 +66,7 @@
   tr.caso-grupo td{background:var(--panel2);border-top:1px solid var(--border);padding-top:8px;padding-bottom:8px}
   tr.caso-grupo:first-child td{border-top:none}
   td.caso-nombre{padding-left:22px}
+  .caso-grupo-chevron{display:inline-block;width:14px;color:var(--muted);font-size:11px}
   .paso-badge{background:var(--accent);color:#fff;font-size:10.5px;font-weight:700;padding:2px 8px;border-radius:20px;margin-right:8px;letter-spacing:.02em;text-transform:none}
   .card p.muted{font-size:12.5px;line-height:1.45}
   label{display:block;font-size:12.5px;color:var(--muted);margin-bottom:4px;margin-top:9px}
@@ -827,6 +828,8 @@ async function cargarCasosWebmobile(){
     // Orden natural: los de la suite oficial en el orden en que aparecen en el archivo,
     // y los generados (si los hay) al final.
     WEBMOBILE_CASOS = archivos.flatMap((texto, i) => parseCasosDeArchivo(texto, rutas[i]));
+    const idsVigentes = new Set(WEBMOBILE_CASOS.map(c => c.id));
+    [...casosSeleccionados].forEach(id => { if(!idsVigentes.has(id)) casosSeleccionados.delete(id); });
     renderCasosTable();
     poblarComponentesConocidos();
   } catch(e){
@@ -861,14 +864,23 @@ function renderCasosTable(){
   body.innerHTML = nombresGrupo.map(nombreGrupo => {
     const casos = grupos.get(nombreGrupo);
     const idsGrupo = casos.map(c => c.id).join(",");
+    const colapsado = !!gruposColapsados[nombreGrupo];
+    const grupoCompleto = casos.every(c => casosSeleccionados.has(c.id));
+    const nombreJs = nombreGrupo.replace(/\\/g, "\\\\").replace(/'/g, "\\'");
     const filaGrupo = `
       <tr class="caso-grupo">
-        <td><input type="checkbox" onchange="tildarGrupo('${idsGrupo}', this.checked)" title="Tildar todo ${nombreGrupo}"></td>
-        <td colspan="3"><b>${nombreGrupo}</b> <span class="muted">(${casos.length})</span></td>
+        <td><input type="checkbox" ${grupoCompleto ? "checked" : ""} onclick="event.stopPropagation()"
+              onchange="tildarGrupo('${idsGrupo}', this.checked)" title="Tildar todo ${nombreGrupo}"></td>
+        <td colspan="3" onclick="toggleGrupo('${nombreJs}')" style="cursor:pointer">
+          <span class="caso-grupo-chevron">${colapsado ? "▸" : "▾"}</span>
+          <b>${nombreGrupo}</b> <span class="muted">(${casos.length})</span>
+        </td>
       </tr>`;
+    if(colapsado) return filaGrupo;
     const filasCasos = casos.map(c => `
       <tr>
-        <td><input type="checkbox" class="casoCheck" value="${c.id}"></td>
+        <td><input type="checkbox" class="casoCheck" value="${c.id}" ${casosSeleccionados.has(c.id) ? "checked" : ""}
+              onchange="toggleCasoSeleccionado('${c.id}', this.checked)"></td>
         <td class="caso-nombre"><b>${c.nombre}</b></td>
         <td class="muted">${c.desc}</td>
         <td>
@@ -879,19 +891,32 @@ function renderCasosTable(){
     return filaGrupo + filasCasos;
   }).join("");
 }
+let gruposColapsados = {};
+try { gruposColapsados = JSON.parse(localStorage.getItem("wm_grupos_colapsados") || "{}"); } catch(e){ gruposColapsados = {}; }
+function toggleGrupo(nombreGrupo){
+  gruposColapsados[nombreGrupo] = !gruposColapsados[nombreGrupo];
+  try { localStorage.setItem("wm_grupos_colapsados", JSON.stringify(gruposColapsados)); } catch(e){}
+  renderCasosTable();
+}
+// La selección se guarda por id, no por el estado del checkbox en el DOM -- así un caso
+// tildado se mantiene elegido aunque su grupo esté colapsado (y el checkbox ni exista).
+let casosSeleccionados = new Set();
+function toggleCasoSeleccionado(id, checked){
+  if(checked) casosSeleccionados.add(id); else casosSeleccionados.delete(id);
+  renderCasosTable();
+}
 function tildarGrupo(idsCsv, checked){
-  const ids = new Set(idsCsv.split(","));
-  document.querySelectorAll(".casoCheck").forEach(cb => {
-    if(ids.has(cb.value)) cb.checked = checked;
+  idsCsv.split(",").forEach(id => {
+    if(checked) casosSeleccionados.add(id); else casosSeleccionados.delete(id);
   });
+  renderCasosTable();
 }
 function clearCasosSeleccionados(){
-  document.querySelectorAll(".casoCheck").forEach(cb => cb.checked = false);
-  document.querySelectorAll(".caso-grupo input[type=checkbox]").forEach(cb => cb.checked = false);
+  casosSeleccionados.clear();
+  renderCasosTable();
 }
 function selectedCasosFiltro(){
-  const ids = Array.from(document.querySelectorAll(".casoCheck:checked")).map(cb => cb.value);
-  return ids.join(" or ");
+  return [...casosSeleccionados].join(" or ");
 }
 
 async function dispatchWebmobile(){
