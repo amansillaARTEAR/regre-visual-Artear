@@ -57,6 +57,10 @@
   .grid, .grid3{display:flex;flex-wrap:wrap;gap:14px;align-items:flex-start;margin-bottom:14px}
   .grid > .card, .grid3 > .card{flex:1 1 340px; margin-bottom:0}
   .grid3 > .card{flex-basis:260px}
+  /* Una card "compact" (contenido corto, ej. "Limpieza de artifacts") no debe crecer para
+     igualar el ancho de su vecina: se queda en su ancho natural y la card grande (flex:1)
+     absorbe todo el espacio restante de la fila. */
+  .grid > .card.compact{flex:0 1 300px;max-width:320px}
   .card{background:var(--panel);border:1px solid var(--border);border-radius:var(--radius);padding:14px 16px;margin-bottom:14px}
   .card h2{font-size:12.5px;margin:0 0 10px;text-transform:uppercase;letter-spacing:.04em;color:var(--accent2);font-weight:600;display:flex;align-items:center;justify-content:space-between}
   .paso-badge{background:var(--accent);color:#fff;font-size:10.5px;font-weight:700;padding:2px 8px;border-radius:20px;margin-right:8px;letter-spacing:.02em;text-transform:none}
@@ -257,7 +261,7 @@
             </div>
           </div>
 
-          <div class="card">
+          <div class="card compact">
             <h2>Limpieza de artifacts</h2>
             <p class="muted" style="margin-top:0">
               Corre semanalmente sola (domingos 06:00 UTC) y borra artifacts viejos de Actions para no llenar el storage.
