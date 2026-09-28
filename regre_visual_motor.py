@@ -517,6 +517,49 @@ def obtener_estructura_dom(driver, incluir_texto=True, espera_scroll=2, etiqueta
             "document.documentElement.clientHeight, document.documentElement.scrollHeight, "
             "document.documentElement.offsetHeight);"
         )
+
+        # CAUSA REAL del corte antes del footer en Elecciones (encontrada con el
+        # debug log corregido de una corrida real, 28/09 21:12): el footer real
+        # del sitio (1106px de alto) arranca en offsetTop=21003 pero
+        # scrollHeight medía apenas 21074px -- solo 71px DENTRO del footer, muy
+        # lejos de su rectBottom real (22108.7px). O sea: el footer existe,
+        # está montado, tiene su tamaño final -- pero por algún motivo de CSS
+        # (position:absolute o similar en el footer o un ancestro, que no hace
+        # crecer document.body.scrollHeight aunque el contenido se vea/ocupe
+        # espacio en pantalla) el Math.max(...scrollHeight...) de arriba no lo
+        # cuenta. La ventana se resizeaba a 21074px y el screenshot cortaba
+        # ~1034px ANTES de terminar el footer -- no es un problema de timing
+        # ni de scroll, es que la medición de altura nunca iba a incluirlo por
+        # esa vía. En la misma corrida, V2 sí dio una scrollHeight que alcanzó
+        # a cubrir el footer casi exacto (22120px vs. rectBottom 22108.7px) --
+        # por eso el bug se veía distinto entre V1 y V2 (y entre corridas):
+        # una coincidencia de layout, no algo garantizado.
+        #
+        # Fix: medir directamente el rectBottom del <footer> real (el de
+        # rectBottom más grande entre todos los <footer> del DOM, mismo
+        # criterio que ya usa el chequeo de diagnóstico de más abajo) y
+        # usarlo como piso para total_height, sea cual sea lo que diga
+        # scrollHeight. Se hace para TODAS las páginas (no solo Elecciones)
+        # por si el mismo patrón de layout afecta otras.
+        try:
+            footer_bottom = driver.execute_script(
+                "var fs = document.querySelectorAll('footer');"
+                "if (!fs.length) return 0;"
+                "var mejor = fs[0].getBoundingClientRect().bottom;"
+                "for (var i = 1; i < fs.length; i++) {"
+                "  var b = fs[i].getBoundingClientRect().bottom;"
+                "  if (b > mejor) mejor = b;"
+                "}"
+                "return mejor + window.scrollY;"
+            )
+            if footer_bottom and footer_bottom > total_height:
+                log_debug(f"[{tag}] total_height ({total_height}px) no alcanzaba a cubrir "
+                          f"el footer real (rectBottom+scrollY: {footer_bottom}px) -- "
+                          f"se sube total_height para incluirlo.")
+                total_height = int(footer_bottom) + 20  # margen chico de sobra
+        except Exception as e:
+            log_debug(f"[{tag}] no se pudo medir footer_bottom: {e}")
+
         original_size = driver.get_window_size()
         driver.set_window_size(original_size['width'], total_height)
         time.sleep(1)
