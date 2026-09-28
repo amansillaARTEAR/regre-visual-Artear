@@ -78,6 +78,11 @@
      fila sin sumar alto extra al contenedor. */
   .scroll-y{max-height:280px;overflow-y:auto;scrollbar-width:none;-ms-overflow-style:none}
   .scroll-y::-webkit-scrollbar{display:none}
+  /* Corridas recientes: mucho más bajo que el scroll-y genérico y con filas angostas,
+     para que la card no empuje todo lo de abajo aunque haya varias corridas listadas. */
+  .runs-scroll{max-height:160px}
+  .runs-scroll table{font-size:11.8px}
+  .runs-scroll th, .runs-scroll td{padding:4px 6px}
   .scroll-y::after{
     content:"";display:block;position:sticky;bottom:0;left:0;right:0;
     height:28px;margin-top:-28px;pointer-events:none;
@@ -318,7 +323,7 @@
             Corridas recientes
             <button class="ghost" onclick="loadRuns()">↻ Actualizar</button>
           </h2>
-          <div id="runsTableWrap"><div class="empty">Configurá el token para ver las corridas.</div></div>
+          <div class="scroll-y runs-scroll" id="runsTableWrap"><div class="empty">Configurá el token para ver las corridas.</div></div>
         </div>
 
         <div class="card">
@@ -447,7 +452,7 @@
             Corridas recientes
             <button class="ghost" onclick="loadRunsWebmobile()">↻ Actualizar</button>
           </h2>
-          <div class="scroll-y" id="wmRunsTableWrap"><div class="empty">Configurá el token para ver las corridas.</div></div>
+          <div class="scroll-y runs-scroll" id="wmRunsTableWrap"><div class="empty">Configurá el token para ver las corridas.</div></div>
         </div>
 
       </div>
