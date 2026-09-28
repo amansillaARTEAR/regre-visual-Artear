@@ -185,6 +185,43 @@ def forzar_carga_contenido(driver, espera_scroll=2):
     time.sleep(espera_scroll)
 
 
+def expandir_scroll_infinito(driver, max_iteraciones=12, espera=1.2):
+    """Repite scroll-al-fondo hasta que scrollHeight deje de crecer (o se llegue
+    al tope de iteraciones), para páginas con paginación por scroll (ej: TN
+    Elecciones -- un hub de cobertura en vivo, "Decisión 25" -- que sigue
+    agregando bloques de contenido cada vez que se llega al fondo, no solo
+    revela imágenes lazy debajo del fold).
+
+    Por qué hace falta además de forzar_carga_contenido(): esa función hace UN
+    solo ciclo de scroll-al-fondo. Alcanza para lazy-loading normal (imágenes,
+    iframes), pero no para paginación infinita real: cada scroll-al-fondo
+    dispara la carga del SIGUIENTE bloque, que a su vez corre el fondo más
+    abajo -- hace falta re-scrollear al nuevo fondo repetidamente hasta que
+    no aparezca contenido nuevo.
+
+    Bug real (TN webmobile, v.next): Elecciones medía document.body.scrollHeight
+    justo después de un solo scroll-al-fondo y devolvía un valor bastante menor
+    al real; la ventana se resizeaba a esa altura y el screenshot final quedaba
+    cortado ANTES del footer real -- en V1 y V2 por igual (footer directamente
+    ausente de la captura en las dos, no una diferencia entre versiones).
+
+    Tope de iteraciones (no un `while True`) porque una página con paginación
+    verdaderamente infinita (o que sigue agregando notas en vivo sin fin) nunca
+    va a "estabilizar" -- después de `max_iteraciones` se toma la altura
+    alcanzada hasta ahí como suficientemente representativa y se sigue, en vez
+    de bloquear la corrida esperando algo que puede no pasar nunca."""
+    altura_anterior = 0
+    for _ in range(max_iteraciones):
+        altura_actual = driver.execute_script("return document.body.scrollHeight;")
+        if altura_actual == altura_anterior:
+            break
+        altura_anterior = altura_actual
+        driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
+        time.sleep(espera)
+    driver.execute_script("window.scrollTo(0, 0);")
+    time.sleep(0.5)
+
+
 # =====================================================================
 # EXTRACCIÓN DEL DOM (con fingerprint: tag, clases, data-*, texto)
 # =====================================================================
@@ -377,6 +414,7 @@ def obtener_estructura_dom(driver, incluir_texto=True, espera_scroll=2):
         time.sleep(1)
         limpiar_entorno(driver)
         forzar_carga_contenido(driver, espera_scroll=espera_scroll)
+        expandir_scroll_infinito(driver)
 
         total_height = driver.execute_script(
             "return Math.max(document.body.scrollHeight, document.body.offsetHeight, "
