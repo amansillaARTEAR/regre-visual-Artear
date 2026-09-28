@@ -388,6 +388,19 @@ def obtener_estructura_dom(driver, incluir_texto=True, espera_scroll=2):
         time.sleep(1)
         esperar_fuentes(driver)  # el resize puede revelar contenido lazy-loaded con su propia fuente
 
+        # Tercera limpieza, justo antes del screenshot: los dos llamados de arriba pasan
+        # ANTES de forzar_carga_contenido (~8s de scrolls) + el resize + esta espera de
+        # fuentes -- tiempo de sobra para que aparezca un popup con delay propio (ej. el
+        # slidedown de OneSignal pidiendo permiso de notificaciones, que en TN no aparece
+        # al cargar sino unos segundos después). Si aparece ahí, nunca se vuelve a limpiar
+        # y arruina el screenshot: al ser position:fixed y haber resizeado la ventana a la
+        # altura TOTAL del documento, un fixed anclado abajo del viewport termina flotando
+        # justo donde cae el footer, tapándolo en la captura (el footer sigue en el DOM --
+        # por eso un F12 manual lo muestra bien -- pero visualmente desaparece del PNG).
+        # Bug real: TN webmobile v.next, mismo componente disparó en V1 y no en V2 (carrera
+        # de timing, no un cambio del sitio) -> "footer ausente" era un falso positivo.
+        limpiar_entorno(driver)
+
         js = JS_EXTRACCION.replace('INCLUIR_TEXTO', 'true' if incluir_texto else 'false')
         result = driver.execute_script(js)
         data = result.get('elements', [])
