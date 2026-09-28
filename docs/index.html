@@ -774,7 +774,7 @@ function parseCasosDeArchivo(texto, ruta){
   // Un archivo = un ticket = un componente. Si no está (ej. la suite oficial, escrita a
   // mano antes de que existiera este tag), va todo a un grupo genérico.
   const mComponente = texto.slice(0, 400).match(/^#\s*Componente:\s*(.+)$/mi);
-  const componente = mComponente ? mComponente[1].trim() : "Player (suite base)";
+  const componente = mComponente ? mComponente[1].trim() : "Videos Verticales";
   const reDef = /^\s*def (test_\w+)\(player\s*,\s*registro\)\s*:/;
   for(let i = 0; i < lineas.length; i++){
     const m = lineas[i].match(reDef);
@@ -837,7 +837,7 @@ async function cargarCasosWebmobile(){
 function poblarComponentesConocidos(){
   const datalist = document.getElementById("componentesConocidos");
   if(!datalist) return;
-  const nombres = [...new Set(WEBMOBILE_CASOS.map(c => c.componente).filter(n => n !== "Player (suite base)"))].sort();
+  const nombres = [...new Set(WEBMOBILE_CASOS.map(c => c.componente))].sort();
   datalist.innerHTML = nombres.map(n => `<option value="${n.replace(/"/g,'&quot;')}">`).join("");
 }
 
@@ -856,7 +856,7 @@ function renderCasosTable(){
     grupos.get(c.componente).push(c);
   });
   const nombresGrupo = [...grupos.keys()].sort((a, b) =>
-    a === "Player (suite base)" ? -1 : b === "Player (suite base)" ? 1 : a.localeCompare(b));
+    a === "Videos Verticales" ? -1 : b === "Videos Verticales" ? 1 : a.localeCompare(b));
 
   body.innerHTML = nombresGrupo.map(nombreGrupo => {
     const casos = grupos.get(nombreGrupo);
