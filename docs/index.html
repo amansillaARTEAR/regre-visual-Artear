@@ -775,10 +775,20 @@ function parseCasosDeArchivo(texto, ruta){
     }
     let nombre = id.replace(/^test_/, "").toUpperCase();
     let desc = doc || "(sin descripción en el docstring)";
-    const idx = doc.indexOf(":");
-    if(idx > 0 && idx < 20){
-      nombre = doc.slice(0, idx).trim();
-      desc = doc.slice(idx + 1).trim();
+    // Casos con varios escenarios por ticket usan docstrings tipo "POSITIVO: CA16 - ...":
+    // mostramos "CA16 · Positivo" en vez de "POSITIVO", para que se vea consistente con
+    // el resto de la lista (CA12, CA13, ...).
+    const mEscenario = doc.match(/^(POSITIVO|NEGATIVO|BORDE)\s*:\s*(CA\d+)\s*-?\s*(.*)$/i);
+    if(mEscenario){
+      const tipo = mEscenario[1][0].toUpperCase() + mEscenario[1].slice(1).toLowerCase();
+      nombre = `${mEscenario[2].toUpperCase()} · ${tipo}`;
+      desc = mEscenario[3].trim() || desc;
+    } else {
+      const idx = doc.indexOf(":");
+      if(idx > 0 && idx < 20){
+        nombre = doc.slice(0, idx).trim();
+        desc = doc.slice(idx + 1).trim();
+      }
     }
     casos.push({id, nombre, desc, linea: numeroLinea, archivo: ruta});
   }
