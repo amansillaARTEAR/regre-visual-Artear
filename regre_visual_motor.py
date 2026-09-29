@@ -411,42 +411,43 @@ def obtener_estructura_dom(driver, incluir_texto=True, espera_scroll=2):
         # de timing, no un cambio del sitio) -> "footer ausente" era un falso positivo.
         limpiar_entorno(driver)
 
+        # FIX #36 — estabilizar el alto ANTES de extraer datos y capturar, en
+        # vez de re-medir una sola vez después de extraer (fix #34). Evidencia
+        # real (usuario, TN mobile, 28/09 23:30): con el fix #34 ya desplegado,
+        # el footer seguía cortado en TODAS las evidencias mobile, faltando
+        # los últimos 2 links ("Políticas de privacidad", "Media Kit") que sí
+        # existen en el DOM desde el primer momento (confirmado con DevTools
+        # en la página real) -- no es un problema de contenido que tarda en
+        # aparecer, sino de que el propio resize de la ventana a una altura
+        # enorme (para que el documento completo entre en un solo screenshot)
+        # puede hacer crecer el documento DE NUEVO: cualquier estilo del sitio
+        # que use unidades `vh` cambia de valor cuando la ventana pasa a medir
+        # ~20000px de alto, lo que puede modificar el alto real del footer u
+        # otro bloque después de la primera corrección. El fix #34 solo
+        # re-medía y resizeaba UNA vez; si el crecimiento seguía después de
+        # ese segundo resize, quedaba sin corregir. Acá se repite re-medir +
+        # resizear hasta que el alto deja de crecer (o se alcanza el tope de
+        # intentos), y la extracción de datos (JS_EXTRACCION) y el screenshot
+        # se hacen recién después, ya sobre el alto estabilizado -- para que
+        # ambos reflejen el mismo estado final del documento.
+        MAX_INTENTOS_ESTABILIZAR_ALTURA = 4
+        altura_final = total_height
+        for _ in range(MAX_INTENTOS_ESTABILIZAR_ALTURA):
+            nueva_altura = driver.execute_script(
+                "return Math.max(document.body.scrollHeight, document.body.offsetHeight, "
+                "document.documentElement.clientHeight, document.documentElement.scrollHeight, "
+                "document.documentElement.offsetHeight);"
+            )
+            if nueva_altura <= altura_final:
+                altura_final = nueva_altura
+                break
+            altura_final = nueva_altura
+            driver.set_window_size(original_size['width'], altura_final)
+            time.sleep(1)
+
         js = JS_EXTRACCION.replace('INCLUIR_TEXTO', 'true' if incluir_texto else 'false')
         result = driver.execute_script(js)
         data = result.get('elements', [])
-
-        # FIX #34 — re-medir el alto real justo antes de la captura, no confiar
-        # en el `total_height` medido más arriba. Entre esa medición y este
-        # punto pasan: 1s de sleep + esperar_fuentes (hasta 5s) + la 3ra
-        # limpiar_entorno (fix #28) -- tiempo de sobra para que contenido que
-        # carga lento (fuente custom, un widget que termina de renderizar, el
-        # footer asentando su alto final) haga crecer el documento MÁS ALLÁ
-        # de la ventana que ya se redimensionó con el total_height viejo.
-        #
-        # Si eso pasa, el screenshot (get_screenshot_as_png, limitado exacto
-        # al alto de la ventana) sale cortado -- pero la extracción DOM de
-        # arriba (JS_EXTRACCION) NO se ve afectada, porque usa
-        # getBoundingClientRect() + scroll offset, que no depende del tamaño
-        # de ventana: mide la posición real del elemento en la página, exista
-        # o no espacio de ventana para verlo. Por eso la comparación
-        # estructural V1 vs V2 puede dar "sin diferencias" (ambos DOM se
-        # miden bien, footer incluido) mientras UNA de las dos imágenes
-        # (a veces V1, a veces V2 -- depende de cuál tuvo el asentamiento más
-        # lento esa corrida puntual, no es determinístico por URL) aparece
-        # sin footer. Caso real que motivó este fix: Elecciones mobile v721,
-        # 28/09 21:58 -- V2 quedó en 20955px de screenshot mientras el
-        # documento real medía 22001px (igual que V1), footer entero afuera
-        # de la captura, y el reporte igual dio "✅ No se encontraron
-        # diferencias" porque la extracción DOM (que corre después de este
-        # punto) sí veía el footer bien ubicado.
-        altura_final = driver.execute_script(
-            "return Math.max(document.body.scrollHeight, document.body.offsetHeight, "
-            "document.documentElement.clientHeight, document.documentElement.scrollHeight, "
-            "document.documentElement.offsetHeight);"
-        )
-        if altura_final > total_height:
-            driver.set_window_size(original_size['width'], altura_final)
-            time.sleep(1)
 
         png = driver.get_screenshot_as_png()
         driver.set_window_size(original_size['width'], original_size['height'])
@@ -457,12 +458,12 @@ def obtener_estructura_dom(driver, incluir_texto=True, espera_scroll=2):
         # desapercibido el caso real del fix #34: el reporte decía "✅ sin
         # diferencias" con 1046px de footer cortado en una de las dos
         # capturas). altura_captura es el alto de ventana con el que
-        # efectivamente se tomó ESTE screenshot (ya incluye el ajuste del
-        # fix #34 si hizo falta). max_bottom es la posición real más baja
-        # de cualquier elemento medido por JS_EXTRACCION (getBoundingClientRect,
+        # efectivamente se tomó ESTE screenshot (ya estabilizado por el fix
+        # #36 de arriba). max_bottom es la posición real más baja de
+        # cualquier elemento medido por JS_EXTRACCION (getBoundingClientRect,
         # independiente del tamaño de ventana). Si max_bottom se pasa de
         # altura_captura por más que el umbral, algo quedó fuera del PNG.
-        altura_captura = max(altura_final, total_height)
+        altura_captura = altura_final
         bottoms = [
             el['y'] + el['height'] for el in data
             if isinstance(el, dict) and isinstance(el.get('y'), (int, float))
