@@ -405,6 +405,39 @@ def obtener_estructura_dom(driver, incluir_texto=True, espera_scroll=2):
         result = driver.execute_script(js)
         data = result.get('elements', [])
 
+        # FIX #34 — re-medir el alto real justo antes de la captura, no confiar
+        # en el `total_height` medido más arriba. Entre esa medición y este
+        # punto pasan: 1s de sleep + esperar_fuentes (hasta 5s) + la 3ra
+        # limpiar_entorno (fix #28) -- tiempo de sobra para que contenido que
+        # carga lento (fuente custom, un widget que termina de renderizar, el
+        # footer asentando su alto final) haga crecer el documento MÁS ALLÁ
+        # de la ventana que ya se redimensionó con el total_height viejo.
+        #
+        # Si eso pasa, el screenshot (get_screenshot_as_png, limitado exacto
+        # al alto de la ventana) sale cortado -- pero la extracción DOM de
+        # arriba (JS_EXTRACCION) NO se ve afectada, porque usa
+        # getBoundingClientRect() + scroll offset, que no depende del tamaño
+        # de ventana: mide la posición real del elemento en la página, exista
+        # o no espacio de ventana para verlo. Por eso la comparación
+        # estructural V1 vs V2 puede dar "sin diferencias" (ambos DOM se
+        # miden bien, footer incluido) mientras UNA de las dos imágenes
+        # (a veces V1, a veces V2 -- depende de cuál tuvo el asentamiento más
+        # lento esa corrida puntual, no es determinístico por URL) aparece
+        # sin footer. Caso real que motivó este fix: Elecciones mobile v721,
+        # 28/09 21:58 -- V2 quedó en 20955px de screenshot mientras el
+        # documento real medía 22001px (igual que V1), footer entero afuera
+        # de la captura, y el reporte igual dio "✅ No se encontraron
+        # diferencias" porque la extracción DOM (que corre después de este
+        # punto) sí veía el footer bien ubicado.
+        altura_final = driver.execute_script(
+            "return Math.max(document.body.scrollHeight, document.body.offsetHeight, "
+            "document.documentElement.clientHeight, document.documentElement.scrollHeight, "
+            "document.documentElement.offsetHeight);"
+        )
+        if altura_final > total_height:
+            driver.set_window_size(original_size['width'], altura_final)
+            time.sleep(1)
+
         png = driver.get_screenshot_as_png()
         driver.set_window_size(original_size['width'], original_size['height'])
 
