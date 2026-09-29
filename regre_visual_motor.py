@@ -102,12 +102,6 @@ DOMINIOS_BLOQUEADOS = [
 
 REINTENTOS_MAX = 2  # intentos totales por URL (1 original + 1 reintento)
 
-# FIX #35 — umbral de tolerancia para el chequeo de "captura recortada"
-# (ver obtener_estructura_dom). 20px de margen para no generar falsos
-# positivos por redondeo/subpíxel o por elementos legítimamente
-# posicionados apenas fuera del área capturada.
-UMBRAL_RECORTE_PX = 20
-
 
 # =====================================================================
 # UTILIDADES
@@ -371,14 +365,10 @@ def esperar_fuentes(driver, timeout=5):
 
 
 def obtener_estructura_dom(driver, incluir_texto=True, espera_scroll=2):
-    """Devuelve (data, png, recorte) para la URL actualmente cargada en el driver.
-
-    `recorte` es None si la captura parece completa, o un dict con detalle
-    si el screenshot quedó más chico que la posición real de algún elemento
-    del DOM (ver FIX #35 más abajo)."""
+    """Devuelve (data, png) para la URL actualmente cargada en el driver."""
     from selenium.webdriver.support.ui import WebDriverWait
 
-    data, png, recorte = [], None, None
+    data, png = [], None
     try:
         WebDriverWait(driver, 20).until(lambda d: d.execute_script("return document.readyState") == "complete")
         esperar_fuentes(driver)
@@ -398,53 +388,6 @@ def obtener_estructura_dom(driver, incluir_texto=True, espera_scroll=2):
         time.sleep(1)
         esperar_fuentes(driver)  # el resize puede revelar contenido lazy-loaded con su propia fuente
 
-        # Tercera limpieza, justo antes del screenshot: los dos llamados de arriba pasan
-        # ANTES de forzar_carga_contenido (~8s de scrolls) + el resize + esta espera de
-        # fuentes -- tiempo de sobra para que aparezca un popup con delay propio (ej. el
-        # slidedown de OneSignal pidiendo permiso de notificaciones, que en TN no aparece
-        # al cargar sino unos segundos después). Si aparece ahí, nunca se vuelve a limpiar
-        # y arruina el screenshot: al ser position:fixed y haber resizeado la ventana a la
-        # altura TOTAL del documento, un fixed anclado abajo del viewport termina flotando
-        # justo donde cae el footer, tapándolo en la captura (el footer sigue en el DOM --
-        # por eso un F12 manual lo muestra bien -- pero visualmente desaparece del PNG).
-        # Bug real: TN webmobile v.next, mismo componente disparó en V1 y no en V2 (carrera
-        # de timing, no un cambio del sitio) -> "footer ausente" era un falso positivo.
-        limpiar_entorno(driver)
-
-        # FIX #36 — estabilizar el alto ANTES de extraer datos y capturar, en
-        # vez de re-medir una sola vez después de extraer (fix #34). Evidencia
-        # real (usuario, TN mobile, 28/09 23:30): con el fix #34 ya desplegado,
-        # el footer seguía cortado en TODAS las evidencias mobile, faltando
-        # los últimos 2 links ("Políticas de privacidad", "Media Kit") que sí
-        # existen en el DOM desde el primer momento (confirmado con DevTools
-        # en la página real) -- no es un problema de contenido que tarda en
-        # aparecer, sino de que el propio resize de la ventana a una altura
-        # enorme (para que el documento completo entre en un solo screenshot)
-        # puede hacer crecer el documento DE NUEVO: cualquier estilo del sitio
-        # que use unidades `vh` cambia de valor cuando la ventana pasa a medir
-        # ~20000px de alto, lo que puede modificar el alto real del footer u
-        # otro bloque después de la primera corrección. El fix #34 solo
-        # re-medía y resizeaba UNA vez; si el crecimiento seguía después de
-        # ese segundo resize, quedaba sin corregir. Acá se repite re-medir +
-        # resizear hasta que el alto deja de crecer (o se alcanza el tope de
-        # intentos), y la extracción de datos (JS_EXTRACCION) y el screenshot
-        # se hacen recién después, ya sobre el alto estabilizado -- para que
-        # ambos reflejen el mismo estado final del documento.
-        MAX_INTENTOS_ESTABILIZAR_ALTURA = 4
-        altura_final = total_height
-        for _ in range(MAX_INTENTOS_ESTABILIZAR_ALTURA):
-            nueva_altura = driver.execute_script(
-                "return Math.max(document.body.scrollHeight, document.body.offsetHeight, "
-                "document.documentElement.clientHeight, document.documentElement.scrollHeight, "
-                "document.documentElement.offsetHeight);"
-            )
-            if nueva_altura <= altura_final:
-                altura_final = nueva_altura
-                break
-            altura_final = nueva_altura
-            driver.set_window_size(original_size['width'], altura_final)
-            time.sleep(1)
-
         js = JS_EXTRACCION.replace('INCLUIR_TEXTO', 'true' if incluir_texto else 'false')
         result = driver.execute_script(js)
         data = result.get('elements', [])
@@ -452,38 +395,11 @@ def obtener_estructura_dom(driver, incluir_texto=True, espera_scroll=2):
         png = driver.get_screenshot_as_png()
         driver.set_window_size(original_size['width'], original_size['height'])
 
-        # FIX #35 — red de seguridad para detectar automáticamente cualquier
-        # captura recortada (no solo en Elecciones), en vez de depender de
-        # que alguien la note a ojo y compare los PNG a mano (así pasó
-        # desapercibido el caso real del fix #34: el reporte decía "✅ sin
-        # diferencias" con 1046px de footer cortado en una de las dos
-        # capturas). altura_captura es el alto de ventana con el que
-        # efectivamente se tomó ESTE screenshot (ya estabilizado por el fix
-        # #36 de arriba). max_bottom es la posición real más baja de
-        # cualquier elemento medido por JS_EXTRACCION (getBoundingClientRect,
-        # independiente del tamaño de ventana). Si max_bottom se pasa de
-        # altura_captura por más que el umbral, algo quedó fuera del PNG.
-        altura_captura = altura_final
-        bottoms = [
-            el['y'] + el['height'] for el in data
-            if isinstance(el, dict) and isinstance(el.get('y'), (int, float))
-            and isinstance(el.get('height'), (int, float))
-        ]
-        max_bottom = max(bottoms) if bottoms else 0
-        recorte = None
-        if max_bottom > altura_captura + UMBRAL_RECORTE_PX:
-            recorte = {
-                'max_bottom': round(max_bottom),
-                'altura_captura': round(altura_captura),
-                'diff': round(max_bottom - altura_captura),
-            }
-
     except Exception as e:
         print(f"     ❌ Error en la extracción/captura: {e}")
         data = [{'selector': 'FATAL ERROR'}]
-        recorte = None
 
-    return data, png, recorte
+    return data, png
 
 
 def ejecutar_selenium_para_estructura(url, modo, config):
@@ -493,27 +409,7 @@ def ejecutar_selenium_para_estructura(url, modo, config):
 
     options = webdriver.ChromeOptions()
     if config['bloquear_imagenes']:
-        # FIX #37 — el valor de Chrome para BLOQUEAR imágenes es 2, no 1 (1 es
-        # "allow", el default; o sea que este flag nunca bloqueó nada desde que
-        # existe). Evidencia real (usuario, TN/El Trece/El Doce/Ciudad mobile,
-        # 29/09): con el fix #36 (loop de estabilización de alto) ya
-        # desplegado, el footer seguía cortado en TODAS las evidencias mobile
-        # de los 4 productos por igual -- eso apunta a una causa compartida
-        # por el motor, no a un timing puntual de un sitio. Con
-        # bloquear_imagenes=True quedando en "allow" por este typo, en mobile
-        # cargan TODAS las imágenes reales (fotos, iconos de redes, badges de
-        # app store) en vez de bloquearse como estaba pensado desde el
-        # script viejo (ver comentario de DOMINIOS_BLOQUEADOS/config_modos):
-        # esas imágenes siguen bajando y corriendo el layout durante segundos
-        # después de que el loop del fix #36 ya dio por estable el alto del
-        # documento (4 intentos x 1s no alcanzan para cubrir imágenes lentas
-        # de red), lo que corre el footer real más abajo de donde se tomó el
-        # screenshot. Corrigiendo el valor a 2 se recupera el comportamiento
-        # que el flag siempre debió tener: sin imágenes, el layout mobile se
-        # asienta con el contenido de texto/DOM únicamente, mucho más rápido
-        # y estable. El fix #36 se deja como red de seguridad adicional, no
-        # se revierte.
-        options.add_experimental_option("prefs", {"profile.managed_default_content_settings.images": 2})
+        options.add_experimental_option("prefs", {"profile.managed_default_content_settings.images": 1})
 
     # 'eager' = driver.get() vuelve apenas el DOM está listo (DOMContentLoaded),
     # sin esperar a que TERMINEN de cargar ads/trackers/iframes de terceros.
@@ -538,7 +434,7 @@ def ejecutar_selenium_para_estructura(url, modo, config):
     options.add_argument("--disable-features=site-per-process")
 
     driver = None
-    data, png, recorte = [], None, None
+    data, png = [], None
     try:
         os.environ['WDM_LOG_LEVEL'] = '0'
         service = Service(ChromeDriverManager().install())
@@ -564,34 +460,33 @@ def ejecutar_selenium_para_estructura(url, modo, config):
         # el estilo comparara igual, es que ese <a> nunca se extraía en
         # desktop, así que ni pasaba por emparejamiento ni por comparación
         # de estilos. Ahora ambos modos extraen los mismos tags.
-        data, png, recorte = obtener_estructura_dom(driver, incluir_texto=True)
+        data, png = obtener_estructura_dom(driver, incluir_texto=True)
 
     except Exception as e:
         print(f"❌ Error al inicializar/ejecutar Selenium en {url}: {e}")
         data = [{'selector': 'FATAL ERROR'}]
-        recorte = None
     finally:
         if driver:
             driver.quit()
 
-    return data, png, recorte
+    return data, png
 
 
 def ejecutar_con_reintentos(url, modo, config, intentos_max=REINTENTOS_MAX):
     """Antes: un timeout de red puntual marcaba FATAL ERROR sin reintentar,
     perdiendo la corrida completa de esa URL. Ahora reintenta antes de
     darse por vencido."""
-    ultimo_data, ultimo_png, ultimo_recorte = [], None, None
+    ultimo_data, ultimo_png = [], None
     for intento in range(1, intentos_max + 1):
-        data, png, recorte = ejecutar_selenium_para_estructura(url, modo, config)
+        data, png = ejecutar_selenium_para_estructura(url, modo, config)
         es_fatal = any(isinstance(d, dict) and d.get('selector') == 'FATAL ERROR' for d in data)
         if not es_fatal:
-            return data, png, recorte
-        ultimo_data, ultimo_png, ultimo_recorte = data, png, recorte
+            return data, png
+        ultimo_data, ultimo_png = data, png
         if intento < intentos_max:
             print(f"     ⚠️ Intento {intento}/{intentos_max} falló para {url}, reintentando...")
             time.sleep(3)
-    return ultimo_data, ultimo_png, ultimo_recorte
+    return ultimo_data, ultimo_png
 
 
 # =====================================================================
@@ -604,20 +499,9 @@ def procesar_url(url_description, base_url, version_number, modo, config,
     url2 = f"{base_url}&d={version_number}" if '?' in base_url else f"{base_url}?d={version_number}"
 
     print(f"  [V1] Obteniendo datos estructurales...")
-    data_v1, png_v1, recorte_v1 = ejecutar_con_reintentos(url1, modo, config)
+    data_v1, png_v1 = ejecutar_con_reintentos(url1, modo, config)
     print(f"  [V2] Obteniendo datos estructurales...")
-    data_v2, png_v2, recorte_v2 = ejecutar_con_reintentos(url2, modo, config)
-
-    # FIX #35 — avisar si alguna de las dos capturas detectó recorte, para
-    # que se vea en el reporte sin depender de que alguien lo note a ojo
-    # (ver detalle en obtener_estructura_dom). No bloquea la corrida: sigue
-    # comparando lo que haya, pero el reporte debe marcarlo bien visible.
-    if recorte_v1:
-        print(f"     ⚠️ Posible captura recortada en V1: elemento en {recorte_v1['max_bottom']}px, "
-              f"captura de {recorte_v1['altura_captura']}px ({recorte_v1['diff']}px de diferencia)")
-    if recorte_v2:
-        print(f"     ⚠️ Posible captura recortada en V2: elemento en {recorte_v2['max_bottom']}px, "
-              f"captura de {recorte_v2['altura_captura']}px ({recorte_v2['diff']}px de diferencia)")
+    data_v2, png_v2 = ejecutar_con_reintentos(url2, modo, config)
 
     es_fatal = (
         any(isinstance(d, dict) and d.get('selector') == 'FATAL ERROR' for d in data_v1) or
@@ -627,7 +511,6 @@ def procesar_url(url_description, base_url, version_number, modo, config,
         return {
             'url1': url1, 'url2': url2, 'fatal': True,
             'consolidado': [], 'cascadas': [], 'png_v1': png_v1, 'png_v2': png_v2,
-            'recorte_v1': recorte_v1, 'recorte_v2': recorte_v2,
         }
 
     fallas = core.comparar_estructura_dom(data_v1, data_v2, umbral_pixeles=umbral_pixeles,
@@ -650,7 +533,6 @@ def procesar_url(url_description, base_url, version_number, modo, config,
         'url1': url1, 'url2': url2, 'fatal': False,
         'consolidado': consolidado, 'cascadas': cascadas,
         'png_v1': png_v1, 'png_v2': png_v2,
-        'recorte_v1': recorte_v1, 'recorte_v2': recorte_v2,
     }
 
 
@@ -847,17 +729,6 @@ def generar_reporte(all_results, version_number, output_dir, timestamp, umbral_p
         cascadas_revisar = [c for c in cascadas if not c.get('grave')]
         total_graves = len(graves) + len(cascadas_grave)
 
-        # FIX #35 — recorte de captura detectado (ver obtener_estructura_dom):
-        # esto invalida la confiabilidad de la comparación visual para esta
-        # URL (el screenshot no muestra todo lo que el DOM dice que hay), así
-        # que se trata como grave aunque la comparación estructural en sí no
-        # haya encontrado diferencias — es exactamente el escenario real que
-        # motivó este fix (reporte "✅ sin diferencias" con 1046px de footer
-        # cortado en una de las dos capturas, ver fix #34).
-        recorte_v1 = r.get('recorte_v1')
-        recorte_v2 = r.get('recorte_v2')
-        tiene_recorte = bool(recorte_v1 or recorte_v2)
-
         # Etiqueta numerada compartida entre la imagen (marcar_fallas_en_captura,
         # que dibuja esta misma etiqueta al lado del recuadro) y la lista de
         # texto (construir_html_fallas): así el usuario ve "G1" pintado sobre
@@ -879,7 +750,7 @@ def generar_reporte(all_results, version_number, output_dir, timestamp, umbral_p
         # página queda en un estado intermedio "revisar" en vez de "✅ todo
         # igual", que es lo que generaba la confusión de por qué el reporte
         # decía que estaba todo bien y después mostraba desplazamientos.
-        alert = 'red' if (r['fatal'] or total_graves or tiene_recorte) else ('orange' if cascadas_revisar else 'green')
+        alert = 'red' if (r['fatal'] or total_graves) else ('orange' if cascadas_revisar else 'green')
         if alert == 'red':
             sites_con_grave += 1
         elif alert == 'orange':
@@ -887,16 +758,6 @@ def generar_reporte(all_results, version_number, output_dir, timestamp, umbral_p
 
         if r['fatal']:
             resumen_texto = "❌ Error grave en la ejecución de Selenium (ver logs)."
-        elif tiene_recorte:
-            partes = []
-            if recorte_v1:
-                partes.append(f"V1 (elemento a {recorte_v1['max_bottom']}px, captura de solo {recorte_v1['altura_captura']}px)")
-            if recorte_v2:
-                partes.append(f"V2 (elemento a {recorte_v2['max_bottom']}px, captura de solo {recorte_v2['altura_captura']}px)")
-            extra_graves = f" Además se detectaron {total_graves} diferencias graves." if total_graves else ""
-            resumen_texto = (f"❌ Captura posiblemente recortada en {' y '.join(partes)} — hay contenido del DOM "
-                              f"más abajo del borde de la imagen. La comparación de este resultado no es confiable."
-                              f"{extra_graves}")
         elif total_graves:
             resumen_texto = f"❌ Se detectaron {total_graves} diferencias graves."
         elif cascadas_revisar:
