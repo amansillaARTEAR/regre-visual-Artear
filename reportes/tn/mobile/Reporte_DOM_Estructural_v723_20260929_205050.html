@@ -1,0 +1,735 @@
+
+    <html><head><meta charset="utf-8">
+    <title>Reporte de Regresión TN Mobile - Versión 723</title>
+    <style>
+    body { font-family: Arial; background:#f7f7f7; margin:20px; }
+    h1 { color:#1e3a8a; border-bottom:3px solid #bfdbfe; padding-bottom:10px; }
+    h2 { margin-top:40px; color:#555; border-bottom:2px solid #ccc; padding-bottom:5px; }
+    code { background:#eee; padding:2px 4px; border-radius:3px; }
+    .container { display:flex; gap:20px; margin-bottom:40px; border:1px solid #eee; padding:10px; background:#fafafa; overflow-x:auto; }
+    .container > div { flex:1; min-width:480px; }
+    img { width:100%; height:auto; border:3px solid #ccc; border-radius:4px; display:block; }
+    .highlight-box { position:absolute; pointer-events:none; z-index:1000; border-left:15px solid transparent; border-right:15px solid transparent; border-top:30px solid #ffcc00; transform:translateX(-50%); }
+    </style></head>
+    <body>
+    <h1>Reporte de Regresión TN Mobile - Versión 723</h1>
+    <p><strong>Versión Testeada:</strong> <code>723</code></p>
+    <p><strong>Fecha y Hora:</strong> 29/09/2026 20:50:50</p>
+    <p><strong>Tiempo Total:</strong> 0:09:06</p>
+    <p><strong>Umbral de Tolerancia:</strong> 3 píxeles.</p>
+    <p><strong>Resumen global:</strong> <span style="font-weight:bold; color:red;">❌ Se encontraron diferencias graves en 1 de 19 urls. NO recomendado deployar a PROD sin revisar.</span></p>
+    
+<div style="position: sticky; top: 0; z-index: 500; background: #f7f7f7;
+            padding: 10px 0 8px 0; margin: 0 -20px; border-bottom: 2px solid #ddd;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.08);">
+  <div style="display: flex; flex-wrap: wrap; gap: 8px 24px; font-size: 0.82em;
+              color: #555; padding: 0 20px;">
+    <div style="flex: 1 1 220px;"><span style="color:red; font-weight:bold;">■ Rojo</span>: falla grave (elemento ausente/nuevo, o cambio de tamaño/estilo confirmado visualmente).</div>
+    <div style="flex: 1 1 220px;"><span style="color:blue; font-weight:bold;">■ Azul</span>: desplazamiento menor sin cambio de tamaño.</div>
+    <div style="flex: 1 1 220px;"><span style="color:#ff8c00; font-weight:bold;">■ Naranja</span>: el DOM detectó una diferencia pero la confirmación visual (crop + diff) mostró que la región es igual — probablemente un falso positivo.</div>
+    <div style="flex: 1 1 220px;"><span style="color:#7c3aed; font-weight:bold;">■ Violeta</span>: desplazamiento en cascada — un solo elemento anterior cambió de tamaño y corrió a los siguientes; no son N fallas independientes.</div>
+  </div>
+</div>
+
+    <hr/>
+    
+        <div style="border: 2px solid #ddd; padding: 15px; margin-top: 20px; border-radius: 8px;">
+            <h2>Homepage</h2>
+            <p><strong>URL Base (V1):</strong> <a href="https://tn.com.ar/" target="_blank"><code>https://tn.com.ar/</code></a></p>
+            <p><strong>URL Comparada (V2):</strong> <a href="https://tn.com.ar/?d=723" target="_blank"><code>https://tn.com.ar/?d=723</code></a></p>
+            <p><strong>Resultado:</strong> <span style="font-weight:bold; color:green;">✅ No se encontraron diferencias.</span></p>
+            <p><strong>Tiempo de Ejecución:</strong> 0:00:42</p>
+            <details>
+                <summary style="cursor:pointer; font-weight:bold; color:#1e3a8a;">Detalle de diferencias</summary>
+                <div id="diff-list-homepage" style="margin-top:10px; background:#fff; padding:10px; border:1px solid #eee;">
+                    <ul><li>✅ No se encontraron diferencias.</li></ul>
+                </div>
+            </details>
+            <details>
+                <summary style="cursor:pointer; font-weight:bold; color:#1e3a8a;">Contexto Visual</summary>
+                <div class='container' id='container-homepage'>
+                    <div><h4>Versión Base (V1)</h4><img src='homepage_V723_base_20260929_205050.png' alt='V1'></div>
+                    <div id="image-container-homepage" style="position:relative;">
+                        <h4>Versión Nueva (V2)</h4><img id='screenshot-homepage' src='homepage_V723_diff_20260929_205050.png' alt='V2'>
+                        <div id="highlight-box-homepage" class="highlight-box" style="display:none;"></div>
+                    </div>
+                </div>
+            </details>
+        </div>
+        
+        <div style="border: 2px solid #ddd; padding: 15px; margin-top: 20px; border-radius: 8px;">
+            <h2>Listado</h2>
+            <p><strong>URL Base (V1):</strong> <a href="https://tn.com.ar/ultimas-noticias/" target="_blank"><code>https://tn.com.ar/ultimas-noticias/</code></a></p>
+            <p><strong>URL Comparada (V2):</strong> <a href="https://tn.com.ar/ultimas-noticias/?d=723" target="_blank"><code>https://tn.com.ar/ultimas-noticias/?d=723</code></a></p>
+            <p><strong>Resultado:</strong> <span style="font-weight:bold; color:red;">❌ Se detectaron 9 diferencias graves.</span></p>
+            <p><strong>Tiempo de Ejecución:</strong> 0:00:26</p>
+            <details>
+                <summary style="cursor:pointer; font-weight:bold; color:#1e3a8a;">Detalle de diferencias</summary>
+                <div id="diff-list-listado" style="margin-top:10px; background:#fff; padding:10px; border:1px solid #eee;">
+                    <ul>
+            <li class='diff-item' style='color: #7c3aed; border-bottom: 1px dotted #ccc; padding: 5px 0; cursor: pointer;'
+                onclick="highlightElement('listado', '23,8112,439,68', this)"
+                data-coords="23,8112,439,68">
+                <span style="background:#7c3aed; color:#fff; border-radius:3px; padding:1px 6px; font-size:0.8em; font-weight:bold; margin-right:6px;">C1</span>
+                <span style="font-weight: bold;">⚠️ Revisar — desplazamiento en cascada:</span>
+                149 elementos se movieron -60px verticalmente
+                <span style="font-size: 0.8em; color: #888;">(click para verlo resaltado en la imagen)</span>.
+                <br><span style="font-size: 0.85em; color: #666;">
+                Causa probable: un solo elemento anterior del DOM cambió de tamaño y arrastró a los 149 de abajo — no son 149 regresiones independientes, es 1 sola causa raíz (empezando por <code>div#fusion-app > div:nth-child(7) > main > div:nth-child(7) </code>).
+                </span>
+            </li>
+            
+            <li class='diff-item' style='color: #7c3aed; border-bottom: 1px dotted #ccc; padding: 5px 0; cursor: pointer;'
+                onclick="highlightElement('listado', '23,1668,436,88', this)"
+                data-coords="23,1668,436,88">
+                <span style="background:#7c3aed; color:#fff; border-radius:3px; padding:1px 6px; font-size:0.8em; font-weight:bold; margin-right:6px;">C2</span>
+                <span style="font-weight: bold;">⚠️ Revisar — desplazamiento en cascada:</span>
+                17 elementos se movieron 1154px verticalmente
+                <span style="font-size: 0.8em; color: #888;">(click para verlo resaltado en la imagen)</span>.
+                <br><span style="font-size: 0.85em; color: #666;">
+                Causa probable: un solo elemento anterior del DOM cambió de tamaño y arrastró a los 17 de abajo — no son 17 regresiones independientes, es 1 sola causa raíz (empezando por <code>div#fusion-app > div:nth-child(7) > main > div:nth-child(7) </code>).
+                </span>
+            </li>
+            
+        <li class='diff-item'
+            style='color: red; border-bottom: 1px dotted #ccc; padding: 5px 0; cursor: pointer;'
+            onclick="highlightElement('listado', '23,7652,437,88', this)"
+            data-coords="23,7652,437,88">
+            <span style="background:red; color:#fff; border-radius:3px; padding:1px 6px; font-size:0.8em; font-weight:bold; margin-right:6px;">G1</span>
+            <span style="font-weight: bold;">Elemento:</span> <code>div#fusion-app > div:nth-child(7) > main > div:nth-child(7) > div > article:nth-</code>
+            <br><span style="font-weight: bold;">Gravedad:</span> <span style='color:red;'>GRAVE</span>
+            <div style='margin-top:5px; border-left:2px solid #ccc; padding-left:5px;'>Tipo: <b>AUSENTE V2</b> | V1: N/A | V2: N/A | Diff: N/A</div>
+        </li>
+        
+        <li class='diff-item'
+            style='color: red; border-bottom: 1px dotted #ccc; padding: 5px 0; cursor: pointer;'
+            onclick="highlightElement('listado', '23,7773,439,246', this)"
+            data-coords="23,7773,439,246">
+            <span style="background:red; color:#fff; border-radius:3px; padding:1px 6px; font-size:0.8em; font-weight:bold; margin-right:6px;">G2</span>
+            <span style="font-weight: bold;">Elemento:</span> <code>div#fusion-app > div:nth-child(7) > main > div:nth-child(7) > div > article:nth-</code>
+            <br><span style="font-weight: bold;">Gravedad:</span> <span style='color:red;'>GRAVE</span>
+            <div style='margin-top:5px; border-left:2px solid #ccc; padding-left:5px;'>Tipo: <b>AUSENTE V2</b> | V1: N/A | V2: N/A | Diff: N/A</div>
+        </li>
+        
+        <li class='diff-item'
+            style='color: red; border-bottom: 1px dotted #ccc; padding: 5px 0; cursor: pointer;'
+            onclick="highlightElement('listado', '23,7237,385,118', this)"
+            data-coords="23,7237,385,118">
+            <span style="background:red; color:#fff; border-radius:3px; padding:1px 6px; font-size:0.8em; font-weight:bold; margin-right:6px;">G3</span>
+            <span style="font-weight: bold;">Elemento:</span> <code>div#fusion-app > div:nth-child(7) > main > div:nth-child(7) > div > article:nth-</code>
+            <br><span style="font-weight: bold;">Gravedad:</span> <span style='color:red;'>GRAVE</span>
+            <div style='margin-top:5px; border-left:2px solid #ccc; padding-left:5px;'>Tipo: <b>AUSENTE V2</b> | V1: N/A | V2: N/A | Diff: N/A</div>
+        </li>
+        
+        <li class='diff-item'
+            style='color: red; border-bottom: 1px dotted #ccc; padding: 5px 0; cursor: pointer;'
+            onclick="highlightElement('listado', '23,8037,438,118', this)"
+            data-coords="23,8037,438,118">
+            <span style="background:red; color:#fff; border-radius:3px; padding:1px 6px; font-size:0.8em; font-weight:bold; margin-right:6px;">G4</span>
+            <span style="font-weight: bold;">Elemento:</span> <code>div#fusion-app > div:nth-child(7) > main > div:nth-child(7) > div > article:nth-</code>
+            <br><span style="font-weight: bold;">Gravedad:</span> <span style='color:red;'>GRAVE</span>
+            <div style='margin-top:5px; border-left:2px solid #ccc; padding-left:5px;'>Tipo: <b>AUSENTE V2</b> | V1: N/A | V2: N/A | Diff: N/A</div>
+        </li>
+        
+        <li class='diff-item'
+            style='color: red; border-bottom: 1px dotted #ccc; padding: 5px 0; cursor: pointer;'
+            onclick="highlightElement('listado', '23,513,422,88', this)"
+            data-coords="23,513,422,88">
+            <span style="background:red; color:#fff; border-radius:3px; padding:1px 6px; font-size:0.8em; font-weight:bold; margin-right:6px;">G5</span>
+            <span style="font-weight: bold;">Elemento:</span> <code>div#fusion-app > div:nth-child(7) > main > div:nth-child(7) > div > article > di</code>
+            <br><span style="font-weight: bold;">Gravedad:</span> <span style='color:red;'>GRAVE</span>
+            <div style='margin-top:5px; border-left:2px solid #ccc; padding-left:5px;'>Tipo: <b>NUEVO EN V2</b> | V1: N/A | V2: N/A | Diff: N/A</div>
+        </li>
+        
+        <li class='diff-item'
+            style='color: red; border-bottom: 1px dotted #ccc; padding: 5px 0; cursor: pointer;'
+            onclick="highlightElement('listado', '23,8451,48,48', this)"
+            data-coords="23,8451,48,48">
+            <span style="background:red; color:#fff; border-radius:3px; padding:1px 6px; font-size:0.8em; font-weight:bold; margin-right:6px;">G6</span>
+            <span style="font-weight: bold;">Elemento:</span> <code>div#fusion-app > div:nth-child(7) > main > div:nth-child(8) > article > div > di</code>
+            <br><span style="font-weight: bold;">Gravedad:</span> <span style='color:red;'>GRAVE</span>
+            <div style='margin-top:5px; border-left:2px solid #ccc; padding-left:5px;'>Tipo: <b>NUEVO EN V2</b> | V1: N/A | V2: N/A | Diff: N/A</div>
+        </li>
+        
+        <li class='diff-item'
+            style='color: red; border-bottom: 1px dotted #ccc; padding: 5px 0; cursor: pointer;'
+            onclick="highlightElement('listado', '23,898,431,88', this)"
+            data-coords="23,898,431,88">
+            <span style="background:red; color:#fff; border-radius:3px; padding:1px 6px; font-size:0.8em; font-weight:bold; margin-right:6px;">G7</span>
+            <span style="font-weight: bold;">Elemento:</span> <code>div#fusion-app > div:nth-child(7) > main > div:nth-child(7) > div > article:nth-</code>
+            <br><span style="font-weight: bold;">Gravedad:</span> <span style='color:red;'>GRAVE</span>
+            <div style='margin-top:5px; border-left:2px solid #ccc; padding-left:5px;'>Tipo: <b>NUEVO EN V2</b> | V1: N/A | V2: N/A | Diff: N/A</div>
+        </li>
+        
+        <li class='diff-item'
+            style='color: red; border-bottom: 1px dotted #ccc; padding: 5px 0; cursor: pointer;'
+            onclick="highlightElement('listado', '23,1283,428,88', this)"
+            data-coords="23,1283,428,88">
+            <span style="background:red; color:#fff; border-radius:3px; padding:1px 6px; font-size:0.8em; font-weight:bold; margin-right:6px;">G8</span>
+            <span style="font-weight: bold;">Elemento:</span> <code>div#fusion-app > div:nth-child(7) > main > div:nth-child(7) > div > article:nth-</code>
+            <br><span style="font-weight: bold;">Gravedad:</span> <span style='color:red;'>GRAVE</span>
+            <div style='margin-top:5px; border-left:2px solid #ccc; padding-left:5px;'>Tipo: <b>NUEVO EN V2</b> | V1: N/A | V2: N/A | Diff: N/A</div>
+        </li>
+        
+        <li class='diff-item'
+            style='color: red; border-bottom: 1px dotted #ccc; padding: 5px 0; cursor: pointer;'
+            onclick="highlightElement('listado', '23,7358,439,246', this)"
+            data-coords="23,7358,439,246">
+            <span style="background:red; color:#fff; border-radius:3px; padding:1px 6px; font-size:0.8em; font-weight:bold; margin-right:6px;">G9</span>
+            <span style="font-weight: bold;">Elemento:</span> <code>div#fusion-app > div:nth-child(7) > main > div:nth-child(7) > div > article:nth-</code>
+            <br><span style="font-weight: bold;">Gravedad:</span> <span style='color:red;'>GRAVE</span>
+            <div style='margin-top:5px; border-left:2px solid #ccc; padding-left:5px;'>Tipo: <b>NUEVO EN V2</b> | V1: N/A | V2: N/A | Diff: N/A</div>
+        </li>
+        
+        <li class='diff-item'
+            style='color: #007bff; border-bottom: 1px dotted #ccc; padding: 5px 0; cursor: pointer;'
+            onclick="highlightElement('listado', '23,448,48,48', this)"
+            data-coords="23,448,48,48">
+            <span style="background:#007bff; color:#fff; border-radius:3px; padding:1px 6px; font-size:0.8em; font-weight:bold; margin-right:6px;">M1</span>
+            <span style="font-weight: bold;">Elemento:</span> <code>div#fusion-app > div:nth-child(7) > main > div:nth-child(7) > div > article > a </code>
+            <br><span style="font-weight: bold;">Gravedad:</span> <span style='color:#007bff;'>MENOR</span>
+            <div style='margin-top:5px; border-left:2px solid #ccc; padding-left:5px;'>Tipo: <b>DIFERENCIA POSICIÓN (Y)</b> | V1: 1218.81 | V2: 448.94 | Diff: 769.88px — <i>degradado: sin impacto visual confirmado</i></div>
+        </li>
+        
+        <li class='diff-item'
+            style='color: #007bff; border-bottom: 1px dotted #ccc; padding: 5px 0; cursor: pointer;'
+            onclick="highlightElement('listado', '23,3528,48,48', this)"
+            data-coords="23,3528,48,48">
+            <span style="background:#007bff; color:#fff; border-radius:3px; padding:1px 6px; font-size:0.8em; font-weight:bold; margin-right:6px;">M2</span>
+            <span style="font-weight: bold;">Elemento:</span> <code>div#fusion-app > div:nth-child(7) > main > div:nth-child(7) > div > article:nth-</code>
+            <br><span style="font-weight: bold;">Gravedad:</span> <span style='color:#007bff;'>MENOR</span>
+            <div style='margin-top:5px; border-left:2px solid #ccc; padding-left:5px;'>Tipo: <b>DIFERENCIA POSICIÓN (Y)</b> | V1: 4773.25 | V2: 3528.44 | Diff: 1244.81px — <i>degradado: sin impacto visual confirmado</i></div>
+        </li>
+        
+        <li class='diff-item'
+            style='color: #007bff; border-bottom: 1px dotted #ccc; padding: 5px 0; cursor: pointer;'
+            onclick="highlightElement('listado', '23,5928,48,48', this)"
+            data-coords="23,5928,48,48">
+            <span style="background:#007bff; color:#fff; border-radius:3px; padding:1px 6px; font-size:0.8em; font-weight:bold; margin-right:6px;">M3</span>
+            <span style="font-weight: bold;">Elemento:</span> <code>div#fusion-app > div:nth-child(7) > main > div:nth-child(7) > div > article:nth-</code>
+            <br><span style="font-weight: bold;">Gravedad:</span> <span style='color:#007bff;'>MENOR</span>
+            <div style='margin-top:5px; border-left:2px solid #ccc; padding-left:5px;'>Tipo: <b>DIFERENCIA POSICIÓN (Y)</b> | V1: 5573.12 | V2: 5928.06 | Diff: 354.94px — <i>degradado: sin impacto visual confirmado</i></div>
+        </li>
+        
+        <li class='diff-item'
+            style='color: #007bff; border-bottom: 1px dotted #ccc; padding: 5px 0; cursor: pointer;'
+            onclick="highlightElement('listado', '23,6727,48,48', this)"
+            data-coords="23,6727,48,48">
+            <span style="background:#007bff; color:#fff; border-radius:3px; padding:1px 6px; font-size:0.8em; font-weight:bold; margin-right:6px;">M4</span>
+            <span style="font-weight: bold;">Elemento:</span> <code>div#fusion-app > div:nth-child(7) > main > div:nth-child(7) > div > article:nth-</code>
+            <br><span style="font-weight: bold;">Gravedad:</span> <span style='color:#007bff;'>MENOR</span>
+            <div style='margin-top:5px; border-left:2px solid #ccc; padding-left:5px;'>Tipo: <b>DIFERENCIA POSICIÓN (Y)</b> | V1: 6403.00 | V2: 6727.94 | Diff: 324.94px — <i>degradado: sin impacto visual confirmado</i></div>
+        </li>
+        
+        <li class='diff-item'
+            style='color: #007bff; border-bottom: 1px dotted #ccc; padding: 5px 0; cursor: pointer;'
+            onclick="highlightElement('listado', '23,7557,48,48', this)"
+            data-coords="23,7557,48,48">
+            <span style="background:#007bff; color:#fff; border-radius:3px; padding:1px 6px; font-size:0.8em; font-weight:bold; margin-right:6px;">M5</span>
+            <span style="font-weight: bold;">Elemento:</span> <code>div#fusion-app > div:nth-child(7) > main > div:nth-child(7) > div > article:nth-</code>
+            <br><span style="font-weight: bold;">Gravedad:</span> <span style='color:#007bff;'>MENOR</span>
+            <div style='margin-top:5px; border-left:2px solid #ccc; padding-left:5px;'>Tipo: <b>DIFERENCIA POSICIÓN (Y)</b> | V1: 8511.69 | V2: 7557.81 | Diff: 953.88px — <i>degradado: sin impacto visual confirmado</i></div>
+        </li>
+        </ul>
+                </div>
+            </details>
+            <details>
+                <summary style="cursor:pointer; font-weight:bold; color:#1e3a8a;">Contexto Visual</summary>
+                <div class='container' id='container-listado'>
+                    <div><h4>Versión Base (V1)</h4><img src='listado_V723_base_20260929_205050.png' alt='V1'></div>
+                    <div id="image-container-listado" style="position:relative;">
+                        <h4>Versión Nueva (V2)</h4><img id='screenshot-listado' src='listado_V723_diff_20260929_205050.png' alt='V2'>
+                        <div id="highlight-box-listado" class="highlight-box" style="display:none;"></div>
+                    </div>
+                </div>
+            </details>
+        </div>
+        
+        <div style="border: 2px solid #ddd; padding: 15px; margin-top: 20px; border-radius: 8px;">
+            <h2>Videos</h2>
+            <p><strong>URL Base (V1):</strong> <a href="https://tn.com.ar/videos/" target="_blank"><code>https://tn.com.ar/videos/</code></a></p>
+            <p><strong>URL Comparada (V2):</strong> <a href="https://tn.com.ar/videos/?d=723" target="_blank"><code>https://tn.com.ar/videos/?d=723</code></a></p>
+            <p><strong>Resultado:</strong> <span style="font-weight:bold; color:green;">✅ No se encontraron diferencias.</span></p>
+            <p><strong>Tiempo de Ejecución:</strong> 0:00:25</p>
+            <details>
+                <summary style="cursor:pointer; font-weight:bold; color:#1e3a8a;">Detalle de diferencias</summary>
+                <div id="diff-list-videos" style="margin-top:10px; background:#fff; padding:10px; border:1px solid #eee;">
+                    <ul><li>✅ No se encontraron diferencias.</li></ul>
+                </div>
+            </details>
+            <details>
+                <summary style="cursor:pointer; font-weight:bold; color:#1e3a8a;">Contexto Visual</summary>
+                <div class='container' id='container-videos'>
+                    <div><h4>Versión Base (V1)</h4><img src='videos_V723_base_20260929_205050.png' alt='V1'></div>
+                    <div id="image-container-videos" style="position:relative;">
+                        <h4>Versión Nueva (V2)</h4><img id='screenshot-videos' src='videos_V723_diff_20260929_205050.png' alt='V2'>
+                        <div id="highlight-box-videos" class="highlight-box" style="display:none;"></div>
+                    </div>
+                </div>
+            </details>
+        </div>
+        
+        <div style="border: 2px solid #ddd; padding: 15px; margin-top: 20px; border-radius: 8px;">
+            <h2>Vivo</h2>
+            <p><strong>URL Base (V1):</strong> <a href="https://tn.com.ar/envivo/24hs/" target="_blank"><code>https://tn.com.ar/envivo/24hs/</code></a></p>
+            <p><strong>URL Comparada (V2):</strong> <a href="https://tn.com.ar/envivo/24hs/?d=723" target="_blank"><code>https://tn.com.ar/envivo/24hs/?d=723</code></a></p>
+            <p><strong>Resultado:</strong> <span style="font-weight:bold; color:green;">✅ No se encontraron diferencias.</span></p>
+            <p><strong>Tiempo de Ejecución:</strong> 0:00:27</p>
+            <details>
+                <summary style="cursor:pointer; font-weight:bold; color:#1e3a8a;">Detalle de diferencias</summary>
+                <div id="diff-list-vivo" style="margin-top:10px; background:#fff; padding:10px; border:1px solid #eee;">
+                    <ul><li>✅ No se encontraron diferencias.</li></ul>
+                </div>
+            </details>
+            <details>
+                <summary style="cursor:pointer; font-weight:bold; color:#1e3a8a;">Contexto Visual</summary>
+                <div class='container' id='container-vivo'>
+                    <div><h4>Versión Base (V1)</h4><img src='vivo_V723_base_20260929_205050.png' alt='V1'></div>
+                    <div id="image-container-vivo" style="position:relative;">
+                        <h4>Versión Nueva (V2)</h4><img id='screenshot-vivo' src='vivo_V723_diff_20260929_205050.png' alt='V2'>
+                        <div id="highlight-box-vivo" class="highlight-box" style="display:none;"></div>
+                    </div>
+                </div>
+            </details>
+        </div>
+        
+        <div style="border: 2px solid #ddd; padding: 15px; margin-top: 20px; border-radius: 8px;">
+            <h2>Clima</h2>
+            <p><strong>URL Base (V1):</strong> <a href="https://tn.com.ar/clima/" target="_blank"><code>https://tn.com.ar/clima/</code></a></p>
+            <p><strong>URL Comparada (V2):</strong> <a href="https://tn.com.ar/clima/?d=723" target="_blank"><code>https://tn.com.ar/clima/?d=723</code></a></p>
+            <p><strong>Resultado:</strong> <span style="font-weight:bold; color:green;">✅ No se encontraron diferencias.</span></p>
+            <p><strong>Tiempo de Ejecución:</strong> 0:00:24</p>
+            <details>
+                <summary style="cursor:pointer; font-weight:bold; color:#1e3a8a;">Detalle de diferencias</summary>
+                <div id="diff-list-clima" style="margin-top:10px; background:#fff; padding:10px; border:1px solid #eee;">
+                    <ul><li>✅ No se encontraron diferencias.</li></ul>
+                </div>
+            </details>
+            <details>
+                <summary style="cursor:pointer; font-weight:bold; color:#1e3a8a;">Contexto Visual</summary>
+                <div class='container' id='container-clima'>
+                    <div><h4>Versión Base (V1)</h4><img src='clima_V723_base_20260929_205050.png' alt='V1'></div>
+                    <div id="image-container-clima" style="position:relative;">
+                        <h4>Versión Nueva (V2)</h4><img id='screenshot-clima' src='clima_V723_diff_20260929_205050.png' alt='V2'>
+                        <div id="highlight-box-clima" class="highlight-box" style="display:none;"></div>
+                    </div>
+                </div>
+            </details>
+        </div>
+        
+        <div style="border: 2px solid #ddd; padding: 15px; margin-top: 20px; border-radius: 8px;">
+            <h2>Economia</h2>
+            <p><strong>URL Base (V1):</strong> <a href="https://tn.com.ar/economia/divisas" target="_blank"><code>https://tn.com.ar/economia/divisas</code></a></p>
+            <p><strong>URL Comparada (V2):</strong> <a href="https://tn.com.ar/economia/divisas?d=723" target="_blank"><code>https://tn.com.ar/economia/divisas?d=723</code></a></p>
+            <p><strong>Resultado:</strong> <span style="font-weight:bold; color:green;">✅ No se encontraron diferencias.</span></p>
+            <p><strong>Tiempo de Ejecución:</strong> 0:00:24</p>
+            <details>
+                <summary style="cursor:pointer; font-weight:bold; color:#1e3a8a;">Detalle de diferencias</summary>
+                <div id="diff-list-economia" style="margin-top:10px; background:#fff; padding:10px; border:1px solid #eee;">
+                    <ul><li>✅ No se encontraron diferencias.</li></ul>
+                </div>
+            </details>
+            <details>
+                <summary style="cursor:pointer; font-weight:bold; color:#1e3a8a;">Contexto Visual</summary>
+                <div class='container' id='container-economia'>
+                    <div><h4>Versión Base (V1)</h4><img src='economia_V723_base_20260929_205050.png' alt='V1'></div>
+                    <div id="image-container-economia" style="position:relative;">
+                        <h4>Versión Nueva (V2)</h4><img id='screenshot-economia' src='economia_V723_diff_20260929_205050.png' alt='V2'>
+                        <div id="highlight-box-economia" class="highlight-box" style="display:none;"></div>
+                    </div>
+                </div>
+            </details>
+        </div>
+        
+        <div style="border: 2px solid #ddd; padding: 15px; margin-top: 20px; border-radius: 8px;">
+            <h2>Divisas</h2>
+            <p><strong>URL Base (V1):</strong> <a href="https://tn.com.ar/economia/divisas/dolar-oficial-hoy/" target="_blank"><code>https://tn.com.ar/economia/divisas/dolar-oficial-hoy/</code></a></p>
+            <p><strong>URL Comparada (V2):</strong> <a href="https://tn.com.ar/economia/divisas/dolar-oficial-hoy/?d=723" target="_blank"><code>https://tn.com.ar/economia/divisas/dolar-oficial-hoy/?d=723</code></a></p>
+            <p><strong>Resultado:</strong> <span style="font-weight:bold; color:green;">✅ No se encontraron diferencias.</span></p>
+            <p><strong>Tiempo de Ejecución:</strong> 0:00:23</p>
+            <details>
+                <summary style="cursor:pointer; font-weight:bold; color:#1e3a8a;">Detalle de diferencias</summary>
+                <div id="diff-list-divisas" style="margin-top:10px; background:#fff; padding:10px; border:1px solid #eee;">
+                    <ul><li>✅ No se encontraron diferencias.</li></ul>
+                </div>
+            </details>
+            <details>
+                <summary style="cursor:pointer; font-weight:bold; color:#1e3a8a;">Contexto Visual</summary>
+                <div class='container' id='container-divisas'>
+                    <div><h4>Versión Base (V1)</h4><img src='divisas_V723_base_20260929_205050.png' alt='V1'></div>
+                    <div id="image-container-divisas" style="position:relative;">
+                        <h4>Versión Nueva (V2)</h4><img id='screenshot-divisas' src='divisas_V723_diff_20260929_205050.png' alt='V2'>
+                        <div id="highlight-box-divisas" class="highlight-box" style="display:none;"></div>
+                    </div>
+                </div>
+            </details>
+        </div>
+        
+        <div style="border: 2px solid #ddd; padding: 15px; margin-top: 20px; border-radius: 8px;">
+            <h2>Podcast</h2>
+            <p><strong>URL Base (V1):</strong> <a href="https://tn.com.ar/podcasts/2025/05/14/soy-adoptada-una-identidad-dicha-con-orgullo/" target="_blank"><code>https://tn.com.ar/podcasts/2025/05/14/soy-adoptada-una-identidad-dicha-con-orgullo/</code></a></p>
+            <p><strong>URL Comparada (V2):</strong> <a href="https://tn.com.ar/podcasts/2025/05/14/soy-adoptada-una-identidad-dicha-con-orgullo/?d=723" target="_blank"><code>https://tn.com.ar/podcasts/2025/05/14/soy-adoptada-una-identidad-dicha-con-orgullo/?d=723</code></a></p>
+            <p><strong>Resultado:</strong> <span style="font-weight:bold; color:green;">✅ No se encontraron diferencias.</span></p>
+            <p><strong>Tiempo de Ejecución:</strong> 0:00:25</p>
+            <details>
+                <summary style="cursor:pointer; font-weight:bold; color:#1e3a8a;">Detalle de diferencias</summary>
+                <div id="diff-list-podcast" style="margin-top:10px; background:#fff; padding:10px; border:1px solid #eee;">
+                    <ul><li>✅ No se encontraron diferencias.</li></ul>
+                </div>
+            </details>
+            <details>
+                <summary style="cursor:pointer; font-weight:bold; color:#1e3a8a;">Contexto Visual</summary>
+                <div class='container' id='container-podcast'>
+                    <div><h4>Versión Base (V1)</h4><img src='podcast_V723_base_20260929_205050.png' alt='V1'></div>
+                    <div id="image-container-podcast" style="position:relative;">
+                        <h4>Versión Nueva (V2)</h4><img id='screenshot-podcast' src='podcast_V723_diff_20260929_205050.png' alt='V2'>
+                        <div id="highlight-box-podcast" class="highlight-box" style="display:none;"></div>
+                    </div>
+                </div>
+            </details>
+        </div>
+        
+        <div style="border: 2px solid #ddd; padding: 15px; margin-top: 20px; border-radius: 8px;">
+            <h2>deportivo</h2>
+            <p><strong>URL Base (V1):</strong> <a href="https://tn.com.ar/deportes/" target="_blank"><code>https://tn.com.ar/deportes/</code></a></p>
+            <p><strong>URL Comparada (V2):</strong> <a href="https://tn.com.ar/deportes/?d=723" target="_blank"><code>https://tn.com.ar/deportes/?d=723</code></a></p>
+            <p><strong>Resultado:</strong> <span style="font-weight:bold; color:green;">✅ No se encontraron diferencias.</span></p>
+            <p><strong>Tiempo de Ejecución:</strong> 0:00:29</p>
+            <details>
+                <summary style="cursor:pointer; font-weight:bold; color:#1e3a8a;">Detalle de diferencias</summary>
+                <div id="diff-list-deportivo" style="margin-top:10px; background:#fff; padding:10px; border:1px solid #eee;">
+                    <ul><li>✅ No se encontraron diferencias.</li></ul>
+                </div>
+            </details>
+            <details>
+                <summary style="cursor:pointer; font-weight:bold; color:#1e3a8a;">Contexto Visual</summary>
+                <div class='container' id='container-deportivo'>
+                    <div><h4>Versión Base (V1)</h4><img src='deportivo_V723_base_20260929_205050.png' alt='V1'></div>
+                    <div id="image-container-deportivo" style="position:relative;">
+                        <h4>Versión Nueva (V2)</h4><img id='screenshot-deportivo' src='deportivo_V723_diff_20260929_205050.png' alt='V2'>
+                        <div id="highlight-box-deportivo" class="highlight-box" style="display:none;"></div>
+                    </div>
+                </div>
+            </details>
+        </div>
+        
+        <div style="border: 2px solid #ddd; padding: 15px; margin-top: 20px; border-radius: 8px;">
+            <h2>Estadisticas</h2>
+            <p><strong>URL Base (V1):</strong> <a href="https://tn.com.ar/deportes/estadisticas/" target="_blank"><code>https://tn.com.ar/deportes/estadisticas/</code></a></p>
+            <p><strong>URL Comparada (V2):</strong> <a href="https://tn.com.ar/deportes/estadisticas/?d=723" target="_blank"><code>https://tn.com.ar/deportes/estadisticas/?d=723</code></a></p>
+            <p><strong>Resultado:</strong> <span style="font-weight:bold; color:green;">✅ No se encontraron diferencias.</span></p>
+            <p><strong>Tiempo de Ejecución:</strong> 0:00:32</p>
+            <details>
+                <summary style="cursor:pointer; font-weight:bold; color:#1e3a8a;">Detalle de diferencias</summary>
+                <div id="diff-list-estadisticas" style="margin-top:10px; background:#fff; padding:10px; border:1px solid #eee;">
+                    <ul><li>✅ No se encontraron diferencias.</li></ul>
+                </div>
+            </details>
+            <details>
+                <summary style="cursor:pointer; font-weight:bold; color:#1e3a8a;">Contexto Visual</summary>
+                <div class='container' id='container-estadisticas'>
+                    <div><h4>Versión Base (V1)</h4><img src='estadisticas_V723_base_20260929_205050.png' alt='V1'></div>
+                    <div id="image-container-estadisticas" style="position:relative;">
+                        <h4>Versión Nueva (V2)</h4><img id='screenshot-estadisticas' src='estadisticas_V723_diff_20260929_205050.png' alt='V2'>
+                        <div id="highlight-box-estadisticas" class="highlight-box" style="display:none;"></div>
+                    </div>
+                </div>
+            </details>
+        </div>
+        
+        <div style="border: 2px solid #ddd; padding: 15px; margin-top: 20px; border-radius: 8px;">
+            <h2>Quinielas</h2>
+            <p><strong>URL Base (V1):</strong> <a href="https://tn.com.ar/quinielas-loterias/" target="_blank"><code>https://tn.com.ar/quinielas-loterias/</code></a></p>
+            <p><strong>URL Comparada (V2):</strong> <a href="https://tn.com.ar/quinielas-loterias/?d=723" target="_blank"><code>https://tn.com.ar/quinielas-loterias/?d=723</code></a></p>
+            <p><strong>Resultado:</strong> <span style="font-weight:bold; color:green;">✅ No se encontraron diferencias.</span></p>
+            <p><strong>Tiempo de Ejecución:</strong> 0:00:24</p>
+            <details>
+                <summary style="cursor:pointer; font-weight:bold; color:#1e3a8a;">Detalle de diferencias</summary>
+                <div id="diff-list-quinielas" style="margin-top:10px; background:#fff; padding:10px; border:1px solid #eee;">
+                    <ul><li>✅ No se encontraron diferencias.</li></ul>
+                </div>
+            </details>
+            <details>
+                <summary style="cursor:pointer; font-weight:bold; color:#1e3a8a;">Contexto Visual</summary>
+                <div class='container' id='container-quinielas'>
+                    <div><h4>Versión Base (V1)</h4><img src='quinielas_V723_base_20260929_205050.png' alt='V1'></div>
+                    <div id="image-container-quinielas" style="position:relative;">
+                        <h4>Versión Nueva (V2)</h4><img id='screenshot-quinielas' src='quinielas_V723_diff_20260929_205050.png' alt='V2'>
+                        <div id="highlight-box-quinielas" class="highlight-box" style="display:none;"></div>
+                    </div>
+                </div>
+            </details>
+        </div>
+        
+        <div style="border: 2px solid #ddd; padding: 15px; margin-top: 20px; border-radius: 8px;">
+            <h2>Juegos</h2>
+            <p><strong>URL Base (V1):</strong> <a href="https://tn.com.ar/juegos/" target="_blank"><code>https://tn.com.ar/juegos/</code></a></p>
+            <p><strong>URL Comparada (V2):</strong> <a href="https://tn.com.ar/juegos/?d=723" target="_blank"><code>https://tn.com.ar/juegos/?d=723</code></a></p>
+            <p><strong>Resultado:</strong> <span style="font-weight:bold; color:green;">✅ No se encontraron diferencias.</span></p>
+            <p><strong>Tiempo de Ejecución:</strong> 0:00:24</p>
+            <details>
+                <summary style="cursor:pointer; font-weight:bold; color:#1e3a8a;">Detalle de diferencias</summary>
+                <div id="diff-list-juegos" style="margin-top:10px; background:#fff; padding:10px; border:1px solid #eee;">
+                    <ul><li>✅ No se encontraron diferencias.</li></ul>
+                </div>
+            </details>
+            <details>
+                <summary style="cursor:pointer; font-weight:bold; color:#1e3a8a;">Contexto Visual</summary>
+                <div class='container' id='container-juegos'>
+                    <div><h4>Versión Base (V1)</h4><img src='juegos_V723_base_20260929_205050.png' alt='V1'></div>
+                    <div id="image-container-juegos" style="position:relative;">
+                        <h4>Versión Nueva (V2)</h4><img id='screenshot-juegos' src='juegos_V723_diff_20260929_205050.png' alt='V2'>
+                        <div id="highlight-box-juegos" class="highlight-box" style="display:none;"></div>
+                    </div>
+                </div>
+            </details>
+        </div>
+        
+        <div style="border: 2px solid #ddd; padding: 15px; margin-top: 20px; border-radius: 8px;">
+            <h2>Elecciones</h2>
+            <p><strong>URL Base (V1):</strong> <a href="https://tn.com.ar/elecciones-2025/" target="_blank"><code>https://tn.com.ar/elecciones-2025/</code></a></p>
+            <p><strong>URL Comparada (V2):</strong> <a href="https://tn.com.ar/elecciones-2025/?d=723" target="_blank"><code>https://tn.com.ar/elecciones-2025/?d=723</code></a></p>
+            <p><strong>Resultado:</strong> <span style="font-weight:bold; color:orange;">⚠️ Sin diferencias graves, pero hay 1 desplazamiento(s) en cascada para revisar (ver detalle) — puede ser contenido que legítimamente cambió de tamaño, o un bug de layout real.</span></p>
+            <p><strong>Tiempo de Ejecución:</strong> 0:00:32</p>
+            <details>
+                <summary style="cursor:pointer; font-weight:bold; color:#1e3a8a;">Detalle de diferencias</summary>
+                <div id="diff-list-elecciones" style="margin-top:10px; background:#fff; padding:10px; border:1px solid #eee;">
+                    <ul>
+            <li class='diff-item' style='color: #7c3aed; border-bottom: 1px dotted #ccc; padding: 5px 0; cursor: pointer;'
+                onclick="highlightElement('elecciones', '24,21853,437,130', this)"
+                data-coords="24,21853,437,130">
+                <span style="background:#7c3aed; color:#fff; border-radius:3px; padding:1px 6px; font-size:0.8em; font-weight:bold; margin-right:6px;">C1</span>
+                <span style="font-weight: bold;">⚠️ Revisar — desplazamiento en cascada:</span>
+                7 elementos se movieron 1046px verticalmente
+                <span style="font-size: 0.8em; color: #888;">(click para verlo resaltado en la imagen)</span>.
+                <br><span style="font-size: 0.85em; color: #666;">
+                Causa probable: un solo elemento anterior del DOM cambió de tamaño y arrastró a los 7 de abajo — no son 7 regresiones independientes, es 1 sola causa raíz (empezando por <code>div#normal-slidedown</code>).
+                </span>
+            </li>
+            </ul>
+                </div>
+            </details>
+            <details>
+                <summary style="cursor:pointer; font-weight:bold; color:#1e3a8a;">Contexto Visual</summary>
+                <div class='container' id='container-elecciones'>
+                    <div><h4>Versión Base (V1)</h4><img src='elecciones_V723_base_20260929_205050.png' alt='V1'></div>
+                    <div id="image-container-elecciones" style="position:relative;">
+                        <h4>Versión Nueva (V2)</h4><img id='screenshot-elecciones' src='elecciones_V723_diff_20260929_205050.png' alt='V2'>
+                        <div id="highlight-box-elecciones" class="highlight-box" style="display:none;"></div>
+                    </div>
+                </div>
+            </details>
+        </div>
+        
+        <div style="border: 2px solid #ddd; padding: 15px; margin-top: 20px; border-radius: 8px;">
+            <h2>Internacional</h2>
+            <p><strong>URL Base (V1):</strong> <a href="https://tn.com.ar/internacional/" target="_blank"><code>https://tn.com.ar/internacional/</code></a></p>
+            <p><strong>URL Comparada (V2):</strong> <a href="https://tn.com.ar/internacional/?d=723" target="_blank"><code>https://tn.com.ar/internacional/?d=723</code></a></p>
+            <p><strong>Resultado:</strong> <span style="font-weight:bold; color:green;">✅ No se encontraron diferencias.</span></p>
+            <p><strong>Tiempo de Ejecución:</strong> 0:00:26</p>
+            <details>
+                <summary style="cursor:pointer; font-weight:bold; color:#1e3a8a;">Detalle de diferencias</summary>
+                <div id="diff-list-internacional" style="margin-top:10px; background:#fff; padding:10px; border:1px solid #eee;">
+                    <ul><li>✅ No se encontraron diferencias.</li></ul>
+                </div>
+            </details>
+            <details>
+                <summary style="cursor:pointer; font-weight:bold; color:#1e3a8a;">Contexto Visual</summary>
+                <div class='container' id='container-internacional'>
+                    <div><h4>Versión Base (V1)</h4><img src='internacional_V723_base_20260929_205050.png' alt='V1'></div>
+                    <div id="image-container-internacional" style="position:relative;">
+                        <h4>Versión Nueva (V2)</h4><img id='screenshot-internacional' src='internacional_V723_diff_20260929_205050.png' alt='V2'>
+                        <div id="highlight-box-internacional" class="highlight-box" style="display:none;"></div>
+                    </div>
+                </div>
+            </details>
+        </div>
+        
+        <div style="border: 2px solid #ddd; padding: 15px; margin-top: 20px; border-radius: 8px;">
+            <h2>Article</h2>
+            <p><strong>URL Base (V1):</strong> <a href="https://tn.com.ar/deportes/automovilismo/2025/11/07/el-posteo-que-williams-le-dedico-a-colapinto-despues-de-ser-confirmado-en-alpine-para-la-temporada-2026-de-f1/" target="_blank"><code>https://tn.com.ar/deportes/automovilismo/2025/11/07/el-posteo-que-williams-le-dedico-a-colapinto-despues-de-ser-confirmado-en-alpine-para-la-temporada-2026-de-f1/</code></a></p>
+            <p><strong>URL Comparada (V2):</strong> <a href="https://tn.com.ar/deportes/automovilismo/2025/11/07/el-posteo-que-williams-le-dedico-a-colapinto-despues-de-ser-confirmado-en-alpine-para-la-temporada-2026-de-f1/?d=723" target="_blank"><code>https://tn.com.ar/deportes/automovilismo/2025/11/07/el-posteo-que-williams-le-dedico-a-colapinto-despues-de-ser-confirmado-en-alpine-para-la-temporada-2026-de-f1/?d=723</code></a></p>
+            <p><strong>Resultado:</strong> <span style="font-weight:bold; color:green;">✅ No se encontraron diferencias.</span></p>
+            <p><strong>Tiempo de Ejecución:</strong> 0:00:25</p>
+            <details>
+                <summary style="cursor:pointer; font-weight:bold; color:#1e3a8a;">Detalle de diferencias</summary>
+                <div id="diff-list-article" style="margin-top:10px; background:#fff; padding:10px; border:1px solid #eee;">
+                    <ul><li>✅ No se encontraron diferencias.</li></ul>
+                </div>
+            </details>
+            <details>
+                <summary style="cursor:pointer; font-weight:bold; color:#1e3a8a;">Contexto Visual</summary>
+                <div class='container' id='container-article'>
+                    <div><h4>Versión Base (V1)</h4><img src='article_V723_base_20260929_205050.png' alt='V1'></div>
+                    <div id="image-container-article" style="position:relative;">
+                        <h4>Versión Nueva (V2)</h4><img id='screenshot-article' src='article_V723_diff_20260929_205050.png' alt='V2'>
+                        <div id="highlight-box-article" class="highlight-box" style="display:none;"></div>
+                    </div>
+                </div>
+            </details>
+        </div>
+        
+        <div style="border: 2px solid #ddd; padding: 15px; margin-top: 20px; border-radius: 8px;">
+            <h2>Video</h2>
+            <p><strong>URL Base (V1):</strong> <a href="https://tn.com.ar/videos/videos/2026/04/26/asi-se-ve-una-tormenta-electrica-desde-las-alturas/" target="_blank"><code>https://tn.com.ar/videos/videos/2026/04/26/asi-se-ve-una-tormenta-electrica-desde-las-alturas/</code></a></p>
+            <p><strong>URL Comparada (V2):</strong> <a href="https://tn.com.ar/videos/videos/2026/04/26/asi-se-ve-una-tormenta-electrica-desde-las-alturas/?d=723" target="_blank"><code>https://tn.com.ar/videos/videos/2026/04/26/asi-se-ve-una-tormenta-electrica-desde-las-alturas/?d=723</code></a></p>
+            <p><strong>Resultado:</strong> <span style="font-weight:bold; color:green;">✅ No se encontraron diferencias.</span></p>
+            <p><strong>Tiempo de Ejecución:</strong> 0:00:24</p>
+            <details>
+                <summary style="cursor:pointer; font-weight:bold; color:#1e3a8a;">Detalle de diferencias</summary>
+                <div id="diff-list-video" style="margin-top:10px; background:#fff; padding:10px; border:1px solid #eee;">
+                    <ul><li>✅ No se encontraron diferencias.</li></ul>
+                </div>
+            </details>
+            <details>
+                <summary style="cursor:pointer; font-weight:bold; color:#1e3a8a;">Contexto Visual</summary>
+                <div class='container' id='container-video'>
+                    <div><h4>Versión Base (V1)</h4><img src='video_V723_base_20260929_205050.png' alt='V1'></div>
+                    <div id="image-container-video" style="position:relative;">
+                        <h4>Versión Nueva (V2)</h4><img id='screenshot-video' src='video_V723_diff_20260929_205050.png' alt='V2'>
+                        <div id="highlight-box-video" class="highlight-box" style="display:none;"></div>
+                    </div>
+                </div>
+            </details>
+        </div>
+        
+        <div style="border: 2px solid #ddd; padding: 15px; margin-top: 20px; border-radius: 8px;">
+            <h2>Longform c/fondo</h2>
+            <p><strong>URL Base (V1):</strong> <a href="https://tn.com.ar/economia/2025/11/09/vivir-a-credito-crece-el-endeudamiento-cotidiano-y-hasta-el-40-del-sueldo-se-destina-a-pagar-la-tarjeta/" target="_blank"><code>https://tn.com.ar/economia/2025/11/09/vivir-a-credito-crece-el-endeudamiento-cotidiano-y-hasta-el-40-del-sueldo-se-destina-a-pagar-la-tarjeta/</code></a></p>
+            <p><strong>URL Comparada (V2):</strong> <a href="https://tn.com.ar/economia/2025/11/09/vivir-a-credito-crece-el-endeudamiento-cotidiano-y-hasta-el-40-del-sueldo-se-destina-a-pagar-la-tarjeta/?d=723" target="_blank"><code>https://tn.com.ar/economia/2025/11/09/vivir-a-credito-crece-el-endeudamiento-cotidiano-y-hasta-el-40-del-sueldo-se-destina-a-pagar-la-tarjeta/?d=723</code></a></p>
+            <p><strong>Resultado:</strong> <span style="font-weight:bold; color:green;">✅ No se encontraron diferencias.</span></p>
+            <p><strong>Tiempo de Ejecución:</strong> 0:00:26</p>
+            <details>
+                <summary style="cursor:pointer; font-weight:bold; color:#1e3a8a;">Detalle de diferencias</summary>
+                <div id="diff-list-longform_c_fondo" style="margin-top:10px; background:#fff; padding:10px; border:1px solid #eee;">
+                    <ul><li>✅ No se encontraron diferencias.</li></ul>
+                </div>
+            </details>
+            <details>
+                <summary style="cursor:pointer; font-weight:bold; color:#1e3a8a;">Contexto Visual</summary>
+                <div class='container' id='container-longform_c_fondo'>
+                    <div><h4>Versión Base (V1)</h4><img src='longform_c_fondo_V723_base_20260929_205050.png' alt='V1'></div>
+                    <div id="image-container-longform_c_fondo" style="position:relative;">
+                        <h4>Versión Nueva (V2)</h4><img id='screenshot-longform_c_fondo' src='longform_c_fondo_V723_diff_20260929_205050.png' alt='V2'>
+                        <div id="highlight-box-longform_c_fondo" class="highlight-box" style="display:none;"></div>
+                    </div>
+                </div>
+            </details>
+        </div>
+        
+        <div style="border: 2px solid #ddd; padding: 15px; margin-top: 20px; border-radius: 8px;">
+            <h2>Longform s/fondo</h2>
+            <p><strong>URL Base (V1):</strong> <a href="https://tn.com.ar/sociedad/2023/02/12/mapa-de-los-incendios-en-la-argentina-por-que-cada-verano-se-recrudece-el-fuego/" target="_blank"><code>https://tn.com.ar/sociedad/2023/02/12/mapa-de-los-incendios-en-la-argentina-por-que-cada-verano-se-recrudece-el-fuego/</code></a></p>
+            <p><strong>URL Comparada (V2):</strong> <a href="https://tn.com.ar/sociedad/2023/02/12/mapa-de-los-incendios-en-la-argentina-por-que-cada-verano-se-recrudece-el-fuego/?d=723" target="_blank"><code>https://tn.com.ar/sociedad/2023/02/12/mapa-de-los-incendios-en-la-argentina-por-que-cada-verano-se-recrudece-el-fuego/?d=723</code></a></p>
+            <p><strong>Resultado:</strong> <span style="font-weight:bold; color:green;">✅ No se encontraron diferencias.</span></p>
+            <p><strong>Tiempo de Ejecución:</strong> 0:00:27</p>
+            <details>
+                <summary style="cursor:pointer; font-weight:bold; color:#1e3a8a;">Detalle de diferencias</summary>
+                <div id="diff-list-longform_s_fondo" style="margin-top:10px; background:#fff; padding:10px; border:1px solid #eee;">
+                    <ul><li>✅ No se encontraron diferencias.</li></ul>
+                </div>
+            </details>
+            <details>
+                <summary style="cursor:pointer; font-weight:bold; color:#1e3a8a;">Contexto Visual</summary>
+                <div class='container' id='container-longform_s_fondo'>
+                    <div><h4>Versión Base (V1)</h4><img src='longform_s_fondo_V723_base_20260929_205050.png' alt='V1'></div>
+                    <div id="image-container-longform_s_fondo" style="position:relative;">
+                        <h4>Versión Nueva (V2)</h4><img id='screenshot-longform_s_fondo' src='longform_s_fondo_V723_diff_20260929_205050.png' alt='V2'>
+                        <div id="highlight-box-longform_s_fondo" class="highlight-box" style="display:none;"></div>
+                    </div>
+                </div>
+            </details>
+        </div>
+        
+        <div style="border: 2px solid #ddd; padding: 15px; margin-top: 20px; border-radius: 8px;">
+            <h2>Liveblogging</h2>
+            <p><strong>URL Base (V1):</strong> <a href="https://tn.com.ar/deportes/futbol/2025/11/07/franco-colapinto-corre-la-primera-practica-y-la-clasificacion-sprint-del-gp-de-brasil/" target="_blank"><code>https://tn.com.ar/deportes/futbol/2025/11/07/franco-colapinto-corre-la-primera-practica-y-la-clasificacion-sprint-del-gp-de-brasil/</code></a></p>
+            <p><strong>URL Comparada (V2):</strong> <a href="https://tn.com.ar/deportes/futbol/2025/11/07/franco-colapinto-corre-la-primera-practica-y-la-clasificacion-sprint-del-gp-de-brasil/?d=723" target="_blank"><code>https://tn.com.ar/deportes/futbol/2025/11/07/franco-colapinto-corre-la-primera-practica-y-la-clasificacion-sprint-del-gp-de-brasil/?d=723</code></a></p>
+            <p><strong>Resultado:</strong> <span style="font-weight:bold; color:green;">✅ No se encontraron diferencias.</span></p>
+            <p><strong>Tiempo de Ejecución:</strong> 0:00:28</p>
+            <details>
+                <summary style="cursor:pointer; font-weight:bold; color:#1e3a8a;">Detalle de diferencias</summary>
+                <div id="diff-list-liveblogging" style="margin-top:10px; background:#fff; padding:10px; border:1px solid #eee;">
+                    <ul><li>✅ No se encontraron diferencias.</li></ul>
+                </div>
+            </details>
+            <details>
+                <summary style="cursor:pointer; font-weight:bold; color:#1e3a8a;">Contexto Visual</summary>
+                <div class='container' id='container-liveblogging'>
+                    <div><h4>Versión Base (V1)</h4><img src='liveblogging_V723_base_20260929_205050.png' alt='V1'></div>
+                    <div id="image-container-liveblogging" style="position:relative;">
+                        <h4>Versión Nueva (V2)</h4><img id='screenshot-liveblogging' src='liveblogging_V723_diff_20260929_205050.png' alt='V2'>
+                        <div id="highlight-box-liveblogging" class="highlight-box" style="display:none;"></div>
+                    </div>
+                </div>
+            </details>
+        </div>
+        
+    <div id="offscreen-toast" style="display:none; position:fixed; bottom:20px; left:50%; transform:translateX(-50%);
+        background:#1e293b; color:#fff; padding:10px 18px; border-radius:6px; font-size:0.85em; z-index:2000;
+        box-shadow:0 4px 12px rgba(0,0,0,0.3); max-width:600px; text-align:center;"></div>
+    <script>
+    let lastHighlightedItem = null;
+    let offscreenToastTimer = null;
+    function showOffscreenToast(msg) {
+        const toast = document.getElementById('offscreen-toast');
+        if (!toast) return;
+        toast.textContent = msg;
+        toast.style.display = 'block';
+        if (offscreenToastTimer) clearTimeout(offscreenToastTimer);
+        offscreenToastTimer = setTimeout(() => { toast.style.display = 'none'; }, 4000);
+    }
+    function highlightElement(urlId, coordsStr, clickedItem) {
+        if (lastHighlightedItem) lastHighlightedItem.style.backgroundColor = 'transparent';
+        clickedItem.style.backgroundColor = '#fffacd';
+        lastHighlightedItem = clickedItem;
+        const screenshot = document.getElementById(`screenshot-${urlId}`);
+        const highlightBox = document.getElementById(`highlight-box-${urlId}`);
+        if (!screenshot || !highlightBox) return;
+        const doHighlight = () => {
+            // Guard contra clientWidth/naturalWidth en 0 (imagen todavía no
+            // terminó de cargar/decodificar cuando se hizo click): sin esto
+            // scaleFactor da NaN, las coordenadas del recuadro y del scroll
+            // también dan NaN, y window.scrollTo({top: NaN}) hace que el
+            // navegador interprete NaN como 0 y salte al principio de la
+            // página en vez de a la falla clickeada. Bug real reportado por
+            // el usuario (El Doce desktop v721): click en una falla grave
+            // scrolleaba siempre hacia arriba.
+            if (!screenshot.naturalWidth || !screenshot.clientWidth) return;
+            const [origX, origY, origW, origH] = coordsStr.split(',').map(Number);
+            // Elementos posicionados fuera de pantalla por el propio sitio
+            // (patrón común para ocultar visualmente contenido, ej. un panel
+            // de búsqueda o un menú colapsado: left:-9999px o similar) no
+            // tienen ninguna posición real dentro de la captura. Sin este
+            // guard, el scroll se calculaba igual con esas coordenadas
+            // negativas/absurdas y terminaba en un punto arbitrario de la
+            // imagen (ni arriba de todo ni cerca de nada relevante) —
+            // confuso para quien hace click esperando ver la falla resaltada.
+            // Bug real reportado por el usuario sobre El Doce desktop v721
+            // (Deportes / Estadísticas deportes), con el fix anterior (NaN
+            // → scroll a 0) ya desplegado: el click seguía sin llevar a un
+            // lugar útil, solo que ahora a un punto random en vez de arriba.
+            const fueraDePantalla = origX < 0 || origY < 0 ||
+                origX > screenshot.naturalWidth || origY > screenshot.naturalHeight;
+            if (fueraDePantalla) {
+                highlightBox.style.display = 'none';
+                screenshot.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                showOffscreenToast('⚠️ Este elemento está posicionado fuera de la pantalla visible por el propio sitio (oculto por CSS) — no aparece en la captura, por eso no se puede resaltar.');
+                return;
+            }
+            const scaleFactor = screenshot.clientWidth / screenshot.naturalWidth;
+            highlightBox.style.display = 'block';
+            highlightBox.style.left = (origX * scaleFactor + (origW * scaleFactor / 2)) + "px";
+            highlightBox.style.top = (origY * scaleFactor - 35) + "px";
+            const rect = screenshot.getBoundingClientRect();
+            window.scrollTo({ top: window.pageYOffset + rect.top + (origY * scaleFactor) - 200, behavior: 'smooth' });
+        };
+        if (screenshot.complete) {
+            doHighlight();
+        } else {
+            screenshot.addEventListener('load', doHighlight, { once: true });
+        }
+    }
+    </script>
+    </body></html>
+    
