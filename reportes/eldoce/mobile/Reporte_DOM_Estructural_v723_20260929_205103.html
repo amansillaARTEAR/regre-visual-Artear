@@ -1,0 +1,1755 @@
+
+    <html><head><meta charset="utf-8">
+    <title>Reporte de Regresión El Doce Mobile - Versión 723</title>
+    <style>
+    body { font-family: Arial; background:#f7f7f7; margin:20px; }
+    h1 { color:#1e3a8a; border-bottom:3px solid #bfdbfe; padding-bottom:10px; }
+    h2 { margin-top:40px; color:#555; border-bottom:2px solid #ccc; padding-bottom:5px; }
+    code { background:#eee; padding:2px 4px; border-radius:3px; }
+    .container { display:flex; gap:20px; margin-bottom:40px; border:1px solid #eee; padding:10px; background:#fafafa; overflow-x:auto; }
+    .container > div { flex:1; min-width:480px; }
+    img { width:100%; height:auto; border:3px solid #ccc; border-radius:4px; display:block; }
+    .highlight-box { position:absolute; pointer-events:none; z-index:1000; border-left:15px solid transparent; border-right:15px solid transparent; border-top:30px solid #ffcc00; transform:translateX(-50%); }
+    </style></head>
+    <body>
+    <h1>Reporte de Regresión El Doce Mobile - Versión 723</h1>
+    <p><strong>Versión Testeada:</strong> <code>723</code></p>
+    <p><strong>Fecha y Hora:</strong> 29/09/2026 20:51:03</p>
+    <p><strong>Tiempo Total:</strong> 0:08:40</p>
+    <p><strong>Umbral de Tolerancia:</strong> 3 píxeles.</p>
+    <p><strong>Resumen global:</strong> <span style="font-weight:bold; color:red;">❌ Se encontraron diferencias graves en 2 de 19 urls. NO recomendado deployar a PROD sin revisar.</span></p>
+    
+<div style="position: sticky; top: 0; z-index: 500; background: #f7f7f7;
+            padding: 10px 0 8px 0; margin: 0 -20px; border-bottom: 2px solid #ddd;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.08);">
+  <div style="display: flex; flex-wrap: wrap; gap: 8px 24px; font-size: 0.82em;
+              color: #555; padding: 0 20px;">
+    <div style="flex: 1 1 220px;"><span style="color:red; font-weight:bold;">■ Rojo</span>: falla grave (elemento ausente/nuevo, o cambio de tamaño/estilo confirmado visualmente).</div>
+    <div style="flex: 1 1 220px;"><span style="color:blue; font-weight:bold;">■ Azul</span>: desplazamiento menor sin cambio de tamaño.</div>
+    <div style="flex: 1 1 220px;"><span style="color:#ff8c00; font-weight:bold;">■ Naranja</span>: el DOM detectó una diferencia pero la confirmación visual (crop + diff) mostró que la región es igual — probablemente un falso positivo.</div>
+    <div style="flex: 1 1 220px;"><span style="color:#7c3aed; font-weight:bold;">■ Violeta</span>: desplazamiento en cascada — un solo elemento anterior cambió de tamaño y corrió a los siguientes; no son N fallas independientes.</div>
+  </div>
+</div>
+
+    <hr/>
+    
+        <div style="border: 2px solid #ddd; padding: 15px; margin-top: 20px; border-radius: 8px;">
+            <h2>Homepage</h2>
+            <p><strong>URL Base (V1):</strong> <a href="https://eldoce.tv/" target="_blank"><code>https://eldoce.tv/</code></a></p>
+            <p><strong>URL Comparada (V2):</strong> <a href="https://eldoce.tv/?d=723" target="_blank"><code>https://eldoce.tv/?d=723</code></a></p>
+            <p><strong>Resultado:</strong> <span style="font-weight:bold; color:green;">✅ No se encontraron diferencias.</span></p>
+            <p><strong>Tiempo de Ejecución:</strong> 0:00:43</p>
+            <details>
+                <summary style="cursor:pointer; font-weight:bold; color:#1e3a8a;">Detalle de diferencias</summary>
+                <div id="diff-list-homepage" style="margin-top:10px; background:#fff; padding:10px; border:1px solid #eee;">
+                    <ul><li>✅ No se encontraron diferencias.</li></ul>
+                </div>
+            </details>
+            <details>
+                <summary style="cursor:pointer; font-weight:bold; color:#1e3a8a;">Contexto Visual</summary>
+                <div class='container' id='container-homepage'>
+                    <div><h4>Versión Base (V1)</h4><img src='homepage_V723_base_20260929_205103.png' alt='V1'></div>
+                    <div id="image-container-homepage" style="position:relative;">
+                        <h4>Versión Nueva (V2)</h4><img id='screenshot-homepage' src='homepage_V723_diff_20260929_205103.png' alt='V2'>
+                        <div id="highlight-box-homepage" class="highlight-box" style="display:none;"></div>
+                    </div>
+                </div>
+            </details>
+        </div>
+        
+        <div style="border: 2px solid #ddd; padding: 15px; margin-top: 20px; border-radius: 8px;">
+            <h2>Cuartetenado</h2>
+            <p><strong>URL Base (V1):</strong> <a href="https://eldoce.tv/cuarteteando/" target="_blank"><code>https://eldoce.tv/cuarteteando/</code></a></p>
+            <p><strong>URL Comparada (V2):</strong> <a href="https://eldoce.tv/cuarteteando/?d=723" target="_blank"><code>https://eldoce.tv/cuarteteando/?d=723</code></a></p>
+            <p><strong>Resultado:</strong> <span style="font-weight:bold; color:green;">✅ No se encontraron diferencias.</span></p>
+            <p><strong>Tiempo de Ejecución:</strong> 0:00:26</p>
+            <details>
+                <summary style="cursor:pointer; font-weight:bold; color:#1e3a8a;">Detalle de diferencias</summary>
+                <div id="diff-list-cuartetenado" style="margin-top:10px; background:#fff; padding:10px; border:1px solid #eee;">
+                    <ul><li>✅ No se encontraron diferencias.</li></ul>
+                </div>
+            </details>
+            <details>
+                <summary style="cursor:pointer; font-weight:bold; color:#1e3a8a;">Contexto Visual</summary>
+                <div class='container' id='container-cuartetenado'>
+                    <div><h4>Versión Base (V1)</h4><img src='cuartetenado_V723_base_20260929_205103.png' alt='V1'></div>
+                    <div id="image-container-cuartetenado" style="position:relative;">
+                        <h4>Versión Nueva (V2)</h4><img id='screenshot-cuartetenado' src='cuartetenado_V723_diff_20260929_205103.png' alt='V2'>
+                        <div id="highlight-box-cuartetenado" class="highlight-box" style="display:none;"></div>
+                    </div>
+                </div>
+            </details>
+        </div>
+        
+        <div style="border: 2px solid #ddd; padding: 15px; margin-top: 20px; border-radius: 8px;">
+            <h2>Videos</h2>
+            <p><strong>URL Base (V1):</strong> <a href="https://eldoce.tv/videos/" target="_blank"><code>https://eldoce.tv/videos/</code></a></p>
+            <p><strong>URL Comparada (V2):</strong> <a href="https://eldoce.tv/videos/?d=723" target="_blank"><code>https://eldoce.tv/videos/?d=723</code></a></p>
+            <p><strong>Resultado:</strong> <span style="font-weight:bold; color:red;">❌ Se detectaron 109 diferencias graves.</span></p>
+            <p><strong>Tiempo de Ejecución:</strong> 0:00:24</p>
+            <details>
+                <summary style="cursor:pointer; font-weight:bold; color:#1e3a8a;">Detalle de diferencias</summary>
+                <div id="diff-list-videos" style="margin-top:10px; background:#fff; padding:10px; border:1px solid #eee;">
+                    <ul>
+            <li class='diff-item' style='color: #7c3aed; border-bottom: 1px dotted #ccc; padding: 5px 0; cursor: pointer;'
+                onclick="highlightElement('videos', '23,560,454,104', this)"
+                data-coords="23,560,454,104">
+                <span style="background:#7c3aed; color:#fff; border-radius:3px; padding:1px 6px; font-size:0.8em; font-weight:bold; margin-right:6px;">C1</span>
+                <span style="font-weight: bold;">⚠️ Revisar — desplazamiento en cascada:</span>
+                87 elementos se movieron -4814px verticalmente
+                <span style="font-size: 0.8em; color: #888;">(click para verlo resaltado en la imagen)</span>.
+                <br><span style="font-size: 0.85em; color: #666;">
+                Causa probable: un solo elemento anterior del DOM cambió de tamaño y arrastró a los 87 de abajo — no son 87 regresiones independientes, es 1 sola causa raíz (empezando por <code>div#fusion-app > footer > div</code>).
+                </span>
+            </li>
+            
+            <li class='diff-item' style='color: #7c3aed; border-bottom: 1px dotted #ccc; padding: 5px 0; cursor: pointer;'
+                onclick="highlightElement('videos', '0,1309,500,1331', this)"
+                data-coords="0,1309,500,1331">
+                <span style="background:#7c3aed; color:#fff; border-radius:3px; padding:1px 6px; font-size:0.8em; font-weight:bold; margin-right:6px;">C2</span>
+                <span style="font-weight: bold;">⚠️ Revisar — desplazamiento en cascada:</span>
+                9 elementos se movieron -4726px verticalmente
+                <span style="font-size: 0.8em; color: #888;">(click para verlo resaltado en la imagen)</span>.
+                <br><span style="font-size: 0.85em; color: #666;">
+                Causa probable: un solo elemento anterior del DOM cambió de tamaño y arrastró a los 9 de abajo — no son 9 regresiones independientes, es 1 sola causa raíz (empezando por <code>div#FC_Inu0ZxjUTruRZwczME4iOg</code>).
+                </span>
+            </li>
+            
+            <li class='diff-item' style='color: #7c3aed; border-bottom: 1px dotted #ccc; padding: 5px 0; cursor: pointer;'
+                onclick="highlightElement('videos', '23,1204,32,32', this)"
+                data-coords="23,1204,32,32">
+                <span style="background:#7c3aed; color:#fff; border-radius:3px; padding:1px 6px; font-size:0.8em; font-weight:bold; margin-right:6px;">C3</span>
+                <span style="font-weight: bold;">⚠️ Revisar — desplazamiento en cascada:</span>
+                4 elementos se movieron -48px horizontalmente
+                <span style="font-size: 0.8em; color: #888;">(click para verlo resaltado en la imagen)</span>.
+                <br><span style="font-size: 0.85em; color: #666;">
+                Causa probable: un solo elemento anterior del DOM cambió de tamaño y arrastró a los 4 de abajo — no son 4 regresiones independientes, es 1 sola causa raíz (empezando por <code>div#fusion-app > footer > div:nth-child(2) > div:nth-child(2</code>).
+                </span>
+            </li>
+            
+            <li class='diff-item' style='color: #7c3aed; border-bottom: 1px dotted #ccc; padding: 5px 0; cursor: pointer;'
+                onclick="highlightElement('videos', '0,1319,500,1373', this)"
+                data-coords="0,1319,500,1373">
+                <span style="background:#7c3aed; color:#fff; border-radius:3px; padding:1px 6px; font-size:0.8em; font-weight:bold; margin-right:6px;">C4</span>
+                <span style="font-weight: bold;">⚠️ Revisar — desplazamiento en cascada:</span>
+                2 elementos cambiaron de alto -416px
+                <span style="font-size: 0.8em; color: #888;">(click para verlo resaltado en la imagen)</span>.
+                <br><span style="font-size: 0.85em; color: #666;">
+                Causa probable: un solo elemento anterior del DOM cambió de tamaño y arrastró a los 2 de abajo — no son 2 regresiones independientes, es 1 sola causa raíz (empezando por <code>div#FC_Inu0ZxjUTruRZwczME4iOg > div</code>).
+                </span>
+            </li>
+            
+            <li class='diff-item' style='color: #7c3aed; border-bottom: 1px dotted #ccc; padding: 5px 0; cursor: pointer;'
+                onclick="highlightElement('videos', '0,-1331,500,1331', this)"
+                data-coords="0,-1331,500,1331">
+                <span style="background:#7c3aed; color:#fff; border-radius:3px; padding:1px 6px; font-size:0.8em; font-weight:bold; margin-right:6px;">C5</span>
+                <span style="font-weight: bold;">⚠️ Revisar — desplazamiento en cascada:</span>
+                3 elementos cambiaron de alto -4726px
+                <span style="font-size: 0.8em; color: #888;">(click para verlo resaltado en la imagen)</span>.
+                <br><span style="font-size: 0.85em; color: #666;">
+                Causa probable: un solo elemento anterior del DOM cambió de tamaño y arrastró a los 3 de abajo — no son 3 regresiones independientes, es 1 sola causa raíz (empezando por <code>html > body > marfeel-flowcards > div</code>).
+                </span>
+            </li>
+            
+        <li class='diff-item'
+            style='color: red; border-bottom: 1px dotted #ccc; padding: 5px 0; cursor: pointer;'
+            onclick="highlightElement('videos', '302,508,28,24', this)"
+            data-coords="302,508,28,24">
+            <span style="background:red; color:#fff; border-radius:3px; padding:1px 6px; font-size:0.8em; font-weight:bold; margin-right:6px;">G1</span>
+            <span style="font-weight: bold;">Elemento:</span> <code>div#fusion-app > div:nth-child(2) > div:nth-child(2) > a > span:nth-child(2)</code>
+            <br><span style="font-weight: bold;">Gravedad:</span> <span style='color:red;'>GRAVE</span>
+            <div style='margin-top:5px; border-left:2px solid #ccc; padding-left:5px;'>Tipo: <b>DIFERENCIA ALTURA (H)</b> | V1: 32.00 | V2: 24.00 | Diff: 8.00px<br>Tipo: <b>DIFERENCIA ANCHO (W)</b> | V1: 32.00 | V2: 28.00 | Diff: 4.00px<br>Tipo: <b>DIFERENCIA POSICIÓN (Y)</b> | V1: 6017.41 | V2: 508.00 | Diff: 5509.41px<br>Tipo: <b>DIFERENCIA POSICIÓN (X)</b> | V1: 23.00 | V2: 302.62 | Diff: 279.62px<br>Tipo: <b>DIFERENCIA ESTILO (COLOR)</b> | V1: rgb(255, 177, 104) | V2: rgb(250, 250, 250) | Diff: N/A<br>Tipo: <b>DIFERENCIA ESTILO (FONTWEIGHT)</b> | V1: 700 | V2: 400 | Diff: N/A<br>Tipo: <b>DIFERENCIA ESTILO (PADDINGLEFT)</b> | V1: 0px | V2: 4px | Diff: N/A</div>
+        </li>
+        
+        <li class='diff-item'
+            style='color: red; border-bottom: 1px dotted #ccc; padding: 5px 0; cursor: pointer;'
+            onclick="highlightElement('videos', '23,3927,454,1301', this)"
+            data-coords="23,3927,454,1301">
+            <span style="background:red; color:#fff; border-radius:3px; padding:1px 6px; font-size:0.8em; font-weight:bold; margin-right:6px;">G2</span>
+            <span style="font-weight: bold;">Elemento:</span> <code>div#fusion-app > div:nth-child(5) > main > div:nth-child(6) > div</code>
+            <br><span style="font-weight: bold;">Gravedad:</span> <span style='color:red;'>GRAVE</span>
+            <div style='margin-top:5px; border-left:2px solid #ccc; padding-left:5px;'>Tipo: <b>AUSENTE V2</b> | V1: N/A | V2: N/A | Diff: N/A</div>
+        </li>
+        
+        <li class='diff-item'
+            style='color: red; border-bottom: 1px dotted #ccc; padding: 5px 0; cursor: pointer;'
+            onclick="highlightElement('videos', '23,260,454,807', this)"
+            data-coords="23,260,454,807">
+            <span style="background:red; color:#fff; border-radius:3px; padding:1px 6px; font-size:0.8em; font-weight:bold; margin-right:6px;">G3</span>
+            <span style="font-weight: bold;">Elemento:</span> <code>div#fusion-app > div:nth-child(5) > main > div > div > div > article > a</code>
+            <br><span style="font-weight: bold;">Gravedad:</span> <span style='color:red;'>GRAVE</span>
+            <div style='margin-top:5px; border-left:2px solid #ccc; padding-left:5px;'>Tipo: <b>AUSENTE V2</b> | V1: N/A | V2: N/A | Diff: N/A</div>
+        </li>
+        
+        <li class='diff-item'
+            style='color: red; border-bottom: 1px dotted #ccc; padding: 5px 0; cursor: pointer;'
+            onclick="highlightElement('videos', '23,208,454,36', this)"
+            data-coords="23,208,454,36">
+            <span style="background:red; color:#fff; border-radius:3px; padding:1px 6px; font-size:0.8em; font-weight:bold; margin-right:6px;">G4</span>
+            <span style="font-weight: bold;">Elemento:</span> <code>div#fusion-app > div:nth-child(5) > main > div > h2</code>
+            <br><span style="font-weight: bold;">Gravedad:</span> <span style='color:red;'>GRAVE</span>
+            <div style='margin-top:5px; border-left:2px solid #ccc; padding-left:5px;'>Tipo: <b>AUSENTE V2</b> | V1: N/A | V2: N/A | Diff: N/A</div>
+        </li>
+        
+        <li class='diff-item'
+            style='color: red; border-bottom: 1px dotted #ccc; padding: 5px 0; cursor: pointer;'
+            onclick="highlightElement('videos', '23,1076,428,93', this)"
+            data-coords="23,1076,428,93">
+            <span style="background:red; color:#fff; border-radius:3px; padding:1px 6px; font-size:0.8em; font-weight:bold; margin-right:6px;">G5</span>
+            <span style="font-weight: bold;">Elemento:</span> <code>div#fusion-app > div:nth-child(5) > main > div > div > div > article > div > hea</code>
+            <br><span style="font-weight: bold;">Gravedad:</span> <span style='color:red;'>GRAVE</span>
+            <div style='margin-top:5px; border-left:2px solid #ccc; padding-left:5px;'>Tipo: <b>AUSENTE V2</b> | V1: N/A | V2: N/A | Diff: N/A</div>
+        </li>
+        
+        <li class='diff-item'
+            style='color: red; border-bottom: 1px dotted #ccc; padding: 5px 0; cursor: pointer;'
+            onclick="highlightElement('videos', '370,1809,284,157', this)"
+            data-coords="370,1809,284,157">
+            <span style="background:red; color:#fff; border-radius:3px; padding:1px 6px; font-size:0.8em; font-weight:bold; margin-right:6px;">G6</span>
+            <span style="font-weight: bold;">Elemento:</span> <code>div#fusion-app > div:nth-child(5) > main > div > div:nth-child(2) > div > div > </code>
+            <br><span style="font-weight: bold;">Gravedad:</span> <span style='color:red;'>GRAVE</span>
+            <div style='margin-top:5px; border-left:2px solid #ccc; padding-left:5px;'>Tipo: <b>AUSENTE V2</b> | V1: N/A | V2: N/A | Diff: N/A</div>
+        </li>
+        
+        <li class='diff-item'
+            style='color: red; border-bottom: 1px dotted #ccc; padding: 5px 0; cursor: pointer;'
+            onclick="highlightElement('videos', '23,1211,496,765', this)"
+            data-coords="23,1211,496,765">
+            <span style="background:red; color:#fff; border-radius:3px; padding:1px 6px; font-size:0.8em; font-weight:bold; margin-right:6px;">G7</span>
+            <span style="font-weight: bold;">Elemento:</span> <code>div#fusion-app > div:nth-child(5) > main > div > div:nth-child(2) > div > div</code>
+            <br><span style="font-weight: bold;">Gravedad:</span> <span style='color:red;'>GRAVE</span>
+            <div style='margin-top:5px; border-left:2px solid #ccc; padding-left:5px;'>Tipo: <b>AUSENTE V2</b> | V1: N/A | V2: N/A | Diff: N/A</div>
+        </li>
+        
+        <li class='diff-item'
+            style='color: red; border-bottom: 1px dotted #ccc; padding: 5px 0; cursor: pointer;'
+            onclick="highlightElement('videos', '23,3022,487,753', this)"
+            data-coords="23,3022,487,753">
+            <span style="background:red; color:#fff; border-radius:3px; padding:1px 6px; font-size:0.8em; font-weight:bold; margin-right:6px;">G8</span>
+            <span style="font-weight: bold;">Elemento:</span> <code>div#fusion-app > div:nth-child(5) > main > div:nth-child(2) > div:nth-child(2) ></code>
+            <br><span style="font-weight: bold;">Gravedad:</span> <span style='color:red;'>GRAVE</span>
+            <div style='margin-top:5px; border-left:2px solid #ccc; padding-left:5px;'>Tipo: <b>AUSENTE V2</b> | V1: N/A | V2: N/A | Diff: N/A</div>
+        </li>
+        
+        <li class='diff-item'
+            style='color: red; border-bottom: 1px dotted #ccc; padding: 5px 0; cursor: pointer;'
+            onclick="highlightElement('videos', '705,3609,280,157', this)"
+            data-coords="705,3609,280,157">
+            <span style="background:red; color:#fff; border-radius:3px; padding:1px 6px; font-size:0.8em; font-weight:bold; margin-right:6px;">G9</span>
+            <span style="font-weight: bold;">Elemento:</span> <code>div#fusion-app > div:nth-child(5) > main > div:nth-child(2) > div:nth-child(2) ></code>
+            <br><span style="font-weight: bold;">Gravedad:</span> <span style='color:red;'>GRAVE</span>
+            <div style='margin-top:5px; border-left:2px solid #ccc; padding-left:5px;'>Tipo: <b>AUSENTE V2</b> | V1: N/A | V2: N/A | Diff: N/A</div>
+        </li>
+        
+        <li class='diff-item'
+            style='color: red; border-bottom: 1px dotted #ccc; padding: 5px 0; cursor: pointer;'
+            onclick="highlightElement('videos', '183,5282,160,18', this)"
+            data-coords="183,5282,160,18">
+            <span style="background:red; color:#fff; border-radius:3px; padding:1px 6px; font-size:0.8em; font-weight:bold; margin-right:6px;">G10</span>
+            <span style="font-weight: bold;">Elemento:</span> <code>div#fusion-app > div:nth-child(5) > main > div:nth-child(6) > div:nth-child(2) ></code>
+            <br><span style="font-weight: bold;">Gravedad:</span> <span style='color:red;'>GRAVE</span>
+            <div style='margin-top:5px; border-left:2px solid #ccc; padding-left:5px;'>Tipo: <b>AUSENTE V2</b> | V1: N/A | V2: N/A | Diff: N/A</div>
+        </li>
+        
+        <li class='diff-item'
+            style='color: red; border-bottom: 1px dotted #ccc; padding: 5px 0; cursor: pointer;'
+            onclick="highlightElement('videos', '23,260,454,807', this)"
+            data-coords="23,260,454,807">
+            <span style="background:red; color:#fff; border-radius:3px; padding:1px 6px; font-size:0.8em; font-weight:bold; margin-right:6px;">G11</span>
+            <span style="font-weight: bold;">Elemento:</span> <code>div#fusion-app > div:nth-child(5) > main > div > div > div > article > a > div</code>
+            <br><span style="font-weight: bold;">Gravedad:</span> <span style='color:red;'>GRAVE</span>
+            <div style='margin-top:5px; border-left:2px solid #ccc; padding-left:5px;'>Tipo: <b>AUSENTE V2</b> | V1: N/A | V2: N/A | Diff: N/A</div>
+        </li>
+        
+        <li class='diff-item'
+            style='color: red; border-bottom: 1px dotted #ccc; padding: 5px 0; cursor: pointer;'
+            onclick="highlightElement('videos', '23,1211,331,589', this)"
+            data-coords="23,1211,331,589">
+            <span style="background:red; color:#fff; border-radius:3px; padding:1px 6px; font-size:0.8em; font-weight:bold; margin-right:6px;">G12</span>
+            <span style="font-weight: bold;">Elemento:</span> <code>div#fusion-app > div:nth-child(5) > main > div > div:nth-child(2) > div > div > </code>
+            <br><span style="font-weight: bold;">Gravedad:</span> <span style='color:red;'>GRAVE</span>
+            <div style='margin-top:5px; border-left:2px solid #ccc; padding-left:5px;'>Tipo: <b>AUSENTE V2</b> | V1: N/A | V2: N/A | Diff: N/A</div>
+        </li>
+        
+        <li class='diff-item'
+            style='color: red; border-bottom: 1px dotted #ccc; padding: 5px 0; cursor: pointer;'
+            onclick="highlightElement('videos', '370,1211,331,589', this)"
+            data-coords="370,1211,331,589">
+            <span style="background:red; color:#fff; border-radius:3px; padding:1px 6px; font-size:0.8em; font-weight:bold; margin-right:6px;">G13</span>
+            <span style="font-weight: bold;">Elemento:</span> <code>div#fusion-app > div:nth-child(5) > main > div > div:nth-child(2) > div > div > </code>
+            <br><span style="font-weight: bold;">Gravedad:</span> <span style='color:red;'>GRAVE</span>
+            <div style='margin-top:5px; border-left:2px solid #ccc; padding-left:5px;'>Tipo: <b>AUSENTE V2</b> | V1: N/A | V2: N/A | Diff: N/A</div>
+        </li>
+        
+        <li class='diff-item'
+            style='color: red; border-bottom: 1px dotted #ccc; padding: 5px 0; cursor: pointer;'
+            onclick="highlightElement('videos', '718,1211,331,589', this)"
+            data-coords="718,1211,331,589">
+            <span style="background:red; color:#fff; border-radius:3px; padding:1px 6px; font-size:0.8em; font-weight:bold; margin-right:6px;">G14</span>
+            <span style="font-weight: bold;">Elemento:</span> <code>div#fusion-app > div:nth-child(5) > main > div > div:nth-child(2) > div > div > </code>
+            <br><span style="font-weight: bold;">Gravedad:</span> <span style='color:red;'>GRAVE</span>
+            <div style='margin-top:5px; border-left:2px solid #ccc; padding-left:5px;'>Tipo: <b>AUSENTE V2</b> | V1: N/A | V2: N/A | Diff: N/A</div>
+        </li>
+        
+        <li class='diff-item'
+            style='color: red; border-bottom: 1px dotted #ccc; padding: 5px 0; cursor: pointer;'
+            onclick="highlightElement('videos', '23,2071,454,807', this)"
+            data-coords="23,2071,454,807">
+            <span style="background:red; color:#fff; border-radius:3px; padding:1px 6px; font-size:0.8em; font-weight:bold; margin-right:6px;">G15</span>
+            <span style="font-weight: bold;">Elemento:</span> <code>div#fusion-app > div:nth-child(5) > main > div:nth-child(2) > div > div > articl</code>
+            <br><span style="font-weight: bold;">Gravedad:</span> <span style='color:red;'>GRAVE</span>
+            <div style='margin-top:5px; border-left:2px solid #ccc; padding-left:5px;'>Tipo: <b>AUSENTE V2</b> | V1: N/A | V2: N/A | Diff: N/A</div>
+        </li>
+        
+        <li class='diff-item'
+            style='color: red; border-bottom: 1px dotted #ccc; padding: 5px 0; cursor: pointer;'
+            onclick="highlightElement('videos', '23,3022,325,577', this)"
+            data-coords="23,3022,325,577">
+            <span style="background:red; color:#fff; border-radius:3px; padding:1px 6px; font-size:0.8em; font-weight:bold; margin-right:6px;">G16</span>
+            <span style="font-weight: bold;">Elemento:</span> <code>div#fusion-app > div:nth-child(5) > main > div:nth-child(2) > div:nth-child(2) ></code>
+            <br><span style="font-weight: bold;">Gravedad:</span> <span style='color:red;'>GRAVE</span>
+            <div style='margin-top:5px; border-left:2px solid #ccc; padding-left:5px;'>Tipo: <b>AUSENTE V2</b> | V1: N/A | V2: N/A | Diff: N/A</div>
+        </li>
+        
+        <li class='diff-item'
+            style='color: red; border-bottom: 1px dotted #ccc; padding: 5px 0; cursor: pointer;'
+            onclick="highlightElement('videos', '364,3022,325,577', this)"
+            data-coords="364,3022,325,577">
+            <span style="background:red; color:#fff; border-radius:3px; padding:1px 6px; font-size:0.8em; font-weight:bold; margin-right:6px;">G17</span>
+            <span style="font-weight: bold;">Elemento:</span> <code>div#fusion-app > div:nth-child(5) > main > div:nth-child(2) > div:nth-child(2) ></code>
+            <br><span style="font-weight: bold;">Gravedad:</span> <span style='color:red;'>GRAVE</span>
+            <div style='margin-top:5px; border-left:2px solid #ccc; padding-left:5px;'>Tipo: <b>AUSENTE V2</b> | V1: N/A | V2: N/A | Diff: N/A</div>
+        </li>
+        
+        <li class='diff-item'
+            style='color: red; border-bottom: 1px dotted #ccc; padding: 5px 0; cursor: pointer;'
+            onclick="highlightElement('videos', '705,3022,325,577', this)"
+            data-coords="705,3022,325,577">
+            <span style="background:red; color:#fff; border-radius:3px; padding:1px 6px; font-size:0.8em; font-weight:bold; margin-right:6px;">G18</span>
+            <span style="font-weight: bold;">Elemento:</span> <code>div#fusion-app > div:nth-child(5) > main > div:nth-child(2) > div:nth-child(2) ></code>
+            <br><span style="font-weight: bold;">Gravedad:</span> <span style='color:red;'>GRAVE</span>
+            <div style='margin-top:5px; border-left:2px solid #ccc; padding-left:5px;'>Tipo: <b>AUSENTE V2</b> | V1: N/A | V2: N/A | Diff: N/A</div>
+        </li>
+        
+        <li class='diff-item'
+            style='color: red; border-bottom: 1px dotted #ccc; padding: 5px 0; cursor: pointer;'
+            onclick="highlightElement('videos', '23,3927,454,255', this)"
+            data-coords="23,3927,454,255">
+            <span style="background:red; color:#fff; border-radius:3px; padding:1px 6px; font-size:0.8em; font-weight:bold; margin-right:6px;">G19</span>
+            <span style="font-weight: bold;">Elemento:</span> <code>div#fusion-app > div:nth-child(5) > main > div:nth-child(6) > div > article > a </code>
+            <br><span style="font-weight: bold;">Gravedad:</span> <span style='color:red;'>GRAVE</span>
+            <div style='margin-top:5px; border-left:2px solid #ccc; padding-left:5px;'>Tipo: <b>AUSENTE V2</b> | V1: N/A | V2: N/A | Diff: N/A</div>
+        </li>
+        
+        <li class='diff-item'
+            style='color: red; border-bottom: 1px dotted #ccc; padding: 5px 0; cursor: pointer;'
+            onclick="highlightElement('videos', '23,4259,454,255', this)"
+            data-coords="23,4259,454,255">
+            <span style="background:red; color:#fff; border-radius:3px; padding:1px 6px; font-size:0.8em; font-weight:bold; margin-right:6px;">G20</span>
+            <span style="font-weight: bold;">Elemento:</span> <code>div#fusion-app > div:nth-child(5) > main > div:nth-child(6) > div > article:nth-</code>
+            <br><span style="font-weight: bold;">Gravedad:</span> <span style='color:red;'>GRAVE</span>
+            <div style='margin-top:5px; border-left:2px solid #ccc; padding-left:5px;'>Tipo: <b>AUSENTE V2</b> | V1: N/A | V2: N/A | Diff: N/A</div>
+        </li>
+        
+        <li class='diff-item'
+            style='color: red; border-bottom: 1px dotted #ccc; padding: 5px 0; cursor: pointer;'
+            onclick="highlightElement('videos', '23,4590,454,255', this)"
+            data-coords="23,4590,454,255">
+            <span style="background:red; color:#fff; border-radius:3px; padding:1px 6px; font-size:0.8em; font-weight:bold; margin-right:6px;">G21</span>
+            <span style="font-weight: bold;">Elemento:</span> <code>div#fusion-app > div:nth-child(5) > main > div:nth-child(6) > div > article:nth-</code>
+            <br><span style="font-weight: bold;">Gravedad:</span> <span style='color:red;'>GRAVE</span>
+            <div style='margin-top:5px; border-left:2px solid #ccc; padding-left:5px;'>Tipo: <b>AUSENTE V2</b> | V1: N/A | V2: N/A | Diff: N/A</div>
+        </li>
+        
+        <li class='diff-item'
+            style='color: red; border-bottom: 1px dotted #ccc; padding: 5px 0; cursor: pointer;'
+            onclick="highlightElement('videos', '23,4922,454,255', this)"
+            data-coords="23,4922,454,255">
+            <span style="background:red; color:#fff; border-radius:3px; padding:1px 6px; font-size:0.8em; font-weight:bold; margin-right:6px;">G22</span>
+            <span style="font-weight: bold;">Elemento:</span> <code>div#fusion-app > div:nth-child(5) > main > div:nth-child(6) > div > article:nth-</code>
+            <br><span style="font-weight: bold;">Gravedad:</span> <span style='color:red;'>GRAVE</span>
+            <div style='margin-top:5px; border-left:2px solid #ccc; padding-left:5px;'>Tipo: <b>AUSENTE V2</b> | V1: N/A | V2: N/A | Diff: N/A</div>
+        </li>
+        
+        <li class='diff-item'
+            style='color: red; border-bottom: 1px dotted #ccc; padding: 5px 0; cursor: pointer;'
+            onclick="highlightElement('videos', '370,1211,347,765', this)"
+            data-coords="370,1211,347,765">
+            <span style="background:red; color:#fff; border-radius:3px; padding:1px 6px; font-size:0.8em; font-weight:bold; margin-right:6px;">G23</span>
+            <span style="font-weight: bold;">Elemento:</span> <code>div#fusion-app > div:nth-child(5) > main > div > div:nth-child(2) > div > div > </code>
+            <br><span style="font-weight: bold;">Gravedad:</span> <span style='color:red;'>GRAVE</span>
+            <div style='margin-top:5px; border-left:2px solid #ccc; padding-left:5px;'>Tipo: <b>AUSENTE V2</b> | V1: N/A | V2: N/A | Diff: N/A</div>
+        </li>
+        
+        <li class='diff-item'
+            style='color: red; border-bottom: 1px dotted #ccc; padding: 5px 0; cursor: pointer;'
+            onclick="highlightElement('videos', '364,3022,341,753', this)"
+            data-coords="364,3022,341,753">
+            <span style="background:red; color:#fff; border-radius:3px; padding:1px 6px; font-size:0.8em; font-weight:bold; margin-right:6px;">G24</span>
+            <span style="font-weight: bold;">Elemento:</span> <code>div#fusion-app > div:nth-child(5) > main > div:nth-child(2) > div:nth-child(2) ></code>
+            <br><span style="font-weight: bold;">Gravedad:</span> <span style='color:red;'>GRAVE</span>
+            <div style='margin-top:5px; border-left:2px solid #ccc; padding-left:5px;'>Tipo: <b>AUSENTE V2</b> | V1: N/A | V2: N/A | Diff: N/A</div>
+        </li>
+        
+        <li class='diff-item'
+            style='color: red; border-bottom: 1px dotted #ccc; padding: 5px 0; cursor: pointer;'
+            onclick="highlightElement('videos', '23,1211,447,780', this)"
+            data-coords="23,1211,447,780">
+            <span style="background:red; color:#fff; border-radius:3px; padding:1px 6px; font-size:0.8em; font-weight:bold; margin-right:6px;">G25</span>
+            <span style="font-weight: bold;">Elemento:</span> <code>div#fusion-app > div:nth-child(5) > main > div > div:nth-child(2)</code>
+            <br><span style="font-weight: bold;">Gravedad:</span> <span style='color:red;'>GRAVE</span>
+            <div style='margin-top:5px; border-left:2px solid #ccc; padding-left:5px;'>Tipo: <b>AUSENTE V2</b> | V1: N/A | V2: N/A | Diff: N/A</div>
+        </li>
+        
+        <li class='diff-item'
+            style='color: red; border-bottom: 1px dotted #ccc; padding: 5px 0; cursor: pointer;'
+            onclick="highlightElement('videos', '23,3022,447,768', this)"
+            data-coords="23,3022,447,768">
+            <span style="background:red; color:#fff; border-radius:3px; padding:1px 6px; font-size:0.8em; font-weight:bold; margin-right:6px;">G26</span>
+            <span style="font-weight: bold;">Elemento:</span> <code>div#fusion-app > div:nth-child(5) > main > div:nth-child(2) > div:nth-child(2)</code>
+            <br><span style="font-weight: bold;">Gravedad:</span> <span style='color:red;'>GRAVE</span>
+            <div style='margin-top:5px; border-left:2px solid #ccc; padding-left:5px;'>Tipo: <b>AUSENTE V2</b> | V1: N/A | V2: N/A | Diff: N/A</div>
+        </li>
+        
+        <li class='diff-item'
+            style='color: red; border-bottom: 1px dotted #ccc; padding: 5px 0; cursor: pointer;'
+            onclick="highlightElement('videos', '39,5267,422,48', this)"
+            data-coords="39,5267,422,48">
+            <span style="background:red; color:#fff; border-radius:3px; padding:1px 6px; font-size:0.8em; font-weight:bold; margin-right:6px;">G27</span>
+            <span style="font-weight: bold;">Elemento:</span> <code>div#fusion-app > div:nth-child(5) > main > div:nth-child(6) > div:nth-child(2) ></code>
+            <br><span style="font-weight: bold;">Gravedad:</span> <span style='color:red;'>GRAVE</span>
+            <div style='margin-top:5px; border-left:2px solid #ccc; padding-left:5px;'>Tipo: <b>AUSENTE V2</b> | V1: N/A | V2: N/A | Diff: N/A</div>
+        </li>
+        
+        <li class='diff-item'
+            style='color: red; border-bottom: 1px dotted #ccc; padding: 5px 0; cursor: pointer;'
+            onclick="highlightElement('videos', '0,3831,500,64', this)"
+            data-coords="0,3831,500,64">
+            <span style="background:red; color:#fff; border-radius:3px; padding:1px 6px; font-size:0.8em; font-weight:bold; margin-right:6px;">G28</span>
+            <span style="font-weight: bold;">Elemento:</span> <code>div#fusion-app > div:nth-child(5) > main > div:nth-child(4)</code>
+            <br><span style="font-weight: bold;">Gravedad:</span> <span style='color:red;'>GRAVE</span>
+            <div style='margin-top:5px; border-left:2px solid #ccc; padding-left:5px;'>Tipo: <b>AUSENTE V2</b> | V1: N/A | V2: N/A | Diff: N/A</div>
+        </li>
+        
+        <li class='diff-item'
+            style='color: red; border-bottom: 1px dotted #ccc; padding: 5px 0; cursor: pointer;'
+            onclick="highlightElement('videos', '23,1067,454,112', this)"
+            data-coords="23,1067,454,112">
+            <span style="background:red; color:#fff; border-radius:3px; padding:1px 6px; font-size:0.8em; font-weight:bold; margin-right:6px;">G29</span>
+            <span style="font-weight: bold;">Elemento:</span> <code>div#fusion-app > div:nth-child(5) > main > div > div > div > article > div</code>
+            <br><span style="font-weight: bold;">Gravedad:</span> <span style='color:red;'>GRAVE</span>
+            <div style='margin-top:5px; border-left:2px solid #ccc; padding-left:5px;'>Tipo: <b>AUSENTE V2</b> | V1: N/A | V2: N/A | Diff: N/A</div>
+        </li>
+        
+        <li class='diff-item'
+            style='color: red; border-bottom: 1px dotted #ccc; padding: 5px 0; cursor: pointer;'
+            onclick="highlightElement('videos', '23,1800,331,176', this)"
+            data-coords="23,1800,331,176">
+            <span style="background:red; color:#fff; border-radius:3px; padding:1px 6px; font-size:0.8em; font-weight:bold; margin-right:6px;">G30</span>
+            <span style="font-weight: bold;">Elemento:</span> <code>div#fusion-app > div:nth-child(5) > main > div > div:nth-child(2) > div > div > </code>
+            <br><span style="font-weight: bold;">Gravedad:</span> <span style='color:red;'>GRAVE</span>
+            <div style='margin-top:5px; border-left:2px solid #ccc; padding-left:5px;'>Tipo: <b>AUSENTE V2</b> | V1: N/A | V2: N/A | Diff: N/A</div>
+        </li>
+        
+        <li class='diff-item'
+            style='color: red; border-bottom: 1px dotted #ccc; padding: 5px 0; cursor: pointer;'
+            onclick="highlightElement('videos', '370,1800,331,176', this)"
+            data-coords="370,1800,331,176">
+            <span style="background:red; color:#fff; border-radius:3px; padding:1px 6px; font-size:0.8em; font-weight:bold; margin-right:6px;">G31</span>
+            <span style="font-weight: bold;">Elemento:</span> <code>div#fusion-app > div:nth-child(5) > main > div > div:nth-child(2) > div > div > </code>
+            <br><span style="font-weight: bold;">Gravedad:</span> <span style='color:red;'>GRAVE</span>
+            <div style='margin-top:5px; border-left:2px solid #ccc; padding-left:5px;'>Tipo: <b>AUSENTE V2</b> | V1: N/A | V2: N/A | Diff: N/A</div>
+        </li>
+        
+        <li class='diff-item'
+            style='color: red; border-bottom: 1px dotted #ccc; padding: 5px 0; cursor: pointer;'
+            onclick="highlightElement('videos', '718,1800,331,176', this)"
+            data-coords="718,1800,331,176">
+            <span style="background:red; color:#fff; border-radius:3px; padding:1px 6px; font-size:0.8em; font-weight:bold; margin-right:6px;">G32</span>
+            <span style="font-weight: bold;">Elemento:</span> <code>div#fusion-app > div:nth-child(5) > main > div > div:nth-child(2) > div > div > </code>
+            <br><span style="font-weight: bold;">Gravedad:</span> <span style='color:red;'>GRAVE</span>
+            <div style='margin-top:5px; border-left:2px solid #ccc; padding-left:5px;'>Tipo: <b>AUSENTE V2</b> | V1: N/A | V2: N/A | Diff: N/A</div>
+        </li>
+        
+        <li class='diff-item'
+            style='color: red; border-bottom: 1px dotted #ccc; padding: 5px 0; cursor: pointer;'
+            onclick="highlightElement('videos', '23,2878,454,112', this)"
+            data-coords="23,2878,454,112">
+            <span style="background:red; color:#fff; border-radius:3px; padding:1px 6px; font-size:0.8em; font-weight:bold; margin-right:6px;">G33</span>
+            <span style="font-weight: bold;">Elemento:</span> <code>div#fusion-app > div:nth-child(5) > main > div:nth-child(2) > div > div > articl</code>
+            <br><span style="font-weight: bold;">Gravedad:</span> <span style='color:red;'>GRAVE</span>
+            <div style='margin-top:5px; border-left:2px solid #ccc; padding-left:5px;'>Tipo: <b>AUSENTE V2</b> | V1: N/A | V2: N/A | Diff: N/A</div>
+        </li>
+        
+        <li class='diff-item'
+            style='color: red; border-bottom: 1px dotted #ccc; padding: 5px 0; cursor: pointer;'
+            onclick="highlightElement('videos', '23,3600,325,176', this)"
+            data-coords="23,3600,325,176">
+            <span style="background:red; color:#fff; border-radius:3px; padding:1px 6px; font-size:0.8em; font-weight:bold; margin-right:6px;">G34</span>
+            <span style="font-weight: bold;">Elemento:</span> <code>div#fusion-app > div:nth-child(5) > main > div:nth-child(2) > div:nth-child(2) ></code>
+            <br><span style="font-weight: bold;">Gravedad:</span> <span style='color:red;'>GRAVE</span>
+            <div style='margin-top:5px; border-left:2px solid #ccc; padding-left:5px;'>Tipo: <b>AUSENTE V2</b> | V1: N/A | V2: N/A | Diff: N/A</div>
+        </li>
+        
+        <li class='diff-item'
+            style='color: red; border-bottom: 1px dotted #ccc; padding: 5px 0; cursor: pointer;'
+            onclick="highlightElement('videos', '364,3600,325,176', this)"
+            data-coords="364,3600,325,176">
+            <span style="background:red; color:#fff; border-radius:3px; padding:1px 6px; font-size:0.8em; font-weight:bold; margin-right:6px;">G35</span>
+            <span style="font-weight: bold;">Elemento:</span> <code>div#fusion-app > div:nth-child(5) > main > div:nth-child(2) > div:nth-child(2) ></code>
+            <br><span style="font-weight: bold;">Gravedad:</span> <span style='color:red;'>GRAVE</span>
+            <div style='margin-top:5px; border-left:2px solid #ccc; padding-left:5px;'>Tipo: <b>AUSENTE V2</b> | V1: N/A | V2: N/A | Diff: N/A</div>
+        </li>
+        
+        <li class='diff-item'
+            style='color: red; border-bottom: 1px dotted #ccc; padding: 5px 0; cursor: pointer;'
+            onclick="highlightElement('videos', '705,3600,325,176', this)"
+            data-coords="705,3600,325,176">
+            <span style="background:red; color:#fff; border-radius:3px; padding:1px 6px; font-size:0.8em; font-weight:bold; margin-right:6px;">G36</span>
+            <span style="font-weight: bold;">Elemento:</span> <code>div#fusion-app > div:nth-child(5) > main > div:nth-child(2) > div:nth-child(2) ></code>
+            <br><span style="font-weight: bold;">Gravedad:</span> <span style='color:red;'>GRAVE</span>
+            <div style='margin-top:5px; border-left:2px solid #ccc; padding-left:5px;'>Tipo: <b>AUSENTE V2</b> | V1: N/A | V2: N/A | Diff: N/A</div>
+        </li>
+        
+        <li class='diff-item'
+            style='color: red; border-bottom: 1px dotted #ccc; padding: 5px 0; cursor: pointer;'
+            onclick="highlightElement('videos', '23,4183,454,52', this)"
+            data-coords="23,4183,454,52">
+            <span style="background:red; color:#fff; border-radius:3px; padding:1px 6px; font-size:0.8em; font-weight:bold; margin-right:6px;">G37</span>
+            <span style="font-weight: bold;">Elemento:</span> <code>div#fusion-app > div:nth-child(5) > main > div:nth-child(6) > div > article > di</code>
+            <br><span style="font-weight: bold;">Gravedad:</span> <span style='color:red;'>GRAVE</span>
+            <div style='margin-top:5px; border-left:2px solid #ccc; padding-left:5px;'>Tipo: <b>AUSENTE V2</b> | V1: N/A | V2: N/A | Diff: N/A</div>
+        </li>
+        
+        <li class='diff-item'
+            style='color: red; border-bottom: 1px dotted #ccc; padding: 5px 0; cursor: pointer;'
+            onclick="highlightElement('videos', '23,4514,454,52', this)"
+            data-coords="23,4514,454,52">
+            <span style="background:red; color:#fff; border-radius:3px; padding:1px 6px; font-size:0.8em; font-weight:bold; margin-right:6px;">G38</span>
+            <span style="font-weight: bold;">Elemento:</span> <code>div#fusion-app > div:nth-child(5) > main > div:nth-child(6) > div > article:nth-</code>
+            <br><span style="font-weight: bold;">Gravedad:</span> <span style='color:red;'>GRAVE</span>
+            <div style='margin-top:5px; border-left:2px solid #ccc; padding-left:5px;'>Tipo: <b>AUSENTE V2</b> | V1: N/A | V2: N/A | Diff: N/A</div>
+        </li>
+        
+        <li class='diff-item'
+            style='color: red; border-bottom: 1px dotted #ccc; padding: 5px 0; cursor: pointer;'
+            onclick="highlightElement('videos', '23,4846,454,52', this)"
+            data-coords="23,4846,454,52">
+            <span style="background:red; color:#fff; border-radius:3px; padding:1px 6px; font-size:0.8em; font-weight:bold; margin-right:6px;">G39</span>
+            <span style="font-weight: bold;">Elemento:</span> <code>div#fusion-app > div:nth-child(5) > main > div:nth-child(6) > div > article:nth-</code>
+            <br><span style="font-weight: bold;">Gravedad:</span> <span style='color:red;'>GRAVE</span>
+            <div style='margin-top:5px; border-left:2px solid #ccc; padding-left:5px;'>Tipo: <b>AUSENTE V2</b> | V1: N/A | V2: N/A | Diff: N/A</div>
+        </li>
+        
+        <li class='diff-item'
+            style='color: red; border-bottom: 1px dotted #ccc; padding: 5px 0; cursor: pointer;'
+            onclick="highlightElement('videos', '23,5177,454,52', this)"
+            data-coords="23,5177,454,52">
+            <span style="background:red; color:#fff; border-radius:3px; padding:1px 6px; font-size:0.8em; font-weight:bold; margin-right:6px;">G40</span>
+            <span style="font-weight: bold;">Elemento:</span> <code>div#fusion-app > div:nth-child(5) > main > div:nth-child(6) > div > article:nth-</code>
+            <br><span style="font-weight: bold;">Gravedad:</span> <span style='color:red;'>GRAVE</span>
+            <div style='margin-top:5px; border-left:2px solid #ccc; padding-left:5px;'>Tipo: <b>AUSENTE V2</b> | V1: N/A | V2: N/A | Diff: N/A</div>
+        </li>
+        
+        <li class='diff-item'
+            style='color: red; border-bottom: 1px dotted #ccc; padding: 5px 0; cursor: pointer;'
+            onclick="highlightElement('videos', '23,2887,380,93', this)"
+            data-coords="23,2887,380,93">
+            <span style="background:red; color:#fff; border-radius:3px; padding:1px 6px; font-size:0.8em; font-weight:bold; margin-right:6px;">G41</span>
+            <span style="font-weight: bold;">Elemento:</span> <code>div#fusion-app > div:nth-child(5) > main > div:nth-child(2) > div > div > articl</code>
+            <br><span style="font-weight: bold;">Gravedad:</span> <span style='color:red;'>GRAVE</span>
+            <div style='margin-top:5px; border-left:2px solid #ccc; padding-left:5px;'>Tipo: <b>AUSENTE V2</b> | V1: N/A | V2: N/A | Diff: N/A</div>
+        </li>
+        
+        <li class='diff-item'
+            style='color: red; border-bottom: 1px dotted #ccc; padding: 5px 0; cursor: pointer;'
+            onclick="highlightElement('videos', '23,4192,443,42', this)"
+            data-coords="23,4192,443,42">
+            <span style="background:red; color:#fff; border-radius:3px; padding:1px 6px; font-size:0.8em; font-weight:bold; margin-right:6px;">G42</span>
+            <span style="font-weight: bold;">Elemento:</span> <code>div#fusion-app > div:nth-child(5) > main > div:nth-child(6) > div > article > di</code>
+            <br><span style="font-weight: bold;">Gravedad:</span> <span style='color:red;'>GRAVE</span>
+            <div style='margin-top:5px; border-left:2px solid #ccc; padding-left:5px;'>Tipo: <b>AUSENTE V2</b> | V1: N/A | V2: N/A | Diff: N/A</div>
+        </li>
+        
+        <li class='diff-item'
+            style='color: red; border-bottom: 1px dotted #ccc; padding: 5px 0; cursor: pointer;'
+            onclick="highlightElement('videos', '23,5257,454,68', this)"
+            data-coords="23,5257,454,68">
+            <span style="background:red; color:#fff; border-radius:3px; padding:1px 6px; font-size:0.8em; font-weight:bold; margin-right:6px;">G43</span>
+            <span style="font-weight: bold;">Elemento:</span> <code>div#fusion-app > div:nth-child(5) > main > div:nth-child(6) > div:nth-child(2)</code>
+            <br><span style="font-weight: bold;">Gravedad:</span> <span style='color:red;'>GRAVE</span>
+            <div style='margin-top:5px; border-left:2px solid #ccc; padding-left:5px;'>Tipo: <b>AUSENTE V2</b> | V1: N/A | V2: N/A | Diff: N/A</div>
+        </li>
+        
+        <li class='diff-item'
+            style='color: red; border-bottom: 1px dotted #ccc; padding: 5px 0; cursor: pointer;'
+            onclick="highlightElement('videos', '718,1809,314,157', this)"
+            data-coords="718,1809,314,157">
+            <span style="background:red; color:#fff; border-radius:3px; padding:1px 6px; font-size:0.8em; font-weight:bold; margin-right:6px;">G44</span>
+            <span style="font-weight: bold;">Elemento:</span> <code>div#fusion-app > div:nth-child(5) > main > div > div:nth-child(2) > div > div > </code>
+            <br><span style="font-weight: bold;">Gravedad:</span> <span style='color:red;'>GRAVE</span>
+            <div style='margin-top:5px; border-left:2px solid #ccc; padding-left:5px;'>Tipo: <b>AUSENTE V2</b> | V1: N/A | V2: N/A | Diff: N/A</div>
+        </li>
+        
+        <li class='diff-item'
+            style='color: red; border-bottom: 1px dotted #ccc; padding: 5px 0; cursor: pointer;'
+            onclick="highlightElement('videos', '364,3609,295,157', this)"
+            data-coords="364,3609,295,157">
+            <span style="background:red; color:#fff; border-radius:3px; padding:1px 6px; font-size:0.8em; font-weight:bold; margin-right:6px;">G45</span>
+            <span style="font-weight: bold;">Elemento:</span> <code>div#fusion-app > div:nth-child(5) > main > div:nth-child(2) > div:nth-child(2) ></code>
+            <br><span style="font-weight: bold;">Gravedad:</span> <span style='color:red;'>GRAVE</span>
+            <div style='margin-top:5px; border-left:2px solid #ccc; padding-left:5px;'>Tipo: <b>AUSENTE V2</b> | V1: N/A | V2: N/A | Diff: N/A</div>
+        </li>
+        
+        <li class='diff-item'
+            style='color: red; border-bottom: 1px dotted #ccc; padding: 5px 0; cursor: pointer;'
+            onclick="highlightElement('videos', '0,60,500,50', this)"
+            data-coords="0,60,500,50">
+            <span style="background:red; color:#fff; border-radius:3px; padding:1px 6px; font-size:0.8em; font-weight:bold; margin-right:6px;">G46</span>
+            <span style="font-weight: bold;">Elemento:</span> <code>div#parent-ad-slot-header_mobile</code>
+            <br><span style="font-weight: bold;">Gravedad:</span> <span style='color:red;'>GRAVE</span>
+            <div style='margin-top:5px; border-left:2px solid #ccc; padding-left:5px;'>Tipo: <b>AUSENTE V2</b> | V1: N/A | V2: N/A | Diff: N/A<br>Tipo: <b>AUSENTE V2</b> | V1: N/A | V2: N/A | Diff: N/A</div>
+        </li>
+        
+        <li class='diff-item'
+            style='color: red; border-bottom: 1px dotted #ccc; padding: 5px 0; cursor: pointer;'
+            onclick="highlightElement('videos', '155,5279,28,24', this)"
+            data-coords="155,5279,28,24">
+            <span style="background:red; color:#fff; border-radius:3px; padding:1px 6px; font-size:0.8em; font-weight:bold; margin-right:6px;">G47</span>
+            <span style="font-weight: bold;">Elemento:</span> <code>div#fusion-app > div:nth-child(5) > main > div:nth-child(6) > div:nth-child(2) ></code>
+            <br><span style="font-weight: bold;">Gravedad:</span> <span style='color:red;'>GRAVE</span>
+            <div style='margin-top:5px; border-left:2px solid #ccc; padding-left:5px;'>Tipo: <b>AUSENTE V2</b> | V1: N/A | V2: N/A | Diff: N/A</div>
+        </li>
+        
+        <li class='diff-item'
+            style='color: red; border-bottom: 1px dotted #ccc; padding: 5px 0; cursor: pointer;'
+            onclick="highlightElement('videos', '23,260,454,951', this)"
+            data-coords="23,260,454,951">
+            <span style="background:red; color:#fff; border-radius:3px; padding:1px 6px; font-size:0.8em; font-weight:bold; margin-right:6px;">G48</span>
+            <span style="font-weight: bold;">Elemento:</span> <code>div#fusion-app > div:nth-child(5) > main > div > div</code>
+            <br><span style="font-weight: bold;">Gravedad:</span> <span style='color:red;'>GRAVE</span>
+            <div style='margin-top:5px; border-left:2px solid #ccc; padding-left:5px;'>Tipo: <b>AUSENTE V2</b> | V1: N/A | V2: N/A | Diff: N/A</div>
+        </li>
+        
+        <li class='diff-item'
+            style='color: red; border-bottom: 1px dotted #ccc; padding: 5px 0; cursor: pointer;'
+            onclick="highlightElement('videos', '23,2071,454,951', this)"
+            data-coords="23,2071,454,951">
+            <span style="background:red; color:#fff; border-radius:3px; padding:1px 6px; font-size:0.8em; font-weight:bold; margin-right:6px;">G49</span>
+            <span style="font-weight: bold;">Elemento:</span> <code>div#fusion-app > div:nth-child(5) > main > div:nth-child(2) > div</code>
+            <br><span style="font-weight: bold;">Gravedad:</span> <span style='color:red;'>GRAVE</span>
+            <div style='margin-top:5px; border-left:2px solid #ccc; padding-left:5px;'>Tipo: <b>AUSENTE V2</b> | V1: N/A | V2: N/A | Diff: N/A</div>
+        </li>
+        
+        <li class='diff-item'
+            style='color: red; border-bottom: 1px dotted #ccc; padding: 5px 0; cursor: pointer;'
+            onclick="highlightElement('videos', '23,5186,421,42', this)"
+            data-coords="23,5186,421,42">
+            <span style="background:red; color:#fff; border-radius:3px; padding:1px 6px; font-size:0.8em; font-weight:bold; margin-right:6px;">G50</span>
+            <span style="font-weight: bold;">Elemento:</span> <code>div#fusion-app > div:nth-child(5) > main > div:nth-child(6) > div > article:nth-</code>
+            <br><span style="font-weight: bold;">Gravedad:</span> <span style='color:red;'>GRAVE</span>
+            <div style='margin-top:5px; border-left:2px solid #ccc; padding-left:5px;'>Tipo: <b>AUSENTE V2</b> | V1: N/A | V2: N/A | Diff: N/A</div>
+        </li>
+        
+        <li class='diff-item'
+            style='color: red; border-bottom: 1px dotted #ccc; padding: 5px 0; cursor: pointer;'
+            onclick="highlightElement('videos', '23,1211,496,765', this)"
+            data-coords="23,1211,496,765">
+            <span style="background:red; color:#fff; border-radius:3px; padding:1px 6px; font-size:0.8em; font-weight:bold; margin-right:6px;">G51</span>
+            <span style="font-weight: bold;">Elemento:</span> <code>div#fusion-app > div:nth-child(5) > main > div > div:nth-child(2) > div > div > </code>
+            <br><span style="font-weight: bold;">Gravedad:</span> <span style='color:red;'>GRAVE</span>
+            <div style='margin-top:5px; border-left:2px solid #ccc; padding-left:5px;'>Tipo: <b>AUSENTE V2</b> | V1: N/A | V2: N/A | Diff: N/A</div>
+        </li>
+        
+        <li class='diff-item'
+            style='color: red; border-bottom: 1px dotted #ccc; padding: 5px 0; cursor: pointer;'
+            onclick="highlightElement('videos', '23,3022,487,753', this)"
+            data-coords="23,3022,487,753">
+            <span style="background:red; color:#fff; border-radius:3px; padding:1px 6px; font-size:0.8em; font-weight:bold; margin-right:6px;">G52</span>
+            <span style="font-weight: bold;">Elemento:</span> <code>div#fusion-app > div:nth-child(5) > main > div:nth-child(2) > div:nth-child(2) ></code>
+            <br><span style="font-weight: bold;">Gravedad:</span> <span style='color:red;'>GRAVE</span>
+            <div style='margin-top:5px; border-left:2px solid #ccc; padding-left:5px;'>Tipo: <b>AUSENTE V2</b> | V1: N/A | V2: N/A | Diff: N/A</div>
+        </li>
+        
+        <li class='diff-item'
+            style='color: red; border-bottom: 1px dotted #ccc; padding: 5px 0; cursor: pointer;'
+            onclick="highlightElement('videos', '23,260,454,919', this)"
+            data-coords="23,260,454,919">
+            <span style="background:red; color:#fff; border-radius:3px; padding:1px 6px; font-size:0.8em; font-weight:bold; margin-right:6px;">G53</span>
+            <span style="font-weight: bold;">Elemento:</span> <code>div#fusion-app > div:nth-child(5) > main > div > div > div > article</code>
+            <br><span style="font-weight: bold;">Gravedad:</span> <span style='color:red;'>GRAVE</span>
+            <div style='margin-top:5px; border-left:2px solid #ccc; padding-left:5px;'>Tipo: <b>AUSENTE V2</b> | V1: N/A | V2: N/A | Diff: N/A</div>
+        </li>
+        
+        <li class='diff-item'
+            style='color: red; border-bottom: 1px dotted #ccc; padding: 5px 0; cursor: pointer;'
+            onclick="highlightElement('videos', '23,1211,331,765', this)"
+            data-coords="23,1211,331,765">
+            <span style="background:red; color:#fff; border-radius:3px; padding:1px 6px; font-size:0.8em; font-weight:bold; margin-right:6px;">G54</span>
+            <span style="font-weight: bold;">Elemento:</span> <code>div#fusion-app > div:nth-child(5) > main > div > div:nth-child(2) > div > div > </code>
+            <br><span style="font-weight: bold;">Gravedad:</span> <span style='color:red;'>GRAVE</span>
+            <div style='margin-top:5px; border-left:2px solid #ccc; padding-left:5px;'>Tipo: <b>AUSENTE V2</b> | V1: N/A | V2: N/A | Diff: N/A</div>
+        </li>
+        
+        <li class='diff-item'
+            style='color: red; border-bottom: 1px dotted #ccc; padding: 5px 0; cursor: pointer;'
+            onclick="highlightElement('videos', '370,1211,331,765', this)"
+            data-coords="370,1211,331,765">
+            <span style="background:red; color:#fff; border-radius:3px; padding:1px 6px; font-size:0.8em; font-weight:bold; margin-right:6px;">G55</span>
+            <span style="font-weight: bold;">Elemento:</span> <code>div#fusion-app > div:nth-child(5) > main > div > div:nth-child(2) > div > div > </code>
+            <br><span style="font-weight: bold;">Gravedad:</span> <span style='color:red;'>GRAVE</span>
+            <div style='margin-top:5px; border-left:2px solid #ccc; padding-left:5px;'>Tipo: <b>AUSENTE V2</b> | V1: N/A | V2: N/A | Diff: N/A</div>
+        </li>
+        
+        <li class='diff-item'
+            style='color: red; border-bottom: 1px dotted #ccc; padding: 5px 0; cursor: pointer;'
+            onclick="highlightElement('videos', '718,1211,331,765', this)"
+            data-coords="718,1211,331,765">
+            <span style="background:red; color:#fff; border-radius:3px; padding:1px 6px; font-size:0.8em; font-weight:bold; margin-right:6px;">G56</span>
+            <span style="font-weight: bold;">Elemento:</span> <code>div#fusion-app > div:nth-child(5) > main > div > div:nth-child(2) > div > div > </code>
+            <br><span style="font-weight: bold;">Gravedad:</span> <span style='color:red;'>GRAVE</span>
+            <div style='margin-top:5px; border-left:2px solid #ccc; padding-left:5px;'>Tipo: <b>AUSENTE V2</b> | V1: N/A | V2: N/A | Diff: N/A</div>
+        </li>
+        
+        <li class='diff-item'
+            style='color: red; border-bottom: 1px dotted #ccc; padding: 5px 0; cursor: pointer;'
+            onclick="highlightElement('videos', '23,2071,454,919', this)"
+            data-coords="23,2071,454,919">
+            <span style="background:red; color:#fff; border-radius:3px; padding:1px 6px; font-size:0.8em; font-weight:bold; margin-right:6px;">G57</span>
+            <span style="font-weight: bold;">Elemento:</span> <code>div#fusion-app > div:nth-child(5) > main > div:nth-child(2) > div > div > articl</code>
+            <br><span style="font-weight: bold;">Gravedad:</span> <span style='color:red;'>GRAVE</span>
+            <div style='margin-top:5px; border-left:2px solid #ccc; padding-left:5px;'>Tipo: <b>AUSENTE V2</b> | V1: N/A | V2: N/A | Diff: N/A</div>
+        </li>
+        
+        <li class='diff-item'
+            style='color: red; border-bottom: 1px dotted #ccc; padding: 5px 0; cursor: pointer;'
+            onclick="highlightElement('videos', '23,3022,325,753', this)"
+            data-coords="23,3022,325,753">
+            <span style="background:red; color:#fff; border-radius:3px; padding:1px 6px; font-size:0.8em; font-weight:bold; margin-right:6px;">G58</span>
+            <span style="font-weight: bold;">Elemento:</span> <code>div#fusion-app > div:nth-child(5) > main > div:nth-child(2) > div:nth-child(2) ></code>
+            <br><span style="font-weight: bold;">Gravedad:</span> <span style='color:red;'>GRAVE</span>
+            <div style='margin-top:5px; border-left:2px solid #ccc; padding-left:5px;'>Tipo: <b>AUSENTE V2</b> | V1: N/A | V2: N/A | Diff: N/A</div>
+        </li>
+        
+        <li class='diff-item'
+            style='color: red; border-bottom: 1px dotted #ccc; padding: 5px 0; cursor: pointer;'
+            onclick="highlightElement('videos', '364,3022,325,753', this)"
+            data-coords="364,3022,325,753">
+            <span style="background:red; color:#fff; border-radius:3px; padding:1px 6px; font-size:0.8em; font-weight:bold; margin-right:6px;">G59</span>
+            <span style="font-weight: bold;">Elemento:</span> <code>div#fusion-app > div:nth-child(5) > main > div:nth-child(2) > div:nth-child(2) ></code>
+            <br><span style="font-weight: bold;">Gravedad:</span> <span style='color:red;'>GRAVE</span>
+            <div style='margin-top:5px; border-left:2px solid #ccc; padding-left:5px;'>Tipo: <b>AUSENTE V2</b> | V1: N/A | V2: N/A | Diff: N/A</div>
+        </li>
+        
+        <li class='diff-item'
+            style='color: red; border-bottom: 1px dotted #ccc; padding: 5px 0; cursor: pointer;'
+            onclick="highlightElement('videos', '705,3022,325,753', this)"
+            data-coords="705,3022,325,753">
+            <span style="background:red; color:#fff; border-radius:3px; padding:1px 6px; font-size:0.8em; font-weight:bold; margin-right:6px;">G60</span>
+            <span style="font-weight: bold;">Elemento:</span> <code>div#fusion-app > div:nth-child(5) > main > div:nth-child(2) > div:nth-child(2) ></code>
+            <br><span style="font-weight: bold;">Gravedad:</span> <span style='color:red;'>GRAVE</span>
+            <div style='margin-top:5px; border-left:2px solid #ccc; padding-left:5px;'>Tipo: <b>AUSENTE V2</b> | V1: N/A | V2: N/A | Diff: N/A</div>
+        </li>
+        
+        <li class='diff-item'
+            style='color: red; border-bottom: 1px dotted #ccc; padding: 5px 0; cursor: pointer;'
+            onclick="highlightElement('videos', '23,3927,454,307', this)"
+            data-coords="23,3927,454,307">
+            <span style="background:red; color:#fff; border-radius:3px; padding:1px 6px; font-size:0.8em; font-weight:bold; margin-right:6px;">G61</span>
+            <span style="font-weight: bold;">Elemento:</span> <code>div#fusion-app > div:nth-child(5) > main > div:nth-child(6) > div > article</code>
+            <br><span style="font-weight: bold;">Gravedad:</span> <span style='color:red;'>GRAVE</span>
+            <div style='margin-top:5px; border-left:2px solid #ccc; padding-left:5px;'>Tipo: <b>AUSENTE V2</b> | V1: N/A | V2: N/A | Diff: N/A</div>
+        </li>
+        
+        <li class='diff-item'
+            style='color: red; border-bottom: 1px dotted #ccc; padding: 5px 0; cursor: pointer;'
+            onclick="highlightElement('videos', '23,4259,454,307', this)"
+            data-coords="23,4259,454,307">
+            <span style="background:red; color:#fff; border-radius:3px; padding:1px 6px; font-size:0.8em; font-weight:bold; margin-right:6px;">G62</span>
+            <span style="font-weight: bold;">Elemento:</span> <code>div#fusion-app > div:nth-child(5) > main > div:nth-child(6) > div > article:nth-</code>
+            <br><span style="font-weight: bold;">Gravedad:</span> <span style='color:red;'>GRAVE</span>
+            <div style='margin-top:5px; border-left:2px solid #ccc; padding-left:5px;'>Tipo: <b>AUSENTE V2</b> | V1: N/A | V2: N/A | Diff: N/A</div>
+        </li>
+        
+        <li class='diff-item'
+            style='color: red; border-bottom: 1px dotted #ccc; padding: 5px 0; cursor: pointer;'
+            onclick="highlightElement('videos', '23,4590,454,307', this)"
+            data-coords="23,4590,454,307">
+            <span style="background:red; color:#fff; border-radius:3px; padding:1px 6px; font-size:0.8em; font-weight:bold; margin-right:6px;">G63</span>
+            <span style="font-weight: bold;">Elemento:</span> <code>div#fusion-app > div:nth-child(5) > main > div:nth-child(6) > div > article:nth-</code>
+            <br><span style="font-weight: bold;">Gravedad:</span> <span style='color:red;'>GRAVE</span>
+            <div style='margin-top:5px; border-left:2px solid #ccc; padding-left:5px;'>Tipo: <b>AUSENTE V2</b> | V1: N/A | V2: N/A | Diff: N/A</div>
+        </li>
+        
+        <li class='diff-item'
+            style='color: red; border-bottom: 1px dotted #ccc; padding: 5px 0; cursor: pointer;'
+            onclick="highlightElement('videos', '23,4922,454,307', this)"
+            data-coords="23,4922,454,307">
+            <span style="background:red; color:#fff; border-radius:3px; padding:1px 6px; font-size:0.8em; font-weight:bold; margin-right:6px;">G64</span>
+            <span style="font-weight: bold;">Elemento:</span> <code>div#fusion-app > div:nth-child(5) > main > div:nth-child(6) > div > article:nth-</code>
+            <br><span style="font-weight: bold;">Gravedad:</span> <span style='color:red;'>GRAVE</span>
+            <div style='margin-top:5px; border-left:2px solid #ccc; padding-left:5px;'>Tipo: <b>AUSENTE V2</b> | V1: N/A | V2: N/A | Diff: N/A</div>
+        </li>
+        
+        <li class='diff-item'
+            style='color: red; border-bottom: 1px dotted #ccc; padding: 5px 0; cursor: pointer;'
+            onclick="highlightElement('videos', '23,1211,432,765', this)"
+            data-coords="23,1211,432,765">
+            <span style="background:red; color:#fff; border-radius:3px; padding:1px 6px; font-size:0.8em; font-weight:bold; margin-right:6px;">G65</span>
+            <span style="font-weight: bold;">Elemento:</span> <code>div#fusion-app > div:nth-child(5) > main > div > div:nth-child(2) > div</code>
+            <br><span style="font-weight: bold;">Gravedad:</span> <span style='color:red;'>GRAVE</span>
+            <div style='margin-top:5px; border-left:2px solid #ccc; padding-left:5px;'>Tipo: <b>AUSENTE V2</b> | V1: N/A | V2: N/A | Diff: N/A</div>
+        </li>
+        
+        <li class='diff-item'
+            style='color: red; border-bottom: 1px dotted #ccc; padding: 5px 0; cursor: pointer;'
+            onclick="highlightElement('videos', '23,3022,432,753', this)"
+            data-coords="23,3022,432,753">
+            <span style="background:red; color:#fff; border-radius:3px; padding:1px 6px; font-size:0.8em; font-weight:bold; margin-right:6px;">G66</span>
+            <span style="font-weight: bold;">Elemento:</span> <code>div#fusion-app > div:nth-child(5) > main > div:nth-child(2) > div:nth-child(2) ></code>
+            <br><span style="font-weight: bold;">Gravedad:</span> <span style='color:red;'>GRAVE</span>
+            <div style='margin-top:5px; border-left:2px solid #ccc; padding-left:5px;'>Tipo: <b>AUSENTE V2</b> | V1: N/A | V2: N/A | Diff: N/A</div>
+        </li>
+        
+        <li class='diff-item'
+            style='color: red; border-bottom: 1px dotted #ccc; padding: 5px 0; cursor: pointer;'
+            onclick="highlightElement('videos', '23,1075,438,96', this)"
+            data-coords="23,1075,438,96">
+            <span style="background:red; color:#fff; border-radius:3px; padding:1px 6px; font-size:0.8em; font-weight:bold; margin-right:6px;">G67</span>
+            <span style="font-weight: bold;">Elemento:</span> <code>div#fusion-app > div:nth-child(5) > main > div > div > div > article > div > hea</code>
+            <br><span style="font-weight: bold;">Gravedad:</span> <span style='color:red;'>GRAVE</span>
+            <div style='margin-top:5px; border-left:2px solid #ccc; padding-left:5px;'>Tipo: <b>AUSENTE V2</b> | V1: N/A | V2: N/A | Diff: N/A</div>
+        </li>
+        
+        <li class='diff-item'
+            style='color: red; border-bottom: 1px dotted #ccc; padding: 5px 0; cursor: pointer;'
+            onclick="highlightElement('videos', '23,1808,315,160', this)"
+            data-coords="23,1808,315,160">
+            <span style="background:red; color:#fff; border-radius:3px; padding:1px 6px; font-size:0.8em; font-weight:bold; margin-right:6px;">G68</span>
+            <span style="font-weight: bold;">Elemento:</span> <code>div#fusion-app > div:nth-child(5) > main > div > div:nth-child(2) > div > div > </code>
+            <br><span style="font-weight: bold;">Gravedad:</span> <span style='color:red;'>GRAVE</span>
+            <div style='margin-top:5px; border-left:2px solid #ccc; padding-left:5px;'>Tipo: <b>AUSENTE V2</b> | V1: N/A | V2: N/A | Diff: N/A</div>
+        </li>
+        
+        <li class='diff-item'
+            style='color: red; border-bottom: 1px dotted #ccc; padding: 5px 0; cursor: pointer;'
+            onclick="highlightElement('videos', '370,1808,315,160', this)"
+            data-coords="370,1808,315,160">
+            <span style="background:red; color:#fff; border-radius:3px; padding:1px 6px; font-size:0.8em; font-weight:bold; margin-right:6px;">G69</span>
+            <span style="font-weight: bold;">Elemento:</span> <code>div#fusion-app > div:nth-child(5) > main > div > div:nth-child(2) > div > div > </code>
+            <br><span style="font-weight: bold;">Gravedad:</span> <span style='color:red;'>GRAVE</span>
+            <div style='margin-top:5px; border-left:2px solid #ccc; padding-left:5px;'>Tipo: <b>AUSENTE V2</b> | V1: N/A | V2: N/A | Diff: N/A</div>
+        </li>
+        
+        <li class='diff-item'
+            style='color: red; border-bottom: 1px dotted #ccc; padding: 5px 0; cursor: pointer;'
+            onclick="highlightElement('videos', '718,1808,315,160', this)"
+            data-coords="718,1808,315,160">
+            <span style="background:red; color:#fff; border-radius:3px; padding:1px 6px; font-size:0.8em; font-weight:bold; margin-right:6px;">G70</span>
+            <span style="font-weight: bold;">Elemento:</span> <code>div#fusion-app > div:nth-child(5) > main > div > div:nth-child(2) > div > div > </code>
+            <br><span style="font-weight: bold;">Gravedad:</span> <span style='color:red;'>GRAVE</span>
+            <div style='margin-top:5px; border-left:2px solid #ccc; padding-left:5px;'>Tipo: <b>AUSENTE V2</b> | V1: N/A | V2: N/A | Diff: N/A</div>
+        </li>
+        
+        <li class='diff-item'
+            style='color: red; border-bottom: 1px dotted #ccc; padding: 5px 0; cursor: pointer;'
+            onclick="highlightElement('videos', '23,2886,438,96', this)"
+            data-coords="23,2886,438,96">
+            <span style="background:red; color:#fff; border-radius:3px; padding:1px 6px; font-size:0.8em; font-weight:bold; margin-right:6px;">G71</span>
+            <span style="font-weight: bold;">Elemento:</span> <code>div#fusion-app > div:nth-child(5) > main > div:nth-child(2) > div > div > articl</code>
+            <br><span style="font-weight: bold;">Gravedad:</span> <span style='color:red;'>GRAVE</span>
+            <div style='margin-top:5px; border-left:2px solid #ccc; padding-left:5px;'>Tipo: <b>AUSENTE V2</b> | V1: N/A | V2: N/A | Diff: N/A</div>
+        </li>
+        
+        <li class='diff-item'
+            style='color: red; border-bottom: 1px dotted #ccc; padding: 5px 0; cursor: pointer;'
+            onclick="highlightElement('videos', '23,3608,309,96', this)"
+            data-coords="23,3608,309,96">
+            <span style="background:red; color:#fff; border-radius:3px; padding:1px 6px; font-size:0.8em; font-weight:bold; margin-right:6px;">G72</span>
+            <span style="font-weight: bold;">Elemento:</span> <code>div#fusion-app > div:nth-child(5) > main > div:nth-child(2) > div:nth-child(2) ></code>
+            <br><span style="font-weight: bold;">Gravedad:</span> <span style='color:red;'>GRAVE</span>
+            <div style='margin-top:5px; border-left:2px solid #ccc; padding-left:5px;'>Tipo: <b>AUSENTE V2</b> | V1: N/A | V2: N/A | Diff: N/A</div>
+        </li>
+        
+        <li class='diff-item'
+            style='color: red; border-bottom: 1px dotted #ccc; padding: 5px 0; cursor: pointer;'
+            onclick="highlightElement('videos', '364,3608,309,160', this)"
+            data-coords="364,3608,309,160">
+            <span style="background:red; color:#fff; border-radius:3px; padding:1px 6px; font-size:0.8em; font-weight:bold; margin-right:6px;">G73</span>
+            <span style="font-weight: bold;">Elemento:</span> <code>div#fusion-app > div:nth-child(5) > main > div:nth-child(2) > div:nth-child(2) ></code>
+            <br><span style="font-weight: bold;">Gravedad:</span> <span style='color:red;'>GRAVE</span>
+            <div style='margin-top:5px; border-left:2px solid #ccc; padding-left:5px;'>Tipo: <b>AUSENTE V2</b> | V1: N/A | V2: N/A | Diff: N/A</div>
+        </li>
+        
+        <li class='diff-item'
+            style='color: red; border-bottom: 1px dotted #ccc; padding: 5px 0; cursor: pointer;'
+            onclick="highlightElement('videos', '705,3608,309,160', this)"
+            data-coords="705,3608,309,160">
+            <span style="background:red; color:#fff; border-radius:3px; padding:1px 6px; font-size:0.8em; font-weight:bold; margin-right:6px;">G74</span>
+            <span style="font-weight: bold;">Elemento:</span> <code>div#fusion-app > div:nth-child(5) > main > div:nth-child(2) > div:nth-child(2) ></code>
+            <br><span style="font-weight: bold;">Gravedad:</span> <span style='color:red;'>GRAVE</span>
+            <div style='margin-top:5px; border-left:2px solid #ccc; padding-left:5px;'>Tipo: <b>AUSENTE V2</b> | V1: N/A | V2: N/A | Diff: N/A</div>
+        </li>
+        
+        <li class='diff-item'
+            style='color: red; border-bottom: 1px dotted #ccc; padding: 5px 0; cursor: pointer;'
+            onclick="highlightElement('videos', '23,4191,446,44', this)"
+            data-coords="23,4191,446,44">
+            <span style="background:red; color:#fff; border-radius:3px; padding:1px 6px; font-size:0.8em; font-weight:bold; margin-right:6px;">G75</span>
+            <span style="font-weight: bold;">Elemento:</span> <code>div#fusion-app > div:nth-child(5) > main > div:nth-child(6) > div > article > di</code>
+            <br><span style="font-weight: bold;">Gravedad:</span> <span style='color:red;'>GRAVE</span>
+            <div style='margin-top:5px; border-left:2px solid #ccc; padding-left:5px;'>Tipo: <b>AUSENTE V2</b> | V1: N/A | V2: N/A | Diff: N/A</div>
+        </li>
+        
+        <li class='diff-item'
+            style='color: red; border-bottom: 1px dotted #ccc; padding: 5px 0; cursor: pointer;'
+            onclick="highlightElement('videos', '23,4522,446,44', this)"
+            data-coords="23,4522,446,44">
+            <span style="background:red; color:#fff; border-radius:3px; padding:1px 6px; font-size:0.8em; font-weight:bold; margin-right:6px;">G76</span>
+            <span style="font-weight: bold;">Elemento:</span> <code>div#fusion-app > div:nth-child(5) > main > div:nth-child(6) > div > article:nth-</code>
+            <br><span style="font-weight: bold;">Gravedad:</span> <span style='color:red;'>GRAVE</span>
+            <div style='margin-top:5px; border-left:2px solid #ccc; padding-left:5px;'>Tipo: <b>AUSENTE V2</b> | V1: N/A | V2: N/A | Diff: N/A</div>
+        </li>
+        
+        <li class='diff-item'
+            style='color: red; border-bottom: 1px dotted #ccc; padding: 5px 0; cursor: pointer;'
+            onclick="highlightElement('videos', '23,4854,446,44', this)"
+            data-coords="23,4854,446,44">
+            <span style="background:red; color:#fff; border-radius:3px; padding:1px 6px; font-size:0.8em; font-weight:bold; margin-right:6px;">G77</span>
+            <span style="font-weight: bold;">Elemento:</span> <code>div#fusion-app > div:nth-child(5) > main > div:nth-child(6) > div > article:nth-</code>
+            <br><span style="font-weight: bold;">Gravedad:</span> <span style='color:red;'>GRAVE</span>
+            <div style='margin-top:5px; border-left:2px solid #ccc; padding-left:5px;'>Tipo: <b>AUSENTE V2</b> | V1: N/A | V2: N/A | Diff: N/A</div>
+        </li>
+        
+        <li class='diff-item'
+            style='color: red; border-bottom: 1px dotted #ccc; padding: 5px 0; cursor: pointer;'
+            onclick="highlightElement('videos', '23,5185,446,44', this)"
+            data-coords="23,5185,446,44">
+            <span style="background:red; color:#fff; border-radius:3px; padding:1px 6px; font-size:0.8em; font-weight:bold; margin-right:6px;">G78</span>
+            <span style="font-weight: bold;">Elemento:</span> <code>div#fusion-app > div:nth-child(5) > main > div:nth-child(6) > div > article:nth-</code>
+            <br><span style="font-weight: bold;">Gravedad:</span> <span style='color:red;'>GRAVE</span>
+            <div style='margin-top:5px; border-left:2px solid #ccc; padding-left:5px;'>Tipo: <b>AUSENTE V2</b> | V1: N/A | V2: N/A | Diff: N/A</div>
+        </li>
+        
+        <li class='diff-item'
+            style='color: red; border-bottom: 1px dotted #ccc; padding: 5px 0; cursor: pointer;'
+            onclick="highlightElement('videos', '23,1211,331,589', this)"
+            data-coords="23,1211,331,589">
+            <span style="background:red; color:#fff; border-radius:3px; padding:1px 6px; font-size:0.8em; font-weight:bold; margin-right:6px;">G79</span>
+            <span style="font-weight: bold;">Elemento:</span> <code>div#fusion-app > div:nth-child(5) > main > div > div:nth-child(2) > div > div > </code>
+            <br><span style="font-weight: bold;">Gravedad:</span> <span style='color:red;'>GRAVE</span>
+            <div style='margin-top:5px; border-left:2px solid #ccc; padding-left:5px;'>Tipo: <b>AUSENTE V2</b> | V1: N/A | V2: N/A | Diff: N/A</div>
+        </li>
+        
+        <li class='diff-item'
+            style='color: red; border-bottom: 1px dotted #ccc; padding: 5px 0; cursor: pointer;'
+            onclick="highlightElement('videos', '370,1211,331,589', this)"
+            data-coords="370,1211,331,589">
+            <span style="background:red; color:#fff; border-radius:3px; padding:1px 6px; font-size:0.8em; font-weight:bold; margin-right:6px;">G80</span>
+            <span style="font-weight: bold;">Elemento:</span> <code>div#fusion-app > div:nth-child(5) > main > div > div:nth-child(2) > div > div > </code>
+            <br><span style="font-weight: bold;">Gravedad:</span> <span style='color:red;'>GRAVE</span>
+            <div style='margin-top:5px; border-left:2px solid #ccc; padding-left:5px;'>Tipo: <b>AUSENTE V2</b> | V1: N/A | V2: N/A | Diff: N/A</div>
+        </li>
+        
+        <li class='diff-item'
+            style='color: red; border-bottom: 1px dotted #ccc; padding: 5px 0; cursor: pointer;'
+            onclick="highlightElement('videos', '718,1211,331,589', this)"
+            data-coords="718,1211,331,589">
+            <span style="background:red; color:#fff; border-radius:3px; padding:1px 6px; font-size:0.8em; font-weight:bold; margin-right:6px;">G81</span>
+            <span style="font-weight: bold;">Elemento:</span> <code>div#fusion-app > div:nth-child(5) > main > div > div:nth-child(2) > div > div > </code>
+            <br><span style="font-weight: bold;">Gravedad:</span> <span style='color:red;'>GRAVE</span>
+            <div style='margin-top:5px; border-left:2px solid #ccc; padding-left:5px;'>Tipo: <b>AUSENTE V2</b> | V1: N/A | V2: N/A | Diff: N/A</div>
+        </li>
+        
+        <li class='diff-item'
+            style='color: red; border-bottom: 1px dotted #ccc; padding: 5px 0; cursor: pointer;'
+            onclick="highlightElement('videos', '23,2071,454,807', this)"
+            data-coords="23,2071,454,807">
+            <span style="background:red; color:#fff; border-radius:3px; padding:1px 6px; font-size:0.8em; font-weight:bold; margin-right:6px;">G82</span>
+            <span style="font-weight: bold;">Elemento:</span> <code>div#fusion-app > div:nth-child(5) > main > div:nth-child(2) > div > div > articl</code>
+            <br><span style="font-weight: bold;">Gravedad:</span> <span style='color:red;'>GRAVE</span>
+            <div style='margin-top:5px; border-left:2px solid #ccc; padding-left:5px;'>Tipo: <b>AUSENTE V2</b> | V1: N/A | V2: N/A | Diff: N/A</div>
+        </li>
+        
+        <li class='diff-item'
+            style='color: red; border-bottom: 1px dotted #ccc; padding: 5px 0; cursor: pointer;'
+            onclick="highlightElement('videos', '23,3022,325,577', this)"
+            data-coords="23,3022,325,577">
+            <span style="background:red; color:#fff; border-radius:3px; padding:1px 6px; font-size:0.8em; font-weight:bold; margin-right:6px;">G83</span>
+            <span style="font-weight: bold;">Elemento:</span> <code>div#fusion-app > div:nth-child(5) > main > div:nth-child(2) > div:nth-child(2) ></code>
+            <br><span style="font-weight: bold;">Gravedad:</span> <span style='color:red;'>GRAVE</span>
+            <div style='margin-top:5px; border-left:2px solid #ccc; padding-left:5px;'>Tipo: <b>AUSENTE V2</b> | V1: N/A | V2: N/A | Diff: N/A</div>
+        </li>
+        
+        <li class='diff-item'
+            style='color: red; border-bottom: 1px dotted #ccc; padding: 5px 0; cursor: pointer;'
+            onclick="highlightElement('videos', '364,3022,325,577', this)"
+            data-coords="364,3022,325,577">
+            <span style="background:red; color:#fff; border-radius:3px; padding:1px 6px; font-size:0.8em; font-weight:bold; margin-right:6px;">G84</span>
+            <span style="font-weight: bold;">Elemento:</span> <code>div#fusion-app > div:nth-child(5) > main > div:nth-child(2) > div:nth-child(2) ></code>
+            <br><span style="font-weight: bold;">Gravedad:</span> <span style='color:red;'>GRAVE</span>
+            <div style='margin-top:5px; border-left:2px solid #ccc; padding-left:5px;'>Tipo: <b>AUSENTE V2</b> | V1: N/A | V2: N/A | Diff: N/A</div>
+        </li>
+        
+        <li class='diff-item'
+            style='color: red; border-bottom: 1px dotted #ccc; padding: 5px 0; cursor: pointer;'
+            onclick="highlightElement('videos', '705,3022,325,577', this)"
+            data-coords="705,3022,325,577">
+            <span style="background:red; color:#fff; border-radius:3px; padding:1px 6px; font-size:0.8em; font-weight:bold; margin-right:6px;">G85</span>
+            <span style="font-weight: bold;">Elemento:</span> <code>div#fusion-app > div:nth-child(5) > main > div:nth-child(2) > div:nth-child(2) ></code>
+            <br><span style="font-weight: bold;">Gravedad:</span> <span style='color:red;'>GRAVE</span>
+            <div style='margin-top:5px; border-left:2px solid #ccc; padding-left:5px;'>Tipo: <b>AUSENTE V2</b> | V1: N/A | V2: N/A | Diff: N/A</div>
+        </li>
+        
+        <li class='diff-item'
+            style='color: red; border-bottom: 1px dotted #ccc; padding: 5px 0; cursor: pointer;'
+            onclick="highlightElement('videos', '23,3927,454,255', this)"
+            data-coords="23,3927,454,255">
+            <span style="background:red; color:#fff; border-radius:3px; padding:1px 6px; font-size:0.8em; font-weight:bold; margin-right:6px;">G86</span>
+            <span style="font-weight: bold;">Elemento:</span> <code>div#fusion-app > div:nth-child(5) > main > div:nth-child(6) > div > article > a</code>
+            <br><span style="font-weight: bold;">Gravedad:</span> <span style='color:red;'>GRAVE</span>
+            <div style='margin-top:5px; border-left:2px solid #ccc; padding-left:5px;'>Tipo: <b>AUSENTE V2</b> | V1: N/A | V2: N/A | Diff: N/A</div>
+        </li>
+        
+        <li class='diff-item'
+            style='color: red; border-bottom: 1px dotted #ccc; padding: 5px 0; cursor: pointer;'
+            onclick="highlightElement('videos', '23,4259,454,255', this)"
+            data-coords="23,4259,454,255">
+            <span style="background:red; color:#fff; border-radius:3px; padding:1px 6px; font-size:0.8em; font-weight:bold; margin-right:6px;">G87</span>
+            <span style="font-weight: bold;">Elemento:</span> <code>div#fusion-app > div:nth-child(5) > main > div:nth-child(6) > div > article:nth-</code>
+            <br><span style="font-weight: bold;">Gravedad:</span> <span style='color:red;'>GRAVE</span>
+            <div style='margin-top:5px; border-left:2px solid #ccc; padding-left:5px;'>Tipo: <b>AUSENTE V2</b> | V1: N/A | V2: N/A | Diff: N/A</div>
+        </li>
+        
+        <li class='diff-item'
+            style='color: red; border-bottom: 1px dotted #ccc; padding: 5px 0; cursor: pointer;'
+            onclick="highlightElement('videos', '23,4590,454,255', this)"
+            data-coords="23,4590,454,255">
+            <span style="background:red; color:#fff; border-radius:3px; padding:1px 6px; font-size:0.8em; font-weight:bold; margin-right:6px;">G88</span>
+            <span style="font-weight: bold;">Elemento:</span> <code>div#fusion-app > div:nth-child(5) > main > div:nth-child(6) > div > article:nth-</code>
+            <br><span style="font-weight: bold;">Gravedad:</span> <span style='color:red;'>GRAVE</span>
+            <div style='margin-top:5px; border-left:2px solid #ccc; padding-left:5px;'>Tipo: <b>AUSENTE V2</b> | V1: N/A | V2: N/A | Diff: N/A</div>
+        </li>
+        
+        <li class='diff-item'
+            style='color: red; border-bottom: 1px dotted #ccc; padding: 5px 0; cursor: pointer;'
+            onclick="highlightElement('videos', '23,4922,454,255', this)"
+            data-coords="23,4922,454,255">
+            <span style="background:red; color:#fff; border-radius:3px; padding:1px 6px; font-size:0.8em; font-weight:bold; margin-right:6px;">G89</span>
+            <span style="font-weight: bold;">Elemento:</span> <code>div#fusion-app > div:nth-child(5) > main > div:nth-child(6) > div > article:nth-</code>
+            <br><span style="font-weight: bold;">Gravedad:</span> <span style='color:red;'>GRAVE</span>
+            <div style='margin-top:5px; border-left:2px solid #ccc; padding-left:5px;'>Tipo: <b>AUSENTE V2</b> | V1: N/A | V2: N/A | Diff: N/A</div>
+        </li>
+        
+        <li class='diff-item'
+            style='color: red; border-bottom: 1px dotted #ccc; padding: 5px 0; cursor: pointer;'
+            onclick="highlightElement('videos', '23,1211,347,765', this)"
+            data-coords="23,1211,347,765">
+            <span style="background:red; color:#fff; border-radius:3px; padding:1px 6px; font-size:0.8em; font-weight:bold; margin-right:6px;">G90</span>
+            <span style="font-weight: bold;">Elemento:</span> <code>div#fusion-app > div:nth-child(5) > main > div > div:nth-child(2) > div > div > </code>
+            <br><span style="font-weight: bold;">Gravedad:</span> <span style='color:red;'>GRAVE</span>
+            <div style='margin-top:5px; border-left:2px solid #ccc; padding-left:5px;'>Tipo: <b>AUSENTE V2</b> | V1: N/A | V2: N/A | Diff: N/A</div>
+        </li>
+        
+        <li class='diff-item'
+            style='color: red; border-bottom: 1px dotted #ccc; padding: 5px 0; cursor: pointer;'
+            onclick="highlightElement('videos', '23,3022,341,753', this)"
+            data-coords="23,3022,341,753">
+            <span style="background:red; color:#fff; border-radius:3px; padding:1px 6px; font-size:0.8em; font-weight:bold; margin-right:6px;">G91</span>
+            <span style="font-weight: bold;">Elemento:</span> <code>div#fusion-app > div:nth-child(5) > main > div:nth-child(2) > div:nth-child(2) ></code>
+            <br><span style="font-weight: bold;">Gravedad:</span> <span style='color:red;'>GRAVE</span>
+            <div style='margin-top:5px; border-left:2px solid #ccc; padding-left:5px;'>Tipo: <b>AUSENTE V2</b> | V1: N/A | V2: N/A | Diff: N/A</div>
+        </li>
+        
+        <li class='diff-item'
+            style='color: red; border-bottom: 1px dotted #ccc; padding: 5px 0; cursor: pointer;'
+            onclick="highlightElement('videos', '23,1809,314,157', this)"
+            data-coords="23,1809,314,157">
+            <span style="background:red; color:#fff; border-radius:3px; padding:1px 6px; font-size:0.8em; font-weight:bold; margin-right:6px;">G92</span>
+            <span style="font-weight: bold;">Elemento:</span> <code>div#fusion-app > div:nth-child(5) > main > div > div:nth-child(2) > div > div > </code>
+            <br><span style="font-weight: bold;">Gravedad:</span> <span style='color:red;'>GRAVE</span>
+            <div style='margin-top:5px; border-left:2px solid #ccc; padding-left:5px;'>Tipo: <b>AUSENTE V2</b> | V1: N/A | V2: N/A | Diff: N/A</div>
+        </li>
+        
+        <li class='diff-item'
+            style='color: red; border-bottom: 1px dotted #ccc; padding: 5px 0; cursor: pointer;'
+            onclick="highlightElement('videos', '718,1211,347,765', this)"
+            data-coords="718,1211,347,765">
+            <span style="background:red; color:#fff; border-radius:3px; padding:1px 6px; font-size:0.8em; font-weight:bold; margin-right:6px;">G93</span>
+            <span style="font-weight: bold;">Elemento:</span> <code>div#fusion-app > div:nth-child(5) > main > div > div:nth-child(2) > div > div > </code>
+            <br><span style="font-weight: bold;">Gravedad:</span> <span style='color:red;'>GRAVE</span>
+            <div style='margin-top:5px; border-left:2px solid #ccc; padding-left:5px;'>Tipo: <b>AUSENTE V2</b> | V1: N/A | V2: N/A | Diff: N/A</div>
+        </li>
+        
+        <li class='diff-item'
+            style='color: red; border-bottom: 1px dotted #ccc; padding: 5px 0; cursor: pointer;'
+            onclick="highlightElement('videos', '705,3022,341,753', this)"
+            data-coords="705,3022,341,753">
+            <span style="background:red; color:#fff; border-radius:3px; padding:1px 6px; font-size:0.8em; font-weight:bold; margin-right:6px;">G94</span>
+            <span style="font-weight: bold;">Elemento:</span> <code>div#fusion-app > div:nth-child(5) > main > div:nth-child(2) > div:nth-child(2) ></code>
+            <br><span style="font-weight: bold;">Gravedad:</span> <span style='color:red;'>GRAVE</span>
+            <div style='margin-top:5px; border-left:2px solid #ccc; padding-left:5px;'>Tipo: <b>AUSENTE V2</b> | V1: N/A | V2: N/A | Diff: N/A</div>
+        </li>
+        
+        <li class='diff-item'
+            style='color: red; border-bottom: 1px dotted #ccc; padding: 5px 0; cursor: pointer;'
+            onclick="highlightElement('videos', '0,168,500,1863', this)"
+            data-coords="0,168,500,1863">
+            <span style="background:red; color:#fff; border-radius:3px; padding:1px 6px; font-size:0.8em; font-weight:bold; margin-right:6px;">G95</span>
+            <span style="font-weight: bold;">Elemento:</span> <code>div#fusion-app > div:nth-child(5) > main > div</code>
+            <br><span style="font-weight: bold;">Gravedad:</span> <span style='color:red;'>GRAVE</span>
+            <div style='margin-top:5px; border-left:2px solid #ccc; padding-left:5px;'>Tipo: <b>AUSENTE V2</b> | V1: N/A | V2: N/A | Diff: N/A</div>
+        </li>
+        
+        <li class='diff-item'
+            style='color: red; border-bottom: 1px dotted #ccc; padding: 5px 0; cursor: pointer;'
+            onclick="highlightElement('videos', '0,2031,500,1800', this)"
+            data-coords="0,2031,500,1800">
+            <span style="background:red; color:#fff; border-radius:3px; padding:1px 6px; font-size:0.8em; font-weight:bold; margin-right:6px;">G96</span>
+            <span style="font-weight: bold;">Elemento:</span> <code>div#fusion-app > div:nth-child(5) > main > div:nth-child(2)</code>
+            <br><span style="font-weight: bold;">Gravedad:</span> <span style='color:red;'>GRAVE</span>
+            <div style='margin-top:5px; border-left:2px solid #ccc; padding-left:5px;'>Tipo: <b>AUSENTE V2</b> | V1: N/A | V2: N/A | Diff: N/A</div>
+        </li>
+        
+        <li class='diff-item'
+            style='color: red; border-bottom: 1px dotted #ccc; padding: 5px 0; cursor: pointer;'
+            onclick="highlightElement('videos', '23,260,454,951', this)"
+            data-coords="23,260,454,951">
+            <span style="background:red; color:#fff; border-radius:3px; padding:1px 6px; font-size:0.8em; font-weight:bold; margin-right:6px;">G97</span>
+            <span style="font-weight: bold;">Elemento:</span> <code>div#fusion-app > div:nth-child(5) > main > div > div > div</code>
+            <br><span style="font-weight: bold;">Gravedad:</span> <span style='color:red;'>GRAVE</span>
+            <div style='margin-top:5px; border-left:2px solid #ccc; padding-left:5px;'>Tipo: <b>AUSENTE V2</b> | V1: N/A | V2: N/A | Diff: N/A</div>
+        </li>
+        
+        <li class='diff-item'
+            style='color: red; border-bottom: 1px dotted #ccc; padding: 5px 0; cursor: pointer;'
+            onclick="highlightElement('videos', '23,2071,454,951', this)"
+            data-coords="23,2071,454,951">
+            <span style="background:red; color:#fff; border-radius:3px; padding:1px 6px; font-size:0.8em; font-weight:bold; margin-right:6px;">G98</span>
+            <span style="font-weight: bold;">Elemento:</span> <code>div#fusion-app > div:nth-child(5) > main > div:nth-child(2) > div > div</code>
+            <br><span style="font-weight: bold;">Gravedad:</span> <span style='color:red;'>GRAVE</span>
+            <div style='margin-top:5px; border-left:2px solid #ccc; padding-left:5px;'>Tipo: <b>AUSENTE V2</b> | V1: N/A | V2: N/A | Diff: N/A</div>
+        </li>
+        
+        <li class='diff-item'
+            style='color: red; border-bottom: 1px dotted #ccc; padding: 5px 0; cursor: pointer;'
+            onclick="highlightElement('videos', '23,4523,389,42', this)"
+            data-coords="23,4523,389,42">
+            <span style="background:red; color:#fff; border-radius:3px; padding:1px 6px; font-size:0.8em; font-weight:bold; margin-right:6px;">G99</span>
+            <span style="font-weight: bold;">Elemento:</span> <code>div#fusion-app > div:nth-child(5) > main > div:nth-child(6) > div > article:nth-</code>
+            <br><span style="font-weight: bold;">Gravedad:</span> <span style='color:red;'>GRAVE</span>
+            <div style='margin-top:5px; border-left:2px solid #ccc; padding-left:5px;'>Tipo: <b>AUSENTE V2</b> | V1: N/A | V2: N/A | Diff: N/A</div>
+        </li>
+        
+        <li class='diff-item'
+            style='color: red; border-bottom: 1px dotted #ccc; padding: 5px 0; cursor: pointer;'
+            onclick="highlightElement('videos', '23,3609,288,93', this)"
+            data-coords="23,3609,288,93">
+            <span style="background:red; color:#fff; border-radius:3px; padding:1px 6px; font-size:0.8em; font-weight:bold; margin-right:6px;">G100</span>
+            <span style="font-weight: bold;">Elemento:</span> <code>div#fusion-app > div:nth-child(5) > main > div:nth-child(2) > div:nth-child(2) ></code>
+            <br><span style="font-weight: bold;">Gravedad:</span> <span style='color:red;'>GRAVE</span>
+            <div style='margin-top:5px; border-left:2px solid #ccc; padding-left:5px;'>Tipo: <b>AUSENTE V2</b> | V1: N/A | V2: N/A | Diff: N/A</div>
+        </li>
+        
+        <li class='diff-item'
+            style='color: red; border-bottom: 1px dotted #ccc; padding: 5px 0; cursor: pointer;'
+            onclick="highlightElement('videos', '23,4855,380,42', this)"
+            data-coords="23,4855,380,42">
+            <span style="background:red; color:#fff; border-radius:3px; padding:1px 6px; font-size:0.8em; font-weight:bold; margin-right:6px;">G101</span>
+            <span style="font-weight: bold;">Elemento:</span> <code>div#fusion-app > div:nth-child(5) > main > div:nth-child(6) > div > article:nth-</code>
+            <br><span style="font-weight: bold;">Gravedad:</span> <span style='color:red;'>GRAVE</span>
+            <div style='margin-top:5px; border-left:2px solid #ccc; padding-left:5px;'>Tipo: <b>AUSENTE V2</b> | V1: N/A | V2: N/A | Diff: N/A</div>
+        </li>
+        
+        <li class='diff-item'
+            style='color: red; border-bottom: 1px dotted #ccc; padding: 5px 0; cursor: pointer;'
+            onclick="highlightElement('videos', '0,3895,500,1469', this)"
+            data-coords="0,3895,500,1469">
+            <span style="background:red; color:#fff; border-radius:3px; padding:1px 6px; font-size:0.8em; font-weight:bold; margin-right:6px;">G102</span>
+            <span style="font-weight: bold;">Elemento:</span> <code>div#fusion-app > div:nth-child(5) > main > div:nth-child(6)</code>
+            <br><span style="font-weight: bold;">Gravedad:</span> <span style='color:red;'>GRAVE</span>
+            <div style='margin-top:5px; border-left:2px solid #ccc; padding-left:5px;'>Tipo: <b>AUSENTE V2</b> | V1: N/A | V2: N/A | Diff: N/A</div>
+        </li>
+        
+        <li class='diff-item'
+            style='color: red; border-bottom: 1px dotted #ccc; padding: 5px 0; cursor: pointer;'
+            onclick="highlightElement('videos', '23,116,454,196', this)"
+            data-coords="23,116,454,196">
+            <span style="background:red; color:#fff; border-radius:3px; padding:1px 6px; font-size:0.8em; font-weight:bold; margin-right:6px;">G103</span>
+            <span style="font-weight: bold;">Elemento:</span> <code>div#fusion-app > div:nth-child(2) > div:nth-child(2) > div</code>
+            <br><span style="font-weight: bold;">Gravedad:</span> <span style='color:red;'>GRAVE</span>
+            <div style='margin-top:5px; border-left:2px solid #ccc; padding-left:5px;'>Tipo: <b>NUEVO EN V2</b> | V1: N/A | V2: N/A | Diff: N/A</div>
+        </li>
+        
+        <li class='diff-item'
+            style='color: red; border-bottom: 1px dotted #ccc; padding: 5px 0; cursor: pointer;'
+            onclick="highlightElement('videos', '142,352,215,36', this)"
+            data-coords="142,352,215,36">
+            <span style="background:red; color:#fff; border-radius:3px; padding:1px 6px; font-size:0.8em; font-weight:bold; margin-right:6px;">G104</span>
+            <span style="font-weight: bold;">Elemento:</span> <code>div#fusion-app > div:nth-child(2) > div:nth-child(2) > h1</code>
+            <br><span style="font-weight: bold;">Gravedad:</span> <span style='color:red;'>GRAVE</span>
+            <div style='margin-top:5px; border-left:2px solid #ccc; padding-left:5px;'>Tipo: <b>NUEVO EN V2</b> | V1: N/A | V2: N/A | Diff: N/A</div>
+        </li>
+        
+        <li class='diff-item'
+            style='color: red; border-bottom: 1px dotted #ccc; padding: 5px 0; cursor: pointer;'
+            onclick="highlightElement('videos', '23,116,454,428', this)"
+            data-coords="23,116,454,428">
+            <span style="background:red; color:#fff; border-radius:3px; padding:1px 6px; font-size:0.8em; font-weight:bold; margin-right:6px;">G105</span>
+            <span style="font-weight: bold;">Elemento:</span> <code>div#fusion-app > div:nth-child(2) > div:nth-child(2)</code>
+            <br><span style="font-weight: bold;">Gravedad:</span> <span style='color:red;'>GRAVE</span>
+            <div style='margin-top:5px; border-left:2px solid #ccc; padding-left:5px;'>Tipo: <b>NUEVO EN V2</b> | V1: N/A | V2: N/A | Diff: N/A</div>
+        </li>
+        
+        <li class='diff-item'
+            style='color: red; border-bottom: 1px dotted #ccc; padding: 5px 0; cursor: pointer;'
+            onclick="highlightElement('videos', '153,496,193,48', this)"
+            data-coords="153,496,193,48">
+            <span style="background:red; color:#fff; border-radius:3px; padding:1px 6px; font-size:0.8em; font-weight:bold; margin-right:6px;">G106</span>
+            <span style="font-weight: bold;">Elemento:</span> <code>div#fusion-app > div:nth-child(2) > div:nth-child(2) > a</code>
+            <br><span style="font-weight: bold;">Gravedad:</span> <span style='color:red;'>GRAVE</span>
+            <div style='margin-top:5px; border-left:2px solid #ccc; padding-left:5px;'>Tipo: <b>NUEVO EN V2</b> | V1: N/A | V2: N/A | Diff: N/A</div>
+        </li>
+        
+        <li class='diff-item'
+            style='color: red; border-bottom: 1px dotted #ccc; padding: 5px 0; cursor: pointer;'
+            onclick="highlightElement('videos', '23,404,454,60', this)"
+            data-coords="23,404,454,60">
+            <span style="background:red; color:#fff; border-radius:3px; padding:1px 6px; font-size:0.8em; font-weight:bold; margin-right:6px;">G107</span>
+            <span style="font-weight: bold;">Elemento:</span> <code>div#fusion-app > div:nth-child(2) > div:nth-child(2) > p</code>
+            <br><span style="font-weight: bold;">Gravedad:</span> <span style='color:red;'>GRAVE</span>
+            <div style='margin-top:5px; border-left:2px solid #ccc; padding-left:5px;'>Tipo: <b>NUEVO EN V2</b> | V1: N/A | V2: N/A | Diff: N/A</div>
+        </li>
+        
+        <li class='diff-item'
+            style='color: red; border-bottom: 1px dotted #ccc; padding: 5px 0; cursor: pointer;'
+            onclick="highlightElement('videos', '169,511,133,18', this)"
+            data-coords="169,511,133,18">
+            <span style="background:red; color:#fff; border-radius:3px; padding:1px 6px; font-size:0.8em; font-weight:bold; margin-right:6px;">G108</span>
+            <span style="font-weight: bold;">Elemento:</span> <code>div#fusion-app > div:nth-child(2) > div:nth-child(2) > a > span</code>
+            <br><span style="font-weight: bold;">Gravedad:</span> <span style='color:red;'>GRAVE</span>
+            <div style='margin-top:5px; border-left:2px solid #ccc; padding-left:5px;'>Tipo: <b>NUEVO EN V2</b> | V1: N/A | V2: N/A | Diff: N/A</div>
+        </li>
+        
+        <li class='diff-item'
+            style='color: red; border-bottom: 1px dotted #ccc; padding: 5px 0; cursor: pointer;'
+            onclick="highlightElement('videos', '215,1204,32,32', this)"
+            data-coords="215,1204,32,32">
+            <span style="background:red; color:#fff; border-radius:3px; padding:1px 6px; font-size:0.8em; font-weight:bold; margin-right:6px;">G109</span>
+            <span style="font-weight: bold;">Elemento:</span> <code>div#fusion-app > footer > div:nth-child(2) > div:nth-child(2) > div:nth-child(2)</code>
+            <br><span style="font-weight: bold;">Gravedad:</span> <span style='color:red;'>GRAVE</span>
+            <div style='margin-top:5px; border-left:2px solid #ccc; padding-left:5px;'>Tipo: <b>NUEVO EN V2</b> | V1: N/A | V2: N/A | Diff: N/A</div>
+        </li>
+        </ul>
+                </div>
+            </details>
+            <details>
+                <summary style="cursor:pointer; font-weight:bold; color:#1e3a8a;">Contexto Visual</summary>
+                <div class='container' id='container-videos'>
+                    <div><h4>Versión Base (V1)</h4><img src='videos_V723_base_20260929_205103.png' alt='V1'></div>
+                    <div id="image-container-videos" style="position:relative;">
+                        <h4>Versión Nueva (V2)</h4><img id='screenshot-videos' src='videos_V723_diff_20260929_205103.png' alt='V2'>
+                        <div id="highlight-box-videos" class="highlight-box" style="display:none;"></div>
+                    </div>
+                </div>
+            </details>
+        </div>
+        
+        <div style="border: 2px solid #ddd; padding: 15px; margin-top: 20px; border-radius: 8px;">
+            <h2>Vivo</h2>
+            <p><strong>URL Base (V1):</strong> <a href="https://eldoce.tv/vivo" target="_blank"><code>https://eldoce.tv/vivo</code></a></p>
+            <p><strong>URL Comparada (V2):</strong> <a href="https://eldoce.tv/vivo?d=723" target="_blank"><code>https://eldoce.tv/vivo?d=723</code></a></p>
+            <p><strong>Resultado:</strong> <span style="font-weight:bold; color:red;">❌ Se detectaron 1 diferencias graves.</span></p>
+            <p><strong>Tiempo de Ejecución:</strong> 0:00:28</p>
+            <details>
+                <summary style="cursor:pointer; font-weight:bold; color:#1e3a8a;">Detalle de diferencias</summary>
+                <div id="diff-list-vivo" style="margin-top:10px; background:#fff; padding:10px; border:1px solid #eee;">
+                    <ul>
+        <li class='diff-item'
+            style='color: red; border-bottom: 1px dotted #ccc; padding: 5px 0; cursor: pointer;'
+            onclick="highlightElement('vivo', '220,318,58,58', this)"
+            data-coords="220,318,58,58">
+            <span style="background:red; color:#fff; border-radius:3px; padding:1px 6px; font-size:0.8em; font-weight:bold; margin-right:6px;">G1</span>
+            <span style="font-weight: bold;">Elemento:</span> <code>div#fusion-app > div:nth-child(7) > main > div > div:nth-child(2) > div:nth-chil</code>
+            <br><span style="font-weight: bold;">Gravedad:</span> <span style='color:red;'>GRAVE</span>
+            <div style='margin-top:5px; border-left:2px solid #ccc; padding-left:5px;'>Tipo: <b>DIFERENCIA ALTURA (H)</b> | V1: 64.14 | V2: 58.38 | Diff: 5.76px<br>Tipo: <b>DIFERENCIA ANCHO (W)</b> | V1: 64.14 | V2: 58.38 | Diff: 5.76px</div>
+        </li>
+        </ul>
+                </div>
+            </details>
+            <details>
+                <summary style="cursor:pointer; font-weight:bold; color:#1e3a8a;">Contexto Visual</summary>
+                <div class='container' id='container-vivo'>
+                    <div><h4>Versión Base (V1)</h4><img src='vivo_V723_base_20260929_205103.png' alt='V1'></div>
+                    <div id="image-container-vivo" style="position:relative;">
+                        <h4>Versión Nueva (V2)</h4><img id='screenshot-vivo' src='vivo_V723_diff_20260929_205103.png' alt='V2'>
+                        <div id="highlight-box-vivo" class="highlight-box" style="display:none;"></div>
+                    </div>
+                </div>
+            </details>
+        </div>
+        
+        <div style="border: 2px solid #ddd; padding: 15px; margin-top: 20px; border-radius: 8px;">
+            <h2>Agenda</h2>
+            <p><strong>URL Base (V1):</strong> <a href="https://eldoce.tv/cuarteteando/agenda/" target="_blank"><code>https://eldoce.tv/cuarteteando/agenda/</code></a></p>
+            <p><strong>URL Comparada (V2):</strong> <a href="https://eldoce.tv/cuarteteando/agenda/?d=723" target="_blank"><code>https://eldoce.tv/cuarteteando/agenda/?d=723</code></a></p>
+            <p><strong>Resultado:</strong> <span style="font-weight:bold; color:green;">✅ No se encontraron diferencias.</span></p>
+            <p><strong>Tiempo de Ejecución:</strong> 0:00:24</p>
+            <details>
+                <summary style="cursor:pointer; font-weight:bold; color:#1e3a8a;">Detalle de diferencias</summary>
+                <div id="diff-list-agenda" style="margin-top:10px; background:#fff; padding:10px; border:1px solid #eee;">
+                    <ul><li>✅ No se encontraron diferencias.</li></ul>
+                </div>
+            </details>
+            <details>
+                <summary style="cursor:pointer; font-weight:bold; color:#1e3a8a;">Contexto Visual</summary>
+                <div class='container' id='container-agenda'>
+                    <div><h4>Versión Base (V1)</h4><img src='agenda_V723_base_20260929_205103.png' alt='V1'></div>
+                    <div id="image-container-agenda" style="position:relative;">
+                        <h4>Versión Nueva (V2)</h4><img id='screenshot-agenda' src='agenda_V723_diff_20260929_205103.png' alt='V2'>
+                        <div id="highlight-box-agenda" class="highlight-box" style="display:none;"></div>
+                    </div>
+                </div>
+            </details>
+        </div>
+        
+        <div style="border: 2px solid #ddd; padding: 15px; margin-top: 20px; border-radius: 8px;">
+            <h2>Deportes</h2>
+            <p><strong>URL Base (V1):</strong> <a href="https://eldoce.tv/deportes/" target="_blank"><code>https://eldoce.tv/deportes/</code></a></p>
+            <p><strong>URL Comparada (V2):</strong> <a href="https://eldoce.tv/deportes/?d=723" target="_blank"><code>https://eldoce.tv/deportes/?d=723</code></a></p>
+            <p><strong>Resultado:</strong> <span style="font-weight:bold; color:green;">✅ No se encontraron diferencias.</span></p>
+            <p><strong>Tiempo de Ejecución:</strong> 0:00:25</p>
+            <details>
+                <summary style="cursor:pointer; font-weight:bold; color:#1e3a8a;">Detalle de diferencias</summary>
+                <div id="diff-list-deportes" style="margin-top:10px; background:#fff; padding:10px; border:1px solid #eee;">
+                    <ul><li>✅ No se encontraron diferencias.</li></ul>
+                </div>
+            </details>
+            <details>
+                <summary style="cursor:pointer; font-weight:bold; color:#1e3a8a;">Contexto Visual</summary>
+                <div class='container' id='container-deportes'>
+                    <div><h4>Versión Base (V1)</h4><img src='deportes_V723_base_20260929_205103.png' alt='V1'></div>
+                    <div id="image-container-deportes" style="position:relative;">
+                        <h4>Versión Nueva (V2)</h4><img id='screenshot-deportes' src='deportes_V723_diff_20260929_205103.png' alt='V2'>
+                        <div id="highlight-box-deportes" class="highlight-box" style="display:none;"></div>
+                    </div>
+                </div>
+            </details>
+        </div>
+        
+        <div style="border: 2px solid #ddd; padding: 15px; margin-top: 20px; border-radius: 8px;">
+            <h2>Estadísticas deportes</h2>
+            <p><strong>URL Base (V1):</strong> <a href="https://eldoce.tv/deportes/estadisticas/" target="_blank"><code>https://eldoce.tv/deportes/estadisticas/</code></a></p>
+            <p><strong>URL Comparada (V2):</strong> <a href="https://eldoce.tv/deportes/estadisticas/?d=723" target="_blank"><code>https://eldoce.tv/deportes/estadisticas/?d=723</code></a></p>
+            <p><strong>Resultado:</strong> <span style="font-weight:bold; color:green;">✅ No se encontraron diferencias.</span></p>
+            <p><strong>Tiempo de Ejecución:</strong> 0:00:24</p>
+            <details>
+                <summary style="cursor:pointer; font-weight:bold; color:#1e3a8a;">Detalle de diferencias</summary>
+                <div id="diff-list-estad_sticas_deportes" style="margin-top:10px; background:#fff; padding:10px; border:1px solid #eee;">
+                    <ul><li>✅ No se encontraron diferencias.</li></ul>
+                </div>
+            </details>
+            <details>
+                <summary style="cursor:pointer; font-weight:bold; color:#1e3a8a;">Contexto Visual</summary>
+                <div class='container' id='container-estad_sticas_deportes'>
+                    <div><h4>Versión Base (V1)</h4><img src='estad_sticas_deportes_V723_base_20260929_205103.png' alt='V1'></div>
+                    <div id="image-container-estad_sticas_deportes" style="position:relative;">
+                        <h4>Versión Nueva (V2)</h4><img id='screenshot-estad_sticas_deportes' src='estad_sticas_deportes_V723_diff_20260929_205103.png' alt='V2'>
+                        <div id="highlight-box-estad_sticas_deportes" class="highlight-box" style="display:none;"></div>
+                    </div>
+                </div>
+            </details>
+        </div>
+        
+        <div style="border: 2px solid #ddd; padding: 15px; margin-top: 20px; border-radius: 8px;">
+            <h2>Torneo deportes</h2>
+            <p><strong>URL Base (V1):</strong> <a href="https://eldoce.tv/deportes/estadisticas/primera-division/" target="_blank"><code>https://eldoce.tv/deportes/estadisticas/primera-division/</code></a></p>
+            <p><strong>URL Comparada (V2):</strong> <a href="https://eldoce.tv/deportes/estadisticas/primera-division/?d=723" target="_blank"><code>https://eldoce.tv/deportes/estadisticas/primera-division/?d=723</code></a></p>
+            <p><strong>Resultado:</strong> <span style="font-weight:bold; color:green;">✅ No se encontraron diferencias.</span></p>
+            <p><strong>Tiempo de Ejecución:</strong> 0:00:30</p>
+            <details>
+                <summary style="cursor:pointer; font-weight:bold; color:#1e3a8a;">Detalle de diferencias</summary>
+                <div id="diff-list-torneo_deportes" style="margin-top:10px; background:#fff; padding:10px; border:1px solid #eee;">
+                    <ul><li>✅ No se encontraron diferencias.</li></ul>
+                </div>
+            </details>
+            <details>
+                <summary style="cursor:pointer; font-weight:bold; color:#1e3a8a;">Contexto Visual</summary>
+                <div class='container' id='container-torneo_deportes'>
+                    <div><h4>Versión Base (V1)</h4><img src='torneo_deportes_V723_base_20260929_205103.png' alt='V1'></div>
+                    <div id="image-container-torneo_deportes" style="position:relative;">
+                        <h4>Versión Nueva (V2)</h4><img id='screenshot-torneo_deportes' src='torneo_deportes_V723_diff_20260929_205103.png' alt='V2'>
+                        <div id="highlight-box-torneo_deportes" class="highlight-box" style="display:none;"></div>
+                    </div>
+                </div>
+            </details>
+        </div>
+        
+        <div style="border: 2px solid #ddd; padding: 15px; margin-top: 20px; border-radius: 8px;">
+            <h2>Horóscopo</h2>
+            <p><strong>URL Base (V1):</strong> <a href="https://eldoce.tv/horoscopo/" target="_blank"><code>https://eldoce.tv/horoscopo/</code></a></p>
+            <p><strong>URL Comparada (V2):</strong> <a href="https://eldoce.tv/horoscopo/?d=723" target="_blank"><code>https://eldoce.tv/horoscopo/?d=723</code></a></p>
+            <p><strong>Resultado:</strong> <span style="font-weight:bold; color:green;">✅ No se encontraron diferencias.</span></p>
+            <p><strong>Tiempo de Ejecución:</strong> 0:00:25</p>
+            <details>
+                <summary style="cursor:pointer; font-weight:bold; color:#1e3a8a;">Detalle de diferencias</summary>
+                <div id="diff-list-hor_scopo" style="margin-top:10px; background:#fff; padding:10px; border:1px solid #eee;">
+                    <ul><li>✅ No se encontraron diferencias.</li></ul>
+                </div>
+            </details>
+            <details>
+                <summary style="cursor:pointer; font-weight:bold; color:#1e3a8a;">Contexto Visual</summary>
+                <div class='container' id='container-hor_scopo'>
+                    <div><h4>Versión Base (V1)</h4><img src='hor_scopo_V723_base_20260929_205103.png' alt='V1'></div>
+                    <div id="image-container-hor_scopo" style="position:relative;">
+                        <h4>Versión Nueva (V2)</h4><img id='screenshot-hor_scopo' src='hor_scopo_V723_diff_20260929_205103.png' alt='V2'>
+                        <div id="highlight-box-hor_scopo" class="highlight-box" style="display:none;"></div>
+                    </div>
+                </div>
+            </details>
+        </div>
+        
+        <div style="border: 2px solid #ddd; padding: 15px; margin-top: 20px; border-radius: 8px;">
+            <h2>Horóscopo signo</h2>
+            <p><strong>URL Base (V1):</strong> <a href="https://eldoce.tv/horoscopo/aries/" target="_blank"><code>https://eldoce.tv/horoscopo/aries/</code></a></p>
+            <p><strong>URL Comparada (V2):</strong> <a href="https://eldoce.tv/horoscopo/aries/?d=723" target="_blank"><code>https://eldoce.tv/horoscopo/aries/?d=723</code></a></p>
+            <p><strong>Resultado:</strong> <span style="font-weight:bold; color:green;">✅ No se encontraron diferencias.</span></p>
+            <p><strong>Tiempo de Ejecución:</strong> 0:00:24</p>
+            <details>
+                <summary style="cursor:pointer; font-weight:bold; color:#1e3a8a;">Detalle de diferencias</summary>
+                <div id="diff-list-hor_scopo_signo" style="margin-top:10px; background:#fff; padding:10px; border:1px solid #eee;">
+                    <ul><li>✅ No se encontraron diferencias.</li></ul>
+                </div>
+            </details>
+            <details>
+                <summary style="cursor:pointer; font-weight:bold; color:#1e3a8a;">Contexto Visual</summary>
+                <div class='container' id='container-hor_scopo_signo'>
+                    <div><h4>Versión Base (V1)</h4><img src='hor_scopo_signo_V723_base_20260929_205103.png' alt='V1'></div>
+                    <div id="image-container-hor_scopo_signo" style="position:relative;">
+                        <h4>Versión Nueva (V2)</h4><img id='screenshot-hor_scopo_signo' src='hor_scopo_signo_V723_diff_20260929_205103.png' alt='V2'>
+                        <div id="highlight-box-hor_scopo_signo" class="highlight-box" style="display:none;"></div>
+                    </div>
+                </div>
+            </details>
+        </div>
+        
+        <div style="border: 2px solid #ddd; padding: 15px; margin-top: 20px; border-radius: 8px;">
+            <h2>Article</h2>
+            <p><strong>URL Base (V1):</strong> <a href="https://eldoce.tv/show/2025/12/11/operativo-para-shakira-en-el-kempes-que-pasara-con-los-naranjitas-a-que-hora-abren-las-puertas-y-ubicaciones/" target="_blank"><code>https://eldoce.tv/show/2025/12/11/operativo-para-shakira-en-el-kempes-que-pasara-con-los-naranjitas-a-que-hora-abren-las-puertas-y-ubicaciones/</code></a></p>
+            <p><strong>URL Comparada (V2):</strong> <a href="https://eldoce.tv/show/2025/12/11/operativo-para-shakira-en-el-kempes-que-pasara-con-los-naranjitas-a-que-hora-abren-las-puertas-y-ubicaciones/?d=723" target="_blank"><code>https://eldoce.tv/show/2025/12/11/operativo-para-shakira-en-el-kempes-que-pasara-con-los-naranjitas-a-que-hora-abren-las-puertas-y-ubicaciones/?d=723</code></a></p>
+            <p><strong>Resultado:</strong> <span style="font-weight:bold; color:green;">✅ No se encontraron diferencias.</span></p>
+            <p><strong>Tiempo de Ejecución:</strong> 0:00:25</p>
+            <details>
+                <summary style="cursor:pointer; font-weight:bold; color:#1e3a8a;">Detalle de diferencias</summary>
+                <div id="diff-list-article" style="margin-top:10px; background:#fff; padding:10px; border:1px solid #eee;">
+                    <ul><li>✅ No se encontraron diferencias.</li></ul>
+                </div>
+            </details>
+            <details>
+                <summary style="cursor:pointer; font-weight:bold; color:#1e3a8a;">Contexto Visual</summary>
+                <div class='container' id='container-article'>
+                    <div><h4>Versión Base (V1)</h4><img src='article_V723_base_20260929_205103.png' alt='V1'></div>
+                    <div id="image-container-article" style="position:relative;">
+                        <h4>Versión Nueva (V2)</h4><img id='screenshot-article' src='article_V723_diff_20260929_205103.png' alt='V2'>
+                        <div id="highlight-box-article" class="highlight-box" style="display:none;"></div>
+                    </div>
+                </div>
+            </details>
+        </div>
+        
+        <div style="border: 2px solid #ddd; padding: 15px; margin-top: 20px; border-radius: 8px;">
+            <h2>AMP</h2>
+            <p><strong>URL Base (V1):</strong> <a href="https://eldoce.tv/show/2025/12/11/operativo-para-shakira-en-el-kempes-que-pasara-con-los-naranjitas-a-que-hora-abren-las-puertas-y-ubicaciones/?outputType=amp" target="_blank"><code>https://eldoce.tv/show/2025/12/11/operativo-para-shakira-en-el-kempes-que-pasara-con-los-naranjitas-a-que-hora-abren-las-puertas-y-ubicaciones/?outputType=amp</code></a></p>
+            <p><strong>URL Comparada (V2):</strong> <a href="https://eldoce.tv/show/2025/12/11/operativo-para-shakira-en-el-kempes-que-pasara-con-los-naranjitas-a-que-hora-abren-las-puertas-y-ubicaciones/?outputType=amp&d=723" target="_blank"><code>https://eldoce.tv/show/2025/12/11/operativo-para-shakira-en-el-kempes-que-pasara-con-los-naranjitas-a-que-hora-abren-las-puertas-y-ubicaciones/?outputType=amp&d=723</code></a></p>
+            <p><strong>Resultado:</strong> <span style="font-weight:bold; color:orange;">⚠️ Sin diferencias graves, pero hay 3 desplazamiento(s) en cascada para revisar (ver detalle) — puede ser contenido que legítimamente cambió de tamaño, o un bug de layout real.</span></p>
+            <p><strong>Tiempo de Ejecución:</strong> 0:00:24</p>
+            <details>
+                <summary style="cursor:pointer; font-weight:bold; color:#1e3a8a;">Detalle de diferencias</summary>
+                <div id="diff-list-amp" style="margin-top:10px; background:#fff; padding:10px; border:1px solid #eee;">
+                    <ul>
+            <li class='diff-item' style='color: #7c3aed; border-bottom: 1px dotted #ccc; padding: 5px 0; cursor: pointer;'
+                onclick="highlightElement('amp', '0,8887,500,2160', this)"
+                data-coords="0,8887,500,2160">
+                <span style="background:#7c3aed; color:#fff; border-radius:3px; padding:1px 6px; font-size:0.8em; font-weight:bold; margin-right:6px;">C1</span>
+                <span style="font-weight: bold;">⚠️ Revisar — desplazamiento en cascada:</span>
+                122 elementos se movieron 1200px verticalmente
+                <span style="font-size: 0.8em; color: #888;">(click para verlo resaltado en la imagen)</span>.
+                <br><span style="font-size: 0.85em; color: #666;">
+                Causa probable: un solo elemento anterior del DOM cambió de tamaño y arrastró a los 122 de abajo — no son 122 regresiones independientes, es 1 sola causa raíz (empezando por <code>html > body > div:nth-child(5)</code>).
+                </span>
+            </li>
+            
+            <li class='diff-item' style='color: #7c3aed; border-bottom: 1px dotted #ccc; padding: 5px 0; cursor: pointer;'
+                onclick="highlightElement('amp', '214,2860,72,72', this)"
+                data-coords="214,2860,72,72">
+                <span style="background:#7c3aed; color:#fff; border-radius:3px; padding:1px 6px; font-size:0.8em; font-weight:bold; margin-right:6px;">C2</span>
+                <span style="font-weight: bold;">⚠️ Revisar — desplazamiento en cascada:</span>
+                2 elementos cambiaron de alto 4px
+                <span style="font-size: 0.8em; color: #888;">(click para verlo resaltado en la imagen)</span>.
+                <br><span style="font-size: 0.85em; color: #666;">
+                Causa probable: un solo elemento anterior del DOM cambió de tamaño y arrastró a los 2 de abajo — no son 2 regresiones independientes, es 1 sola causa raíz (empezando por <code>html > body > div:nth-child(4) > div > main > div:nth-child(</code>).
+                </span>
+            </li>
+            
+            <li class='diff-item' style='color: #7c3aed; border-bottom: 1px dotted #ccc; padding: 5px 0; cursor: pointer;'
+                onclick="highlightElement('amp', '214,2860,72,72', this)"
+                data-coords="214,2860,72,72">
+                <span style="background:#7c3aed; color:#fff; border-radius:3px; padding:1px 6px; font-size:0.8em; font-weight:bold; margin-right:6px;">C3</span>
+                <span style="font-weight: bold;">⚠️ Revisar — desplazamiento en cascada:</span>
+                2 elementos cambiaron de ancho 4px
+                <span style="font-size: 0.8em; color: #888;">(click para verlo resaltado en la imagen)</span>.
+                <br><span style="font-size: 0.85em; color: #666;">
+                Causa probable: un solo elemento anterior del DOM cambió de tamaño y arrastró a los 2 de abajo — no son 2 regresiones independientes, es 1 sola causa raíz (empezando por <code>html > body > div:nth-child(4) > div > main > div:nth-child(</code>).
+                </span>
+            </li>
+            </ul>
+                </div>
+            </details>
+            <details>
+                <summary style="cursor:pointer; font-weight:bold; color:#1e3a8a;">Contexto Visual</summary>
+                <div class='container' id='container-amp'>
+                    <div><h4>Versión Base (V1)</h4><img src='amp_V723_base_20260929_205103.png' alt='V1'></div>
+                    <div id="image-container-amp" style="position:relative;">
+                        <h4>Versión Nueva (V2)</h4><img id='screenshot-amp' src='amp_V723_diff_20260929_205103.png' alt='V2'>
+                        <div id="highlight-box-amp" class="highlight-box" style="display:none;"></div>
+                    </div>
+                </div>
+            </details>
+        </div>
+        
+        <div style="border: 2px solid #ddd; padding: 15px; margin-top: 20px; border-radius: 8px;">
+            <h2>Video</h2>
+            <p><strong>URL Base (V1):</strong> <a href="https://eldoce.tv/videos/show/2025/12/14/aca-en-cordoba-el-inicio-feroz-de-shakira-en-el-kempes/" target="_blank"><code>https://eldoce.tv/videos/show/2025/12/14/aca-en-cordoba-el-inicio-feroz-de-shakira-en-el-kempes/</code></a></p>
+            <p><strong>URL Comparada (V2):</strong> <a href="https://eldoce.tv/videos/show/2025/12/14/aca-en-cordoba-el-inicio-feroz-de-shakira-en-el-kempes/?d=723" target="_blank"><code>https://eldoce.tv/videos/show/2025/12/14/aca-en-cordoba-el-inicio-feroz-de-shakira-en-el-kempes/?d=723</code></a></p>
+            <p><strong>Resultado:</strong> <span style="font-weight:bold; color:green;">✅ No se encontraron diferencias.</span></p>
+            <p><strong>Tiempo de Ejecución:</strong> 0:00:23</p>
+            <details>
+                <summary style="cursor:pointer; font-weight:bold; color:#1e3a8a;">Detalle de diferencias</summary>
+                <div id="diff-list-video" style="margin-top:10px; background:#fff; padding:10px; border:1px solid #eee;">
+                    <ul><li>✅ No se encontraron diferencias.</li></ul>
+                </div>
+            </details>
+            <details>
+                <summary style="cursor:pointer; font-weight:bold; color:#1e3a8a;">Contexto Visual</summary>
+                <div class='container' id='container-video'>
+                    <div><h4>Versión Base (V1)</h4><img src='video_V723_base_20260929_205103.png' alt='V1'></div>
+                    <div id="image-container-video" style="position:relative;">
+                        <h4>Versión Nueva (V2)</h4><img id='screenshot-video' src='video_V723_diff_20260929_205103.png' alt='V2'>
+                        <div id="highlight-box-video" class="highlight-box" style="display:none;"></div>
+                    </div>
+                </div>
+            </details>
+        </div>
+        
+        <div style="border: 2px solid #ddd; padding: 15px; margin-top: 20px; border-radius: 8px;">
+            <h2>Cuarteteando</h2>
+            <p><strong>URL Base (V1):</strong> <a href="https://eldoce.tv/cuarteteando/2025/12/12/los-herrera-emocionaron-a-sus-fans-con-una-version-acustica-de-la-primera-cancion-que-aprendio-fran-en-la-guit/" target="_blank"><code>https://eldoce.tv/cuarteteando/2025/12/12/los-herrera-emocionaron-a-sus-fans-con-una-version-acustica-de-la-primera-cancion-que-aprendio-fran-en-la-guit/</code></a></p>
+            <p><strong>URL Comparada (V2):</strong> <a href="https://eldoce.tv/cuarteteando/2025/12/12/los-herrera-emocionaron-a-sus-fans-con-una-version-acustica-de-la-primera-cancion-que-aprendio-fran-en-la-guit/?d=723" target="_blank"><code>https://eldoce.tv/cuarteteando/2025/12/12/los-herrera-emocionaron-a-sus-fans-con-una-version-acustica-de-la-primera-cancion-que-aprendio-fran-en-la-guit/?d=723</code></a></p>
+            <p><strong>Resultado:</strong> <span style="font-weight:bold; color:green;">✅ No se encontraron diferencias.</span></p>
+            <p><strong>Tiempo de Ejecución:</strong> 0:00:25</p>
+            <details>
+                <summary style="cursor:pointer; font-weight:bold; color:#1e3a8a;">Detalle de diferencias</summary>
+                <div id="diff-list-cuarteteando" style="margin-top:10px; background:#fff; padding:10px; border:1px solid #eee;">
+                    <ul><li>✅ No se encontraron diferencias.</li></ul>
+                </div>
+            </details>
+            <details>
+                <summary style="cursor:pointer; font-weight:bold; color:#1e3a8a;">Contexto Visual</summary>
+                <div class='container' id='container-cuarteteando'>
+                    <div><h4>Versión Base (V1)</h4><img src='cuarteteando_V723_base_20260929_205103.png' alt='V1'></div>
+                    <div id="image-container-cuarteteando" style="position:relative;">
+                        <h4>Versión Nueva (V2)</h4><img id='screenshot-cuarteteando' src='cuarteteando_V723_diff_20260929_205103.png' alt='V2'>
+                        <div id="highlight-box-cuarteteando" class="highlight-box" style="display:none;"></div>
+                    </div>
+                </div>
+            </details>
+        </div>
+        
+        <div style="border: 2px solid #ddd; padding: 15px; margin-top: 20px; border-radius: 8px;">
+            <h2>Video cuarteteando</h2>
+            <p><strong>URL Base (V1):</strong> <a href="https://eldoce.tv/videos/cuarteteando/2025/12/10/dale-q-va-lanzo-un-ft-junto-a-jolgorio/" target="_blank"><code>https://eldoce.tv/videos/cuarteteando/2025/12/10/dale-q-va-lanzo-un-ft-junto-a-jolgorio/</code></a></p>
+            <p><strong>URL Comparada (V2):</strong> <a href="https://eldoce.tv/videos/cuarteteando/2025/12/10/dale-q-va-lanzo-un-ft-junto-a-jolgorio/?d=723" target="_blank"><code>https://eldoce.tv/videos/cuarteteando/2025/12/10/dale-q-va-lanzo-un-ft-junto-a-jolgorio/?d=723</code></a></p>
+            <p><strong>Resultado:</strong> <span style="font-weight:bold; color:green;">✅ No se encontraron diferencias.</span></p>
+            <p><strong>Tiempo de Ejecución:</strong> 0:00:24</p>
+            <details>
+                <summary style="cursor:pointer; font-weight:bold; color:#1e3a8a;">Detalle de diferencias</summary>
+                <div id="diff-list-video_cuarteteando" style="margin-top:10px; background:#fff; padding:10px; border:1px solid #eee;">
+                    <ul><li>✅ No se encontraron diferencias.</li></ul>
+                </div>
+            </details>
+            <details>
+                <summary style="cursor:pointer; font-weight:bold; color:#1e3a8a;">Contexto Visual</summary>
+                <div class='container' id='container-video_cuarteteando'>
+                    <div><h4>Versión Base (V1)</h4><img src='video_cuarteteando_V723_base_20260929_205103.png' alt='V1'></div>
+                    <div id="image-container-video_cuarteteando" style="position:relative;">
+                        <h4>Versión Nueva (V2)</h4><img id='screenshot-video_cuarteteando' src='video_cuarteteando_V723_diff_20260929_205103.png' alt='V2'>
+                        <div id="highlight-box-video_cuarteteando" class="highlight-box" style="display:none;"></div>
+                    </div>
+                </div>
+            </details>
+        </div>
+        
+        <div style="border: 2px solid #ddd; padding: 15px; margin-top: 20px; border-radius: 8px;">
+            <h2>Longform c/fondo</h2>
+            <p><strong>URL Base (V1):</strong> <a href="https://eldoce.tv/tendencias/2024/08/22/piedra-del-molino-una-cascada-oculta-dentro-de-una-caverna-de-valor-incalculable-en-las-sierras-de-cordoba/" target="_blank"><code>https://eldoce.tv/tendencias/2024/08/22/piedra-del-molino-una-cascada-oculta-dentro-de-una-caverna-de-valor-incalculable-en-las-sierras-de-cordoba/</code></a></p>
+            <p><strong>URL Comparada (V2):</strong> <a href="https://eldoce.tv/tendencias/2024/08/22/piedra-del-molino-una-cascada-oculta-dentro-de-una-caverna-de-valor-incalculable-en-las-sierras-de-cordoba/?d=723" target="_blank"><code>https://eldoce.tv/tendencias/2024/08/22/piedra-del-molino-una-cascada-oculta-dentro-de-una-caverna-de-valor-incalculable-en-las-sierras-de-cordoba/?d=723</code></a></p>
+            <p><strong>Resultado:</strong> <span style="font-weight:bold; color:green;">✅ No se encontraron diferencias.</span></p>
+            <p><strong>Tiempo de Ejecución:</strong> 0:00:25</p>
+            <details>
+                <summary style="cursor:pointer; font-weight:bold; color:#1e3a8a;">Detalle de diferencias</summary>
+                <div id="diff-list-longform_c_fondo" style="margin-top:10px; background:#fff; padding:10px; border:1px solid #eee;">
+                    <ul><li>✅ No se encontraron diferencias.</li></ul>
+                </div>
+            </details>
+            <details>
+                <summary style="cursor:pointer; font-weight:bold; color:#1e3a8a;">Contexto Visual</summary>
+                <div class='container' id='container-longform_c_fondo'>
+                    <div><h4>Versión Base (V1)</h4><img src='longform_c_fondo_V723_base_20260929_205103.png' alt='V1'></div>
+                    <div id="image-container-longform_c_fondo" style="position:relative;">
+                        <h4>Versión Nueva (V2)</h4><img id='screenshot-longform_c_fondo' src='longform_c_fondo_V723_diff_20260929_205103.png' alt='V2'>
+                        <div id="highlight-box-longform_c_fondo" class="highlight-box" style="display:none;"></div>
+                    </div>
+                </div>
+            </details>
+        </div>
+        
+        <div style="border: 2px solid #ddd; padding: 15px; margin-top: 20px; border-radius: 8px;">
+            <h2>Longform s/fondo</h2>
+            <p><strong>URL Base (V1):</strong> <a href="https://eldoce.tv/actualidad/2024/09/11/melisa-la-maestra-que-viaja-80-kilometros-para-dar-clases-a-cinco-alumnos-de-agua-hedionda/" target="_blank"><code>https://eldoce.tv/actualidad/2024/09/11/melisa-la-maestra-que-viaja-80-kilometros-para-dar-clases-a-cinco-alumnos-de-agua-hedionda/</code></a></p>
+            <p><strong>URL Comparada (V2):</strong> <a href="https://eldoce.tv/actualidad/2024/09/11/melisa-la-maestra-que-viaja-80-kilometros-para-dar-clases-a-cinco-alumnos-de-agua-hedionda/?d=723" target="_blank"><code>https://eldoce.tv/actualidad/2024/09/11/melisa-la-maestra-que-viaja-80-kilometros-para-dar-clases-a-cinco-alumnos-de-agua-hedionda/?d=723</code></a></p>
+            <p><strong>Resultado:</strong> <span style="font-weight:bold; color:green;">✅ No se encontraron diferencias.</span></p>
+            <p><strong>Tiempo de Ejecución:</strong> 0:00:26</p>
+            <details>
+                <summary style="cursor:pointer; font-weight:bold; color:#1e3a8a;">Detalle de diferencias</summary>
+                <div id="diff-list-longform_s_fondo" style="margin-top:10px; background:#fff; padding:10px; border:1px solid #eee;">
+                    <ul><li>✅ No se encontraron diferencias.</li></ul>
+                </div>
+            </details>
+            <details>
+                <summary style="cursor:pointer; font-weight:bold; color:#1e3a8a;">Contexto Visual</summary>
+                <div class='container' id='container-longform_s_fondo'>
+                    <div><h4>Versión Base (V1)</h4><img src='longform_s_fondo_V723_base_20260929_205103.png' alt='V1'></div>
+                    <div id="image-container-longform_s_fondo" style="position:relative;">
+                        <h4>Versión Nueva (V2)</h4><img id='screenshot-longform_s_fondo' src='longform_s_fondo_V723_diff_20260929_205103.png' alt='V2'>
+                        <div id="highlight-box-longform_s_fondo" class="highlight-box" style="display:none;"></div>
+                    </div>
+                </div>
+            </details>
+        </div>
+        
+        <div style="border: 2px solid #ddd; padding: 15px; margin-top: 20px; border-radius: 8px;">
+            <h2>Liveblogging</h2>
+            <p><strong>URL Base (V1):</strong> <a href="https://eldoce.tv/actualidad/2024/07/15/busqueda-de-loan-en-vivo-se-conocio-una-foto-inedita-del-almuerzo-previo-a-la-desaparicion/" target="_blank"><code>https://eldoce.tv/actualidad/2024/07/15/busqueda-de-loan-en-vivo-se-conocio-una-foto-inedita-del-almuerzo-previo-a-la-desaparicion/</code></a></p>
+            <p><strong>URL Comparada (V2):</strong> <a href="https://eldoce.tv/actualidad/2024/07/15/busqueda-de-loan-en-vivo-se-conocio-una-foto-inedita-del-almuerzo-previo-a-la-desaparicion/?d=723" target="_blank"><code>https://eldoce.tv/actualidad/2024/07/15/busqueda-de-loan-en-vivo-se-conocio-una-foto-inedita-del-almuerzo-previo-a-la-desaparicion/?d=723</code></a></p>
+            <p><strong>Resultado:</strong> <span style="font-weight:bold; color:green;">✅ No se encontraron diferencias.</span></p>
+            <p><strong>Tiempo de Ejecución:</strong> 0:00:25</p>
+            <details>
+                <summary style="cursor:pointer; font-weight:bold; color:#1e3a8a;">Detalle de diferencias</summary>
+                <div id="diff-list-liveblogging" style="margin-top:10px; background:#fff; padding:10px; border:1px solid #eee;">
+                    <ul><li>✅ No se encontraron diferencias.</li></ul>
+                </div>
+            </details>
+            <details>
+                <summary style="cursor:pointer; font-weight:bold; color:#1e3a8a;">Contexto Visual</summary>
+                <div class='container' id='container-liveblogging'>
+                    <div><h4>Versión Base (V1)</h4><img src='liveblogging_V723_base_20260929_205103.png' alt='V1'></div>
+                    <div id="image-container-liveblogging" style="position:relative;">
+                        <h4>Versión Nueva (V2)</h4><img id='screenshot-liveblogging' src='liveblogging_V723_diff_20260929_205103.png' alt='V2'>
+                        <div id="highlight-box-liveblogging" class="highlight-box" style="display:none;"></div>
+                    </div>
+                </div>
+            </details>
+        </div>
+        
+        <div style="border: 2px solid #ddd; padding: 15px; margin-top: 20px; border-radius: 8px;">
+            <h2>Galería</h2>
+            <p><strong>URL Base (V1):</strong> <a href="https://eldoce.tv/fotos/show/2025/12/14/furor-por-shakira-en-su-primer-show-en-el-kempes/" target="_blank"><code>https://eldoce.tv/fotos/show/2025/12/14/furor-por-shakira-en-su-primer-show-en-el-kempes/</code></a></p>
+            <p><strong>URL Comparada (V2):</strong> <a href="https://eldoce.tv/fotos/show/2025/12/14/furor-por-shakira-en-su-primer-show-en-el-kempes/?d=723" target="_blank"><code>https://eldoce.tv/fotos/show/2025/12/14/furor-por-shakira-en-su-primer-show-en-el-kempes/?d=723</code></a></p>
+            <p><strong>Resultado:</strong> <span style="font-weight:bold; color:green;">✅ No se encontraron diferencias.</span></p>
+            <p><strong>Tiempo de Ejecución:</strong> 0:00:24</p>
+            <details>
+                <summary style="cursor:pointer; font-weight:bold; color:#1e3a8a;">Detalle de diferencias</summary>
+                <div id="diff-list-galer_a" style="margin-top:10px; background:#fff; padding:10px; border:1px solid #eee;">
+                    <ul><li>✅ No se encontraron diferencias.</li></ul>
+                </div>
+            </details>
+            <details>
+                <summary style="cursor:pointer; font-weight:bold; color:#1e3a8a;">Contexto Visual</summary>
+                <div class='container' id='container-galer_a'>
+                    <div><h4>Versión Base (V1)</h4><img src='galer_a_V723_base_20260929_205103.png' alt='V1'></div>
+                    <div id="image-container-galer_a" style="position:relative;">
+                        <h4>Versión Nueva (V2)</h4><img id='screenshot-galer_a' src='galer_a_V723_diff_20260929_205103.png' alt='V2'>
+                        <div id="highlight-box-galer_a" class="highlight-box" style="display:none;"></div>
+                    </div>
+                </div>
+            </details>
+        </div>
+        
+    <div id="offscreen-toast" style="display:none; position:fixed; bottom:20px; left:50%; transform:translateX(-50%);
+        background:#1e293b; color:#fff; padding:10px 18px; border-radius:6px; font-size:0.85em; z-index:2000;
+        box-shadow:0 4px 12px rgba(0,0,0,0.3); max-width:600px; text-align:center;"></div>
+    <script>
+    let lastHighlightedItem = null;
+    let offscreenToastTimer = null;
+    function showOffscreenToast(msg) {
+        const toast = document.getElementById('offscreen-toast');
+        if (!toast) return;
+        toast.textContent = msg;
+        toast.style.display = 'block';
+        if (offscreenToastTimer) clearTimeout(offscreenToastTimer);
+        offscreenToastTimer = setTimeout(() => { toast.style.display = 'none'; }, 4000);
+    }
+    function highlightElement(urlId, coordsStr, clickedItem) {
+        if (lastHighlightedItem) lastHighlightedItem.style.backgroundColor = 'transparent';
+        clickedItem.style.backgroundColor = '#fffacd';
+        lastHighlightedItem = clickedItem;
+        const screenshot = document.getElementById(`screenshot-${urlId}`);
+        const highlightBox = document.getElementById(`highlight-box-${urlId}`);
+        if (!screenshot || !highlightBox) return;
+        const doHighlight = () => {
+            // Guard contra clientWidth/naturalWidth en 0 (imagen todavía no
+            // terminó de cargar/decodificar cuando se hizo click): sin esto
+            // scaleFactor da NaN, las coordenadas del recuadro y del scroll
+            // también dan NaN, y window.scrollTo({top: NaN}) hace que el
+            // navegador interprete NaN como 0 y salte al principio de la
+            // página en vez de a la falla clickeada. Bug real reportado por
+            // el usuario (El Doce desktop v721): click en una falla grave
+            // scrolleaba siempre hacia arriba.
+            if (!screenshot.naturalWidth || !screenshot.clientWidth) return;
+            const [origX, origY, origW, origH] = coordsStr.split(',').map(Number);
+            // Elementos posicionados fuera de pantalla por el propio sitio
+            // (patrón común para ocultar visualmente contenido, ej. un panel
+            // de búsqueda o un menú colapsado: left:-9999px o similar) no
+            // tienen ninguna posición real dentro de la captura. Sin este
+            // guard, el scroll se calculaba igual con esas coordenadas
+            // negativas/absurdas y terminaba en un punto arbitrario de la
+            // imagen (ni arriba de todo ni cerca de nada relevante) —
+            // confuso para quien hace click esperando ver la falla resaltada.
+            // Bug real reportado por el usuario sobre El Doce desktop v721
+            // (Deportes / Estadísticas deportes), con el fix anterior (NaN
+            // → scroll a 0) ya desplegado: el click seguía sin llevar a un
+            // lugar útil, solo que ahora a un punto random en vez de arriba.
+            const fueraDePantalla = origX < 0 || origY < 0 ||
+                origX > screenshot.naturalWidth || origY > screenshot.naturalHeight;
+            if (fueraDePantalla) {
+                highlightBox.style.display = 'none';
+                screenshot.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                showOffscreenToast('⚠️ Este elemento está posicionado fuera de la pantalla visible por el propio sitio (oculto por CSS) — no aparece en la captura, por eso no se puede resaltar.');
+                return;
+            }
+            const scaleFactor = screenshot.clientWidth / screenshot.naturalWidth;
+            highlightBox.style.display = 'block';
+            highlightBox.style.left = (origX * scaleFactor + (origW * scaleFactor / 2)) + "px";
+            highlightBox.style.top = (origY * scaleFactor - 35) + "px";
+            const rect = screenshot.getBoundingClientRect();
+            window.scrollTo({ top: window.pageYOffset + rect.top + (origY * scaleFactor) - 200, behavior: 'smooth' });
+        };
+        if (screenshot.complete) {
+            doHighlight();
+        } else {
+            screenshot.addEventListener('load', doHighlight, { once: true });
+        }
+    }
+    </script>
+    </body></html>
+    
