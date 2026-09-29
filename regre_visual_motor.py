@@ -493,7 +493,27 @@ def ejecutar_selenium_para_estructura(url, modo, config):
 
     options = webdriver.ChromeOptions()
     if config['bloquear_imagenes']:
-        options.add_experimental_option("prefs", {"profile.managed_default_content_settings.images": 1})
+        # FIX #37 — el valor de Chrome para BLOQUEAR imágenes es 2, no 1 (1 es
+        # "allow", el default; o sea que este flag nunca bloqueó nada desde que
+        # existe). Evidencia real (usuario, TN/El Trece/El Doce/Ciudad mobile,
+        # 29/09): con el fix #36 (loop de estabilización de alto) ya
+        # desplegado, el footer seguía cortado en TODAS las evidencias mobile
+        # de los 4 productos por igual -- eso apunta a una causa compartida
+        # por el motor, no a un timing puntual de un sitio. Con
+        # bloquear_imagenes=True quedando en "allow" por este typo, en mobile
+        # cargan TODAS las imágenes reales (fotos, iconos de redes, badges de
+        # app store) en vez de bloquearse como estaba pensado desde el
+        # script viejo (ver comentario de DOMINIOS_BLOQUEADOS/config_modos):
+        # esas imágenes siguen bajando y corriendo el layout durante segundos
+        # después de que el loop del fix #36 ya dio por estable el alto del
+        # documento (4 intentos x 1s no alcanzan para cubrir imágenes lentas
+        # de red), lo que corre el footer real más abajo de donde se tomó el
+        # screenshot. Corrigiendo el valor a 2 se recupera el comportamiento
+        # que el flag siempre debió tener: sin imágenes, el layout mobile se
+        # asienta con el contenido de texto/DOM únicamente, mucho más rápido
+        # y estable. El fix #36 se deja como red de seguridad adicional, no
+        # se revierte.
+        options.add_experimental_option("prefs", {"profile.managed_default_content_settings.images": 2})
 
     # 'eager' = driver.get() vuelve apenas el DOM está listo (DOMContentLoaded),
     # sin esperar a que TERMINEN de cargar ads/trackers/iframes de terceros.
