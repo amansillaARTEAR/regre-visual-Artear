@@ -1632,12 +1632,21 @@ async function loadReporteAppNativa(){
   const wrap = document.getElementById("anReporteWrap");
   wrap.innerHTML = `<div class="empty"><span class="spinner"></span> Buscando…</div>`;
   try{
-    const b = await ghJson(`/repos/${WEBMOBILE_OWNER}/${WEBMOBILE_REPO}/branches/${APPNATIVA_REPORT_BRANCH}`);
+    // OJO: comprobar que la RAMA existe no alcanza -- la rama sigue existiendo después de
+    // borrar (a mano, o el workflow) el reporte.html que tenía adentro, y antes esta función
+    // mostraba igual la tarjeta con la fecha del último commit de la rama (aunque fuera un
+    // commit que solo borraba archivos). Hay que listar el contenido de la carpeta del reporte
+    // y confirmar que reporte.html esté ahí.
+    const listing = await ghJson(`/repos/${WEBMOBILE_OWNER}/${WEBMOBILE_REPO}/contents/${APPNATIVA_REPORT_PATH}?ref=${APPNATIVA_REPORT_BRANCH}`);
+    const htmlFile = Array.isArray(listing) ? listing.find(f => f.name.endsWith(".html")) : null;
+    if(!htmlFile) throw new Error("no hay reporte.html publicado");
+    const commits = await ghJson(`/repos/${WEBMOBILE_OWNER}/${WEBMOBILE_REPO}/commits?sha=${APPNATIVA_REPORT_BRANCH}&path=${encodeURIComponent(htmlFile.path)}&per_page=1`);
+    const fecha = commits[0]?.commit?.author?.date;
     wrap.innerHTML = `
       <div class="report-item">
         <div class="info">
           <div class="name">Suite Android — smoke</div>
-          <div class="date">${fmtDate(b.commit.commit.author.date)}</div>
+          <div class="date">${fecha ? fmtDate(fecha) : ""}</div>
         </div>
         <button class="secondary" onclick="verReporteAppNativa()">Ver</button>
       </div>`;
