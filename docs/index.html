@@ -1614,6 +1614,19 @@ async function loadRunsAppNativa(){
 const APPNATIVA_REPORT_BRANCH = "reportes-appnativa-android";
 const APPNATIVA_REPORT_PATH = "reportes/appnativa/android";
 
+// Los reportes de pytest-html usan history.pushState() para reflejar filtros/orden en la URL
+// (ej: al cambiar el sort inicial a "result"). Eso funciona cuando el reporte se abre como una
+// página real, pero acá se inyecta en el iframe vía srcdoc, cuya URL es "about:srcdoc" -- y el
+// navegador rechaza un pushState que no coincide con el origen/URL del documento actual
+// ("Failed to execute 'pushState' on 'History'..."). Esa excepción corta el script de pytest-html
+// a mitad de camino, así que el resumen (Passed/Failed) se ve bien pero la tabla de resultados
+// queda vacía. Se neutraliza pushState antes de que corra ese script -- no afecta nada más del
+// reporte, pytest-html solo lo usa para eso.
+function parcharPushStateEnIframe(html){
+  const parche = "<script>window.history.pushState=function(){};<\/script>";
+  return html.includes("<head>") ? html.replace("<head>", "<head>" + parche) : parche + html;
+}
+
 async function loadReporteAppNativa(){
   if(!TOKEN) return;
   const wrap = document.getElementById("anReporteWrap");
@@ -1653,7 +1666,7 @@ async function verReporteAppNativa(){
         html = html.split(`evidencias/${f.name}`).join(url);
       }));
     }
-    frame.srcdoc = html;
+    frame.srcdoc = parcharPushStateEnIframe(html);
   } catch(e){
     frame.srcdoc = `<body style="font-family:sans-serif;padding:40px;color:#c00">Error cargando el reporte: ${e.message}</body>`;
   }
@@ -1711,7 +1724,7 @@ async function verReporte(producto, modo){
       const url = URL.createObjectURL(blob);
       html = html.split(f.name).join(url);
     }));
-    frame.srcdoc = html;
+    frame.srcdoc = parcharPushStateEnIframe(html);
   } catch(e){
     frame.srcdoc = `<body style="font-family:sans-serif;padding:40px;color:#c00">Error cargando el reporte: ${e.message}</body>`;
   }
