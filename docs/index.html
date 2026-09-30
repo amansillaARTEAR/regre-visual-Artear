@@ -482,6 +482,64 @@
       <div class="view" id="view-appnativa">
 
         <div class="card">
+          <h2><span><span class="paso-badge">Paso 1</span>Importar ticket de Jira</span></h2>
+          <p class="muted" style="margin-top:0">
+            Subí el <b>.xml</b> del ticket exportado desde Jira, o pegá el texto (resumen + criterios de aceptación) a mano.
+          </p>
+          <div class="row">
+            <div>
+              <label>Archivo XML del ticket</label>
+              <input type="file" id="anJiraTicketArchivo" accept=".xml,text/xml" onchange="onJiraArchivoSeleccionadoAppNativa(event)">
+              <div class="hint" id="anJiraArchivoNombre" style="margin-top:6px"></div>
+            </div>
+            <div>
+              <label>o pegá el texto manualmente</label>
+              <textarea id="anJiraTicketTexto" rows="2" placeholder="Resumen + criterios de aceptación..."
+                style="width:100%;padding:9px 10px;background:var(--panel2);border:1px solid var(--border);border-radius:7px;color:var(--text);font-size:13.5px;font-family:inherit;resize:vertical"></textarea>
+            </div>
+          </div>
+          <label>Componente / elemento que toca el ticket
+            <span class="muted">(agrupa los casos en la lista de abajo — ej: Navbar, Player)</span>
+          </label>
+          <input type="text" id="anJiraComponente" list="anComponentesConocidos" placeholder="ej: Navbar">
+          <datalist id="anComponentesConocidos"></datalist>
+        </div>
+
+        <div class="card">
+          <h2><span><span class="paso-badge">Paso 2</span>Generar casos de prueba</span></h2>
+          <p class="muted" style="margin-top:0">
+            Claude analiza el ticket aplicando diseño de casos de QA: deriva el escenario <b>positivo</b> (camino feliz) y,
+            cuando el ticket da pie a ello, un escenario <b>negativo</b> y uno de <b>borde</b> — documentados en formato
+            Given-When-Then. Genera el código automatizado para cada uno y abre un <b>Pull Request</b> para que los
+            revises antes de sumarlos — no se activa solo.
+          </p>
+          <div class="actions">
+            <button onclick="generarCasoDesdeJiraAppNativa()" id="btnAnGenerarCaso">Generar casos de prueba</button>
+          </div>
+          <div class="hint">No hace falta tu PC prendida. El link al PR aparece en "Corridas recientes" → "ver en GitHub". Una vez que mergeás el PR, los casos nuevos aparecen solos en "Casos de prueba" abajo.</div>
+
+          <div class="divider"></div>
+
+          <h2>
+            Casos de prueba
+            <span>
+              <button class="ghost" onclick="cargarCasosAppNativa()">↻ Actualizar lista</button>
+              <button class="ghost" onclick="clearCasosSeleccionadosAppNativa()">Limpiar selección</button>
+            </span>
+          </h2>
+          <p class="muted" style="margin-top:0">
+            Agrupados por componente. Tildá los casos a correr (ninguno = suite completa) — podés tildar un componente
+            entero. El lápiz abre el código en github.dev en esa línea.
+          </p>
+          <div class="scroll-y">
+            <table>
+              <thead><tr><th style="width:36px"></th><th>Caso</th><th>Qué valida</th><th style="width:90px"></th></tr></thead>
+              <tbody id="anCasosTableBody"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="card">
           <h2>Disparar corridas</h2>
           <div class="grid" style="margin-bottom:0">
 
@@ -489,10 +547,6 @@
               <h3>Android</h3>
               <p class="muted" style="margin-top:0">Contra el celular USB de la PC del runner.</p>
               <div class="row">
-                <div>
-                  <label>Filtro <span class="muted">(opcional, expresión -k de pytest — ej: test_01 or test_03)</span></label>
-                  <input type="text" id="anFiltro" placeholder="vacío = suite completa">
-                </div>
                 <div>
                   <label>APK <span class="muted">(opcional, nombre del archivo dentro de la carpeta de APKs)</span></label>
                   <input type="text" id="anApk" placeholder="vacío = el más reciente">
@@ -502,7 +556,7 @@
                 <button onclick="dispatchAppNativa()" id="btnAnDispatch">Disparar corrida</button>
                 <button class="secondary" onclick="abrirCarpetaApks()">📁 Abrir carpeta de APKs</button>
               </div>
-              <div class="hint">Requiere runner prendido + Android por USB + el APK ya copiado en la carpeta de APKs de esa PC.</div>
+              <div class="hint">Usa los casos tildados arriba (ninguno = suite completa). Requiere runner prendido + Android por USB + el APK ya copiado en la carpeta de APKs de esa PC.</div>
               <div class="hint" style="font-family:monospace;user-select:all">D:\Artear\Mobile\actions-runner\_work\Mobile-Artear\Mobile-Artear\appium-native-app-qa\apks</div>
             </div>
 
@@ -565,11 +619,19 @@ const WEBMOBILE_WORKFLOW = "webmobile.yml";
 const WEBMOBILE_IOS_WORKFLOW = "webmobile-ios.yml";
 const WEBMOBILE_GENERAR_WORKFLOW = "generar-caso-desde-jira.yml";
 const APPNATIVA_WORKFLOW = "app-nativa.yml";
+const APPNATIVA_GENERAR_WORKFLOW = "generar-caso-desde-jira-app.yml";
 // Carpeta que realmente lee el workflow (checkout del runner), no el clon manual.
 const APPNATIVA_APKS_PATH = "D:\\Artear\\Mobile\\actions-runner\\_work\\Mobile-Artear\\Mobile-Artear\\appium-native-app-qa\\apks";
 
 const WEBMOBILE_TEST_FILE = "appium-mobile-web-qa/tests/test_tnarc4366.py";
 const WEBMOBILE_GENERADOS_DIR = "appium-mobile-web-qa/tests/generados";
+// A diferencia de WebMobile (un solo archivo de suite oficial), acá hay varios -- cada uno
+// con su propio nombre de grupo por defecto para los casos que no traen "# Componente:".
+const APPNATIVA_TEST_FILES = [
+  { path: "appium-native-app-qa/tests/test_smoke.py", componente: "Smoke" },
+  { path: "appium-native-app-qa/tests/test_amr2083.py", componente: "AMR-2083 · Navbar" }
+];
+const APPNATIVA_GENERADOS_DIR = "appium-native-app-qa/tests/generados";
 // Se completa leyendo el código real del repo (ver cargarCasosWebmobile) — no se edita a mano.
 let WEBMOBILE_CASOS = [];
 
@@ -609,7 +671,7 @@ function showView(view){
   document.getElementById("viewSub").textContent = VIEW_META[view].sub;
   localStorage.setItem("qa_tools_view", view);
   if(view === "webmobile" && TOKEN){ loadRunsWebmobile(); loadRunnerStatusWebmobile(); cargarCasosWebmobile(); }
-  else if(view === "appnativa" && TOKEN){ loadRunsAppNativa(); loadRunnerStatusWebmobile(); loadReporteAppNativa(); }
+  else if(view === "appnativa" && TOKEN){ loadRunsAppNativa(); loadRunnerStatusWebmobile(); loadReporteAppNativa(); cargarCasosAppNativa(); }
   else { document.getElementById("wmRunnerBadge").style.display = "none"; }
 }
 
@@ -882,20 +944,22 @@ async function loadRuns(){
 // Los casos NO están hardcodeados: se leen del código real en GitHub cada vez que se entra a
 // esta vista, así que un caso nuevo aparece solo apenas su Pull Request se mergea a main
 // (no apenas se genera — hasta que no se mergea, el código todavía no existe en la rama principal).
-function parseCasosDeArchivo(texto, ruta){
+function parseCasosDeArchivo(texto, ruta, componenteDefault){
   const lineas = texto.split("\n");
   const casos = [];
   // El generador escribe "# Componente: X" al principio del archivo (ver generar_caso.py).
   // Un archivo = un ticket = un componente. Si no está (ej. la suite oficial, escrita a
   // mano antes de que existiera este tag), va todo a un grupo genérico.
   const mComponente = texto.slice(0, 400).match(/^#\s*Componente:\s*(.+)$/mi);
-  const componente = mComponente ? mComponente[1].trim() : "Videos Verticales";
+  const componente = mComponente ? mComponente[1].trim() : (componenteDefault || "General");
   // El generador también escribe "# Ticket: X" cuando pudo identificar el ticket de Jira de
   // origen (ver extraer_ticket_key en generar_caso.py) -- sirve para identificar de qué ticket
   // salió cada caso generado. La suite oficial no lo tiene, y queda vacío ("Sin ticket").
   const mTicket = texto.slice(0, 400).match(/^#\s*Ticket:\s*(.+)$/mi);
   const ticket = mTicket ? mTicket[1].trim() : "";
-  const reDef = /^\s*def (test_\w+)\(player\s*,\s*registro\)\s*:/;
+  // Nombre de fixture genérico (player en WebMobile, app en App Nativa) -- no importa cuál,
+  // solo que la firma sea (fixture, registro).
+  const reDef = /^\s*def (test_\w+)\(\w+\s*,\s*registro\)\s*:/;
   for(let i = 0; i < lineas.length; i++){
     const m = lineas[i].match(reDef);
     if(!m) continue;
@@ -946,7 +1010,7 @@ async function cargarCasosWebmobile(){
     ));
     // Orden natural: los de la suite oficial en el orden en que aparecen en el archivo,
     // y los generados (si los hay) al final.
-    WEBMOBILE_CASOS = archivos.flatMap((texto, i) => parseCasosDeArchivo(texto, rutas[i]));
+    WEBMOBILE_CASOS = archivos.flatMap((texto, i) => parseCasosDeArchivo(texto, rutas[i], "Videos Verticales"));
     const idsVigentes = new Set(WEBMOBILE_CASOS.map(c => c.id));
     [...casosSeleccionados].forEach(id => { if(!idsVigentes.has(id)) casosSeleccionados.delete(id); });
     renderCasosTable();
@@ -1315,9 +1379,185 @@ async function abrirCarpetaApks(){
   window.open(fileUrl, "_blank");
 }
 
+// ---------- App Nativa: casos de prueba (mismo mecanismo que WebMobile) ----------
+let APPNATIVA_CASOS = [];
+let casosSeleccionadosAn = new Set();
+let gruposColapsadosAn = {};
+try { gruposColapsadosAn = JSON.parse(localStorage.getItem("an_grupos_colapsados") || "{}"); } catch(e){ gruposColapsadosAn = {}; }
+
+async function cargarCasosAppNativa(){
+  const body = document.getElementById("anCasosTableBody");
+  if(!TOKEN){ body.innerHTML = `<tr><td colspan="4" class="empty">Configurá el token para ver los casos.</td></tr>`; return; }
+  body.innerHTML = `<tr><td colspan="4" class="empty"><span class="spinner"></span> Leyendo casos del repo…</td></tr>`;
+  try{
+    const oficiales = APPNATIVA_TEST_FILES.map(f => f.path);
+    const generados = [];
+    // La carpeta de generados no siempre existe (recién se crea cuando se mergea el primer PR).
+    try{
+      const listado = await ghJson(`/repos/${WEBMOBILE_OWNER}/${WEBMOBILE_REPO}/contents/${APPNATIVA_GENERADOS_DIR}`);
+      listado.filter(f => f.type === "file" && f.name.endsWith(".py")).forEach(f => generados.push(`${APPNATIVA_GENERADOS_DIR}/${f.name}`));
+    } catch(e) { /* todavía no hay casos generados mergeados — no es un error */ }
+    const rutas = [...oficiales, ...generados];
+
+    const archivos = await Promise.all(rutas.map(r =>
+      gh(`/repos/${WEBMOBILE_OWNER}/${WEBMOBILE_REPO}/contents/${r}`, {headers:{"Accept":"application/vnd.github.raw"}}).then(r2 => r2.text())
+    ));
+    APPNATIVA_CASOS = archivos.flatMap((texto, i) => {
+      const oficial = APPNATIVA_TEST_FILES.find(f => f.path === rutas[i]);
+      return parseCasosDeArchivo(texto, rutas[i], oficial ? oficial.componente : null);
+    });
+    const idsVigentes = new Set(APPNATIVA_CASOS.map(c => c.id));
+    [...casosSeleccionadosAn].forEach(id => { if(!idsVigentes.has(id)) casosSeleccionadosAn.delete(id); });
+    renderCasosTableAppNativa();
+    poblarComponentesConocidosAppNativa();
+  } catch(e){
+    body.innerHTML = `<tr><td colspan="4" class="empty">Error leyendo los casos: ${e.message}</td></tr>`;
+  }
+}
+
+function poblarComponentesConocidosAppNativa(){
+  const datalist = document.getElementById("anComponentesConocidos");
+  if(!datalist) return;
+  const nombres = [...new Set(APPNATIVA_CASOS.map(c => c.componente))].sort();
+  datalist.innerHTML = nombres.map(n => `<option value="${n.replace(/"/g,'&quot;')}">`).join("");
+}
+
+function renderCasosTableAppNativa(){
+  const body = document.getElementById("anCasosTableBody");
+  if(!APPNATIVA_CASOS.length){
+    body.innerHTML = `<tr><td colspan="4" class="empty">No se encontraron casos.</td></tr>`;
+    return;
+  }
+  const grupos = new Map();
+  APPNATIVA_CASOS.forEach(c => {
+    if(!grupos.has(c.componente)) grupos.set(c.componente, []);
+    grupos.get(c.componente).push(c);
+  });
+  const nombresGrupo = [...grupos.keys()].sort((a, b) =>
+    a === "Smoke" ? -1 : b === "Smoke" ? 1 : a.localeCompare(b));
+
+  body.innerHTML = nombresGrupo.map(nombreGrupo => {
+    const casos = grupos.get(nombreGrupo);
+    const idsGrupo = casos.map(c => c.id).join(",");
+    const colapsado = !!gruposColapsadosAn[nombreGrupo];
+    const grupoCompleto = casos.every(c => casosSeleccionadosAn.has(c.id));
+    const nombreJs = nombreGrupo.replace(/\\/g, "\\\\").replace(/'/g, "\\'");
+    const filaGrupo = `
+      <tr class="caso-grupo">
+        <td><input type="checkbox" ${grupoCompleto ? "checked" : ""} onclick="event.stopPropagation()"
+              onchange="tildarGrupoAppNativa('${idsGrupo}', this.checked)" title="Tildar todo ${nombreGrupo}"></td>
+        <td colspan="3" onclick="toggleGrupoAppNativa('${nombreJs}')" style="cursor:pointer">
+          <span class="caso-grupo-chevron">${colapsado ? "▸" : "▾"}</span>
+          <b>${nombreGrupo}</b> <span class="muted">(${casos.length})</span>
+        </td>
+      </tr>`;
+    if(colapsado) return filaGrupo;
+    const filasCasos = casos.slice().reverse().map(c => `
+      <tr>
+        <td><input type="checkbox" class="casoCheck" value="${c.id}" ${casosSeleccionadosAn.has(c.id) ? "checked" : ""}
+              onchange="toggleCasoSeleccionadoAppNativa('${c.id}', this.checked)"></td>
+        <td class="caso-nombre"><b>${c.nombre}</b>${c.ticket ? ` <span class="badge ticket">${c.ticket}</span>` : ""}</td>
+        <td class="muted">${c.desc}</td>
+        <td>
+          <a href="https://github.dev/${WEBMOBILE_OWNER}/${WEBMOBILE_REPO}/blob/main/${c.archivo}#L${c.linea}"
+             target="_blank" title="Editar código en github.dev">✎ Editar</a>
+        </td>
+      </tr>`).join("");
+    return filaGrupo + filasCasos;
+  }).join("");
+}
+
+function toggleGrupoAppNativa(nombreGrupo){
+  gruposColapsadosAn[nombreGrupo] = !gruposColapsadosAn[nombreGrupo];
+  try { localStorage.setItem("an_grupos_colapsados", JSON.stringify(gruposColapsadosAn)); } catch(e){}
+  renderCasosTableAppNativa();
+}
+function toggleCasoSeleccionadoAppNativa(id, checked){
+  if(checked) casosSeleccionadosAn.add(id); else casosSeleccionadosAn.delete(id);
+  renderCasosTableAppNativa();
+}
+function tildarGrupoAppNativa(idsCsv, checked){
+  idsCsv.split(",").forEach(id => {
+    if(checked) casosSeleccionadosAn.add(id); else casosSeleccionadosAn.delete(id);
+  });
+  renderCasosTableAppNativa();
+}
+function clearCasosSeleccionadosAppNativa(){
+  casosSeleccionadosAn.clear();
+  renderCasosTableAppNativa();
+}
+function selectedCasosFiltroAppNativa(){
+  return [...casosSeleccionadosAn].join(" or ");
+}
+
+let anJiraXmlContenido = "";
+
+function onJiraArchivoSeleccionadoAppNativa(ev){
+  const file = ev.target.files[0];
+  const nombreWrap = document.getElementById("anJiraArchivoNombre");
+  anJiraXmlContenido = "";
+  if(!file){ nombreWrap.textContent = ""; return; }
+  if(!file.name.toLowerCase().endsWith(".xml")){
+    toast("Ese archivo no es un .xml (" + file.name + "). Exportá el ticket como XML desde Jira.", "error");
+    nombreWrap.textContent = "";
+    ev.target.value = "";
+    return;
+  }
+  const reader = new FileReader();
+  reader.onload = () => {
+    const contenido = reader.result.replace(/^﻿/, "").trim();
+    if(!contenido.startsWith("<")){
+      const preview = contenido.slice(0, 80).replace(/[\r\n\t]+/g, " ") || "(archivo vacío)";
+      toast(`El archivo no parece XML — empieza con: "${preview}". Probá abrirlo con el Bloc de notas y guardarlo como UTF-8, o pegá el texto a mano.`, "error");
+      nombreWrap.textContent = "";
+      ev.target.value = "";
+      return;
+    }
+    const extraido = extraerTicketDeXml(contenido);
+    if(extraido){
+      anJiraXmlContenido = extraido;
+      nombreWrap.textContent = `✓ ${file.name} (${(file.size/1024).toFixed(1)} KB) → ticket extraído (${(extraido.length/1024).toFixed(1)} KB)`;
+    } else {
+      anJiraXmlContenido = contenido;
+      nombreWrap.textContent = `✓ ${file.name} cargado (${(file.size/1024).toFixed(1)} KB) — no reconocí el formato de Jira, se manda tal cual`;
+      if(contenido.length > 55000){
+        toast("No pude extraer el contenido puntual del XML y el archivo completo es grande — puede que GitHub lo rechace. Si falla, pegá el texto a mano.", "error");
+      }
+    }
+  };
+  reader.onerror = () => { toast("No se pudo leer el archivo", "error"); };
+  reader.readAsText(file);
+}
+
+async function generarCasoDesdeJiraAppNativa(){
+  if(!TOKEN){ toast("Configurá el token primero", "error"); return; }
+  const ticket = anJiraXmlContenido || document.getElementById("anJiraTicketTexto").value.trim();
+  if(!ticket){ toast("Subí el XML del ticket o pegá el texto primero", "error"); return; }
+  if(ticket.length > 60000){
+    toast("El contenido es muy grande (" + ticket.length + " caracteres) — GitHub Actions puede rechazarlo. Pegá solo el resumen y los criterios de aceptación a mano.", "error");
+    return;
+  }
+  const componente = document.getElementById("anJiraComponente").value.trim() || "Sin clasificar";
+
+  const btn = document.getElementById("btnAnGenerarCaso");
+  btn.disabled = true; btn.innerHTML = `<span class="spinner"></span> Generando…`;
+  try{
+    await gh(`/repos/${WEBMOBILE_OWNER}/${WEBMOBILE_REPO}/actions/workflows/${APPNATIVA_GENERAR_WORKFLOW}/dispatches`, {
+      method: "POST",
+      body: JSON.stringify({ ref: "main", inputs: { ticket, componente } })
+    });
+    toast("Generando caso de prueba — revisá 'Corridas recientes' en un momento", "ok");
+    setTimeout(loadRunsAppNativa, 3000);
+  } catch(e){
+    toast("Error al disparar: " + e.message, "error");
+  } finally {
+    btn.disabled = false; btn.textContent = "Generar casos de prueba";
+  }
+}
+
 async function dispatchAppNativa(){
   if(!TOKEN){ toast("Configurá el token primero", "error"); return; }
-  const filtro = document.getElementById("anFiltro").value.trim();
+  const filtro = selectedCasosFiltroAppNativa();
   const apk = document.getElementById("anApk").value.trim();
   const btn = document.getElementById("btnAnDispatch");
   btn.disabled = true; btn.innerHTML = `<span class="spinner"></span> Disparando…`;
