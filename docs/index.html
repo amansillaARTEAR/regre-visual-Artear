@@ -489,7 +489,7 @@
           </p>
           <div class="row">
             <div>
-              <label>Filtro <span class="muted">(opcional, expresión -k de pytest — ej: smk01 or smk03)</span></label>
+              <label>Filtro <span class="muted">(opcional, expresión -k de pytest — ej: test_01 or test_03)</span></label>
               <input type="text" id="anFiltro" placeholder="vacío = suite completa">
             </div>
             <div>
@@ -509,6 +509,17 @@
             <button class="ghost" onclick="loadRunsAppNativa()">↻ Actualizar</button>
           </h2>
           <div class="scroll-y runs-scroll" id="anRunsTableWrap"><div class="empty">Configurá el token para ver las corridas.</div></div>
+        </div>
+
+        <div class="card">
+          <h2>
+            Último reporte
+            <button class="ghost" onclick="loadReporteAppNativa()">↻ Actualizar</button>
+          </h2>
+          <p class="muted" style="margin-top:0">
+            Reporte HTML (con evidencias) de la corrida más reciente, publicado automáticamente al final de cada ejecución.
+          </p>
+          <div id="anReporteWrap"><div class="empty">Configurá el token para ver el reporte.</div></div>
         </div>
 
       </div>
@@ -582,7 +593,7 @@ function showView(view){
   document.getElementById("viewSub").textContent = VIEW_META[view].sub;
   localStorage.setItem("qa_tools_view", view);
   if(view === "webmobile" && TOKEN){ loadRunsWebmobile(); loadRunnerStatusWebmobile(); cargarCasosWebmobile(); }
-  else if(view === "appnativa" && TOKEN){ loadRunsAppNativa(); loadRunnerStatusWebmobile(); }
+  else if(view === "appnativa" && TOKEN){ loadRunsAppNativa(); loadRunnerStatusWebmobile(); loadReporteAppNativa(); }
   else { document.getElementById("wmRunnerBadge").style.display = "none"; }
 }
 
@@ -615,7 +626,11 @@ async function gh(path, opts={}){
 async function ghJson(path, opts){ return (await gh(path, opts)).json(); }
 
 async function ghRaw(path, ref, binary){
-  const res = await gh(`/repos/${OWNER}/${REPO}/contents/${path}${ref ? "?ref="+encodeURIComponent(ref) : ""}`, {
+  return ghRawRepo(OWNER, REPO, path, ref, binary);
+}
+
+async function ghRawRepo(owner, repo, path, ref, binary){
+  const res = await gh(`/repos/${owner}/${repo}/contents/${path}${ref ? "?ref="+encodeURIComponent(ref) : ""}`, {
     headers: {"Accept":"application/vnd.github.raw"}
   });
   return binary ? res.blob() : res.text();
@@ -1321,6 +1336,54 @@ async function loadRunsAppNativa(){
     }
   } catch(e){
     wrap.innerHTML = `<div class="empty">Error cargando corridas: ${e.message}</div>`;
+  }
+}
+
+const APPNATIVA_REPORT_BRANCH = "reportes-appnativa-android";
+const APPNATIVA_REPORT_PATH = "reportes/appnativa/android";
+
+async function loadReporteAppNativa(){
+  if(!TOKEN) return;
+  const wrap = document.getElementById("anReporteWrap");
+  wrap.innerHTML = `<div class="empty"><span class="spinner"></span> Buscando…</div>`;
+  try{
+    const b = await ghJson(`/repos/${WEBMOBILE_OWNER}/${WEBMOBILE_REPO}/branches/${APPNATIVA_REPORT_BRANCH}`);
+    wrap.innerHTML = `
+      <div class="report-item">
+        <div class="info">
+          <div class="name">Suite Android — smoke</div>
+          <div class="date">${fmtDate(b.commit.commit.author.date)}</div>
+        </div>
+        <button class="secondary" onclick="verReporteAppNativa()">Ver</button>
+      </div>`;
+  } catch(e){
+    wrap.innerHTML = `<div class="empty">Todavía no hay ningún reporte publicado (se publica al final de cada corrida).</div>`;
+  }
+}
+
+async function verReporteAppNativa(){
+  const modalBg = document.getElementById("modalBg");
+  const frame = document.getElementById("modalFrame");
+  document.getElementById("modalTitle").textContent = "App Nativa — Android";
+  frame.srcdoc = `<body style="font-family:sans-serif;padding:40px;color:#666">Cargando reporte…</body>`;
+  modalBg.classList.add("open");
+  try{
+    const listing = await ghJson(`/repos/${WEBMOBILE_OWNER}/${WEBMOBILE_REPO}/contents/${APPNATIVA_REPORT_PATH}?ref=${APPNATIVA_REPORT_BRANCH}`);
+    const htmlFile = listing.find(f => f.name.endsWith(".html"));
+    if(!htmlFile) throw new Error("no se encontró reporte.html en la rama");
+    let html = await ghRawRepo(WEBMOBILE_OWNER, WEBMOBILE_REPO, htmlFile.path, APPNATIVA_REPORT_BRANCH, false);
+    const evidDir = listing.find(f => f.name === "evidencias" && f.type === "dir");
+    if(evidDir){
+      const evidencias = await ghJson(`/repos/${WEBMOBILE_OWNER}/${WEBMOBILE_REPO}/contents/${evidDir.path}?ref=${APPNATIVA_REPORT_BRANCH}`);
+      await Promise.all(evidencias.map(async f => {
+        const blob = await ghRawRepo(WEBMOBILE_OWNER, WEBMOBILE_REPO, f.path, APPNATIVA_REPORT_BRANCH, true);
+        const url = URL.createObjectURL(blob);
+        html = html.split(`evidencias/${f.name}`).join(url);
+      }));
+    }
+    frame.srcdoc = html;
+  } catch(e){
+    frame.srcdoc = `<body style="font-family:sans-serif;padding:40px;color:#c00">Error cargando el reporte: ${e.message}</body>`;
   }
 }
 
