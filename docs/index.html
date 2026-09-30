@@ -482,25 +482,37 @@
       <div class="view" id="view-appnativa">
 
         <div class="card">
-          <h2>Disparar corrida</h2>
-          <p class="muted" style="margin-top:0">
-            Suite Appium sobre Android en dispositivo físico. El APK a probar tiene que estar copiado de antemano
-            en <code>apks\</code>, en la PC del runner (no viaja por git — <code>.gitignore</code> lo excluye).
-          </p>
-          <div class="row">
-            <div>
-              <label>Filtro <span class="muted">(opcional, expresión -k de pytest — ej: test_01 or test_03)</span></label>
-              <input type="text" id="anFiltro" placeholder="vacío = suite completa">
+          <h2>Disparar corridas</h2>
+          <div class="grid" style="margin-bottom:0">
+
+            <div style="flex:1 1 300px">
+              <h3>Android</h3>
+              <p class="muted" style="margin-top:0">Contra el celular USB de la PC del runner.</p>
+              <div class="row">
+                <div>
+                  <label>Filtro <span class="muted">(opcional, expresión -k de pytest — ej: test_01 or test_03)</span></label>
+                  <input type="text" id="anFiltro" placeholder="vacío = suite completa">
+                </div>
+                <div>
+                  <label>APK <span class="muted">(opcional, nombre del archivo dentro de la carpeta de APKs)</span></label>
+                  <input type="text" id="anApk" placeholder="vacío = el más reciente">
+                </div>
+              </div>
+              <div class="actions">
+                <button onclick="dispatchAppNativa()" id="btnAnDispatch">Disparar corrida</button>
+              </div>
+              <div class="hint">Requiere runner prendido + Android por USB + el APK ya copiado en la carpeta de APKs de esa PC.</div>
             </div>
-            <div>
-              <label>APK <span class="muted">(opcional, nombre del archivo dentro de apks\)</span></label>
-              <input type="text" id="anApk" placeholder="vacío = el más reciente en apks\">
+
+            <div style="flex:1 1 300px">
+              <h3>iOS (Device Farm)</h3>
+              <p class="muted" style="margin-top:0">
+                Instala el <code>.ipa</code> en un dispositivo remoto de Device Farm. Pendiente: falta el acceso a la cuenta de AWS.
+              </p>
+              <div class="hint">Todavía no disponible.</div>
             </div>
+
           </div>
-          <div class="actions">
-            <button onclick="dispatchAppNativa()" id="btnAnDispatch">Disparar corrida</button>
-          </div>
-          <div class="hint">Requiere runner prendido + Android por USB + el APK ya copiado en <code>apks\</code> de esa PC.</div>
         </div>
 
         <div class="card">
