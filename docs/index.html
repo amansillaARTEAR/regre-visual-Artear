@@ -557,7 +557,7 @@
                 <button class="secondary" onclick="abrirCarpetaApks()">📁 Abrir carpeta de APKs</button>
               </div>
               <div class="hint">Usa los casos tildados arriba (ninguno = suite completa). Requiere runner prendido + Android por USB + el APK ya copiado en la carpeta de APKs de esa PC.</div>
-              <div class="hint" style="font-family:monospace;user-select:all">D:\Artear\Mobile\actions-runner\_work\Mobile-Artear\Mobile-Artear\appium-native-app-qa\apks</div>
+              <div class="hint" style="font-family:monospace;user-select:all">D:\Artear\Mobile\appium-native-app-qa\apks</div>
             </div>
 
             <div style="flex:1 1 300px">
@@ -620,8 +620,11 @@ const WEBMOBILE_IOS_WORKFLOW = "webmobile-ios.yml";
 const WEBMOBILE_GENERAR_WORKFLOW = "generar-caso-desde-jira.yml";
 const APPNATIVA_WORKFLOW = "app-nativa.yml";
 const APPNATIVA_GENERAR_WORKFLOW = "generar-caso-desde-jira-app.yml";
-// Carpeta que realmente lee el workflow (checkout del runner), no el clon manual.
-const APPNATIVA_APKS_PATH = "D:\\Artear\\Mobile\\actions-runner\\_work\\Mobile-Artear\\Mobile-Artear\\appium-native-app-qa\\apks";
+// Carpeta fija que usa CARPETA_APKS en app-nativa.yml (y correr.ps1 para corridas manuales).
+// Ojo: NO es la carpeta apks\ del checkout del runner (actions-runner\_work\...) -- esa la
+// limpia actions/checkout en cada corrida (gitignored), así que un .apk copiado ahí desaparece
+// apenas se dispara el workflow.
+const APPNATIVA_APKS_PATH = "D:\\Artear\\Mobile\\appium-native-app-qa\\apks";
 
 const WEBMOBILE_TEST_FILE = "appium-mobile-web-qa/tests/test_tnarc4366.py";
 const WEBMOBILE_GENERADOS_DIR = "appium-mobile-web-qa/tests/generados";
