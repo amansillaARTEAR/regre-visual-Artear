@@ -223,7 +223,7 @@
       <span class="ic">📱</span> WebMobile
     </div>
     <div class="nav-item" data-view="appnativa" onclick="showView('appnativa')">
-      <span class="ic">🤖</span> App Nativa <span class="soon">Pronto</span>
+      <span class="ic">🤖</span> App Nativa
     </div>
 
     <div class="sidebar-footer">amansillaARTEAR/regre-visual-artear</div>
@@ -480,13 +480,37 @@
 
       <!-- ===================== VISTA: App Nativa ===================== -->
       <div class="view" id="view-appnativa">
-        <div class="soon-card">
-          <div class="ic">🤖</div>
-          <h3>App Nativa</h3>
-          <p>Suite de automatización con Appium + Python para apps nativas Android/iOS en dispositivo físico.
-            Se va a integrar acá una vez que el proyecto esté versionado en GitHub.</p>
-          <div class="tag">Próximamente</div>
+
+        <div class="card">
+          <h2>Disparar corrida</h2>
+          <p class="muted" style="margin-top:0">
+            Suite Appium sobre Android en dispositivo físico. El APK a probar tiene que estar copiado de antemano
+            en <code>apks\</code>, en la PC del runner (no viaja por git — <code>.gitignore</code> lo excluye).
+          </p>
+          <div class="row">
+            <div>
+              <label>Filtro <span class="muted">(opcional, expresión -k de pytest — ej: smk01 or smk03)</span></label>
+              <input type="text" id="anFiltro" placeholder="vacío = suite completa">
+            </div>
+            <div>
+              <label>APK <span class="muted">(opcional, nombre del archivo dentro de apks\)</span></label>
+              <input type="text" id="anApk" placeholder="vacío = el más reciente en apks\">
+            </div>
+          </div>
+          <div class="actions">
+            <button onclick="dispatchAppNativa()" id="btnAnDispatch">Disparar corrida</button>
+          </div>
+          <div class="hint">Requiere runner prendido + Android por USB + el APK ya copiado en <code>apks\</code> de esa PC.</div>
         </div>
+
+        <div class="card">
+          <h2>
+            Corridas recientes
+            <button class="ghost" onclick="loadRunsAppNativa()">↻ Actualizar</button>
+          </h2>
+          <div class="scroll-y runs-scroll" id="anRunsTableWrap"><div class="empty">Configurá el token para ver las corridas.</div></div>
+        </div>
+
       </div>
 
     </main>
@@ -515,6 +539,7 @@ const WEBMOBILE_REPO = "Mobile-Artear";
 const WEBMOBILE_WORKFLOW = "webmobile.yml";
 const WEBMOBILE_IOS_WORKFLOW = "webmobile-ios.yml";
 const WEBMOBILE_GENERAR_WORKFLOW = "generar-caso-desde-jira.yml";
+const APPNATIVA_WORKFLOW = "app-nativa.yml";
 
 const WEBMOBILE_TEST_FILE = "appium-mobile-web-qa/tests/test_tnarc4366.py";
 const WEBMOBILE_GENERADOS_DIR = "appium-mobile-web-qa/tests/generados";
@@ -540,12 +565,13 @@ const PRODUCTO_LABEL = {tn:"TN", eltrece:"El Trece", eldoce:"El Doce", ciudad:"C
 const VIEW_META = {
   regresion: {title:"Regresión Visual", sub:"Comparación pixel a pixel y estructural entre dos versiones de un sitio"},
   webmobile: {title:"WebMobile", sub:"Automatización Appium sobre Android en dispositivo físico"},
-  appnativa: {title:"App Nativa", sub:"Suite Appium para apps nativas Android/iOS — próximamente"},
+  appnativa: {title:"App Nativa", sub:"Automatización Appium sobre Android en dispositivo físico (app nativa)"},
 };
 
 let TOKEN = localStorage.getItem("gh_pat") || "";
 let runsPoll = null;
 let wmRunsPoll = null;
+let anRunsPoll = null;
 
 // ---------- Navegación ----------
 function showView(view){
@@ -556,6 +582,7 @@ function showView(view){
   document.getElementById("viewSub").textContent = VIEW_META[view].sub;
   localStorage.setItem("qa_tools_view", view);
   if(view === "webmobile" && TOKEN){ loadRunsWebmobile(); loadRunnerStatusWebmobile(); cargarCasosWebmobile(); }
+  else if(view === "appnativa" && TOKEN){ loadRunsAppNativa(); loadRunnerStatusWebmobile(); }
   else { document.getElementById("wmRunnerBadge").style.display = "none"; }
 }
 
@@ -1237,6 +1264,60 @@ async function loadRunsWebmobile(){
       wmRunsPoll = setInterval(loadRunsWebmobile, 20000);
     } else if(!anyRunning && wmRunsPoll){
       clearInterval(wmRunsPoll); wmRunsPoll = null;
+    }
+  } catch(e){
+    wrap.innerHTML = `<div class="empty">Error cargando corridas: ${e.message}</div>`;
+  }
+}
+
+// ---------- App Nativa ----------
+async function dispatchAppNativa(){
+  if(!TOKEN){ toast("Configurá el token primero", "error"); return; }
+  const filtro = document.getElementById("anFiltro").value.trim();
+  const apk = document.getElementById("anApk").value.trim();
+  const btn = document.getElementById("btnAnDispatch");
+  btn.disabled = true; btn.innerHTML = `<span class="spinner"></span> Disparando…`;
+  try{
+    await gh(`/repos/${WEBMOBILE_OWNER}/${WEBMOBILE_REPO}/actions/workflows/${APPNATIVA_WORKFLOW}/dispatches`, {
+      method: "POST",
+      body: JSON.stringify({ ref: "main", inputs: { filtro, apk } })
+    });
+    toast(filtro ? `Corrida disparada (filtro: ${filtro})` : "Corrida disparada (suite completa)", "ok");
+    setTimeout(loadRunsAppNativa, 2500);
+  } catch(e){
+    toast("Error al disparar: " + e.message, "error");
+  } finally {
+    btn.disabled = false; btn.textContent = "Disparar corrida";
+  }
+}
+
+async function loadRunsAppNativa(){
+  if(!TOKEN) return;
+  const wrap = document.getElementById("anRunsTableWrap");
+  try{
+    const data = await ghJson(`/repos/${WEBMOBILE_OWNER}/${WEBMOBILE_REPO}/actions/runs?per_page=20`);
+    const runs = data.workflow_runs.filter(r => r.path.endsWith(APPNATIVA_WORKFLOW));
+    if(!runs.length){ wrap.innerHTML = `<div class="empty">Todavía no hay corridas.</div>`; return; }
+    wrap.innerHTML = `
+      <table>
+        <thead><tr><th>Run</th><th style="width:78px">Estado</th><th style="width:56px">Duración</th><th style="width:78px">Disparado</th><th style="width:92px"></th></tr></thead>
+        <tbody>
+          ${runs.map(r => `
+            <tr>
+              <td class="run-title" title="${r.display_title || r.name}">${r.display_title || r.name}</td>
+              <td>${badge(r.status, r.conclusion)}</td>
+              <td class="muted">${fmtDuracion(r)}</td>
+              <td class="muted">${fmtDate(r.created_at)}</td>
+              <td><a href="${r.html_url}" target="_blank">ver en GitHub →</a></td>
+            </tr>
+          `).join("")}
+        </tbody>
+      </table>`;
+    const anyRunning = runs.some(r => r.status !== "completed");
+    if(anyRunning && !anRunsPoll){
+      anRunsPoll = setInterval(loadRunsAppNativa, 20000);
+    } else if(!anyRunning && anRunsPoll){
+      clearInterval(anRunsPoll); anRunsPoll = null;
     }
   } catch(e){
     wrap.innerHTML = `<div class="empty">Error cargando corridas: ${e.message}</div>`;
