@@ -1063,9 +1063,7 @@ function renderCasosTable(){
         </td>
       </tr>`;
     if(colapsado) return filaGrupo;
-    // Reverso el orden dentro del grupo: los casos generados más recientemente (los últimos
-    // en el archivo/orden de lectura) quedan arriba, a mano, sin tener que scrollear.
-    const filasCasos = casos.slice().reverse().map(c => `
+    const filasCasos = casos.map(c => `
       <tr>
         <td><input type="checkbox" class="casoCheck" value="${c.id}" ${casosSeleccionados.has(c.id) ? "checked" : ""}
               onchange="toggleCasoSeleccionado('${c.id}', this.checked)"></td>
@@ -1455,7 +1453,7 @@ function renderCasosTableAppNativa(){
         </td>
       </tr>`;
     if(colapsado) return filaGrupo;
-    const filasCasos = casos.slice().reverse().map(c => `
+    const filasCasos = casos.map(c => `
       <tr>
         <td><input type="checkbox" class="casoCheck" value="${c.id}" ${casosSeleccionadosAn.has(c.id) ? "checked" : ""}
               onchange="toggleCasoSeleccionadoAppNativa('${c.id}', this.checked)"></td>
