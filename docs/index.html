@@ -581,13 +581,13 @@
 
         <div class="card">
           <h2>
-            Último reporte
-            <button class="ghost" onclick="loadReporteAppNativa()">↻ Actualizar</button>
+            Reportes publicados
+            <button class="ghost" onclick="loadReportesAppNativa()">↻ Actualizar</button>
           </h2>
           <p class="muted" style="margin-top:0">
-            Reporte HTML (con evidencias) de la corrida más reciente, publicado automáticamente al final de cada ejecución.
+            Reporte HTML (con evidencias) de cada corrida, publicado automáticamente al final de cada ejecución. Se guardan las últimas 10; las más viejas se borran solas.
           </p>
-          <div id="anReporteWrap"><div class="empty">Configurá el token para ver el reporte.</div></div>
+          <div id="anReporteWrap"><div class="empty">Configurá el token para ver los reportes.</div></div>
         </div>
 
       </div>
@@ -674,7 +674,7 @@ function showView(view){
   document.getElementById("viewSub").textContent = VIEW_META[view].sub;
   localStorage.setItem("qa_tools_view", view);
   if(view === "webmobile" && TOKEN){ loadRunsWebmobile(); loadRunnerStatusWebmobile(); cargarCasosWebmobile(); }
-  else if(view === "appnativa" && TOKEN){ loadRunsAppNativa(); loadRunnerStatusWebmobile(); loadReporteAppNativa(); cargarCasosAppNativa(); }
+  else if(view === "appnativa" && TOKEN){ loadRunsAppNativa(); loadRunnerStatusWebmobile(); loadReportesAppNativa(); cargarCasosAppNativa(); }
   else { document.getElementById("wmRunnerBadge").style.display = "none"; }
 }
 
@@ -883,6 +883,9 @@ async function dispatchLimpieza(){
 }
 
 // ---------- Runs list ----------
+function esc(s){
+  return String(s).replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+}
 function badge(status, conclusion){
   if(status === "completed"){
     if(conclusion === "success") return `<span class="badge success">✓ success</span>`;
@@ -1611,6 +1614,9 @@ async function loadRunsAppNativa(){
 
 const APPNATIVA_REPORT_BRANCH = "reportes-appnativa-android";
 const APPNATIVA_REPORT_PATH = "reportes/appnativa/android";
+// Cada corrida publica su reporte en su propia carpeta (antes se pisaba siempre
+// reportes/appnativa/android/reporte.html, así que solo se podía ver el último).
+const APPNATIVA_REPORT_RUNS_PATH = "reportes/appnativa/android/runs";
 
 // Los reportes de pytest-html usan history.pushState() para reflejar filtros/orden en la URL
 // (ej: al cambiar el sort inicial a "result"). Eso funciona cuando el reporte se abre como una
@@ -1625,42 +1631,58 @@ function parcharPushStateEnIframe(html){
   return html.includes("<head>") ? html.replace("<head>", "<head>" + parche) : parche + html;
 }
 
-async function loadReporteAppNativa(){
+async function loadReportesAppNativa(){
   if(!TOKEN) return;
   const wrap = document.getElementById("anReporteWrap");
   wrap.innerHTML = `<div class="empty"><span class="spinner"></span> Buscando…</div>`;
   try{
-    // OJO: comprobar que la RAMA existe no alcanza -- la rama sigue existiendo después de
-    // borrar (a mano, o el workflow) el reporte.html que tenía adentro, y antes esta función
-    // mostraba igual la tarjeta con la fecha del último commit de la rama (aunque fuera un
-    // commit que solo borraba archivos). Hay que listar el contenido de la carpeta del reporte
-    // y confirmar que reporte.html esté ahí.
-    const listing = await ghJson(`/repos/${WEBMOBILE_OWNER}/${WEBMOBILE_REPO}/contents/${APPNATIVA_REPORT_PATH}?ref=${APPNATIVA_REPORT_BRANCH}`);
-    const htmlFile = Array.isArray(listing) ? listing.find(f => f.name.endsWith(".html")) : null;
-    if(!htmlFile) throw new Error("no hay reporte.html publicado");
-    const commits = await ghJson(`/repos/${WEBMOBILE_OWNER}/${WEBMOBILE_REPO}/commits?sha=${APPNATIVA_REPORT_BRANCH}&path=${encodeURIComponent(htmlFile.path)}&per_page=1`);
-    const fecha = commits[0]?.commit?.author?.date;
-    wrap.innerHTML = `
-      <div class="report-item">
-        <div class="info">
-          <div class="name">Suite Android — smoke</div>
-          <div class="date">${fecha ? fmtDate(fecha) : ""}</div>
-        </div>
-        <button class="secondary" onclick="verReporteAppNativa()">Ver</button>
-      </div>`;
+    // Cada corrida publica en su propia carpeta (reportes/appnativa/android/runs/<run_id>),
+    // así que acá se lista TODO lo que haya en runs/, no un único reporte.html fijo.
+    const listing = await ghJson(`/repos/${WEBMOBILE_OWNER}/${WEBMOBILE_REPO}/contents/${APPNATIVA_REPORT_RUNS_PATH}?ref=${APPNATIVA_REPORT_BRANCH}`);
+    const carpetas = Array.isArray(listing) ? listing.filter(f => f.type === "dir") : [];
+    if(!carpetas.length) throw new Error("no hay corridas publicadas");
+    // El nombre de cada carpeta es el run id de GitHub Actions, siempre creciente -- ordenar
+    // por eso alcanza para tener la más nueva primero, sin pedir más API.
+    carpetas.sort((a, b) => Number(b.name) - Number(a.name));
+
+    // Para mostrar un nombre lindo (qué se corrió) y la fecha real de la corrida, se cruza
+    // con los runs de Actions por id. Si una corrida ya no está en Actions (se borró a mano)
+    // o esto falla, se listan igual las carpetas, solo que con el run id a secas.
+    let infoPorRun = {};
+    try{
+      const data = await ghJson(`/repos/${WEBMOBILE_OWNER}/${WEBMOBILE_REPO}/actions/runs?per_page=100`);
+      data.workflow_runs.filter(r => r.path.endsWith(APPNATIVA_WORKFLOW)).forEach(r => {
+        infoPorRun[String(r.id)] = { titulo: r.display_title || r.name, fecha: r.created_at };
+      });
+    } catch(e){ /* sin esto igual se puede listar, solo que más pelado */ }
+
+    wrap.innerHTML = `<div class="reports-list">${carpetas.map(c => {
+      const info = infoPorRun[c.name];
+      const nombre = esc(info ? info.titulo : `Run ${c.name}`);
+      const fecha = info ? info.fecha : null;
+      return `
+        <div class="report-item">
+          <div class="info">
+            <div class="name" title="${nombre}">${nombre}</div>
+            <div class="date">${fecha ? fmtDate(fecha) : ""}</div>
+          </div>
+          <button class="secondary" onclick="verReporteAppNativa('${c.name}')">Ver</button>
+        </div>`;
+    }).join("")}</div>`;
   } catch(e){
     wrap.innerHTML = `<div class="empty">Todavía no hay ningún reporte publicado (se publica al final de cada corrida).</div>`;
   }
 }
 
-async function verReporteAppNativa(){
+async function verReporteAppNativa(runId){
   const modalBg = document.getElementById("modalBg");
   const frame = document.getElementById("modalFrame");
   document.getElementById("modalTitle").textContent = "App Nativa — Android";
   frame.srcdoc = `<body style="font-family:sans-serif;padding:40px;color:#666">Cargando reporte…</body>`;
   modalBg.classList.add("open");
   try{
-    const listing = await ghJson(`/repos/${WEBMOBILE_OWNER}/${WEBMOBILE_REPO}/contents/${APPNATIVA_REPORT_PATH}?ref=${APPNATIVA_REPORT_BRANCH}`);
+    const path = `${APPNATIVA_REPORT_RUNS_PATH}/${runId}`;
+    const listing = await ghJson(`/repos/${WEBMOBILE_OWNER}/${WEBMOBILE_REPO}/contents/${path}?ref=${APPNATIVA_REPORT_BRANCH}`);
     const htmlFile = listing.find(f => f.name.endsWith(".html"));
     if(!htmlFile) throw new Error("no se encontró reporte.html en la rama");
     let html = await ghRawRepo(WEBMOBILE_OWNER, WEBMOBILE_REPO, htmlFile.path, APPNATIVA_REPORT_BRANCH, false);
