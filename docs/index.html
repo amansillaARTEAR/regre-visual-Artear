@@ -1645,9 +1645,9 @@ async function loadReportesAppNativa(){
     // por eso alcanza para tener la más nueva primero, sin pedir más API.
     carpetas.sort((a, b) => Number(b.name) - Number(a.name));
 
-    // Para mostrar un nombre lindo (qué se corrió) y la fecha real de la corrida, se cruza
-    // con los runs de Actions por id. Si una corrida ya no está en Actions (se borró a mano)
-    // o esto falla, se listan igual las carpetas, solo que con el run id a secas.
+    // Para la fecha real de la corrida, se cruza con los runs de Actions por id. Si una
+    // corrida ya no está en Actions (se borró a mano) o esto falla, se listan igual las
+    // carpetas, solo que sin fecha.
     let infoPorRun = {};
     try{
       const data = await ghJson(`/repos/${WEBMOBILE_OWNER}/${WEBMOBILE_REPO}/actions/runs?per_page=100`);
@@ -1656,19 +1656,35 @@ async function loadReportesAppNativa(){
       });
     } catch(e){ /* sin esto igual se puede listar, solo que más pelado */ }
 
-    wrap.innerHTML = `<div class="reports-list">${carpetas.map(c => {
+    // El nombre de cada tarjeta es el ticket (ej. "AMR-2087"), sacado del .apk que se
+    // probó en esa corrida -- el workflow lo deja en meta.json junto al reporte. Es mucho
+    // más útil que el título del run de Actions, que muestra el filtro -k crudo (ej.
+    // "test_ca02_ca1 or test_ca02_ca2 or ..."). Una corrida vieja de antes de este cambio
+    // no tiene meta.json (404, se cae al catch): ahí se usa ese título de Actions, o el
+    // run id a secas si tampoco se encontró el run.
+    const items = await Promise.all(carpetas.map(async c => {
       const info = infoPorRun[c.name];
-      const nombre = esc(info ? info.titulo : `Run ${c.name}`);
-      const fecha = info ? info.fecha : null;
-      return `
-        <div class="report-item">
-          <div class="info">
-            <div class="name" title="${nombre}">${nombre}</div>
-            <div class="date">${fecha ? fmtDate(fecha) : ""}</div>
-          </div>
-          <button class="secondary" onclick="verReporteAppNativa('${c.name}')">Ver</button>
-        </div>`;
-    }).join("")}</div>`;
+      let nombre = null;
+      try{
+        const meta = JSON.parse(await ghRawRepo(WEBMOBILE_OWNER, WEBMOBILE_REPO, `${c.path}/meta.json`, APPNATIVA_REPORT_BRANCH, false));
+        if(meta.apk){
+          const ticket = meta.apk.match(/^[A-Za-z]+-\d+/);
+          nombre = ticket ? ticket[0] : meta.apk;
+        }
+      } catch(e){ /* sin meta.json -- se cae al fallback de abajo */ }
+      if(!nombre) nombre = info ? info.titulo : `Run ${c.name}`;
+      return { runId: c.name, nombre, fecha: info ? info.fecha : null };
+    }));
+
+    wrap.innerHTML = `<div class="reports-list">${items.map(it => `
+      <div class="report-item">
+        <div class="info">
+          <div class="name" title="${esc(it.nombre)}">${esc(it.nombre)}</div>
+          <div class="date">${it.fecha ? fmtDate(it.fecha) : ""}</div>
+        </div>
+        <button class="secondary" onclick="verReporteAppNativa('${it.runId}')">Ver</button>
+      </div>
+    `).join("")}</div>`;
   } catch(e){
     wrap.innerHTML = `<div class="empty">Todavía no hay ningún reporte publicado (se publica al final de cada corrida).</div>`;
   }
