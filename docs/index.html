@@ -177,7 +177,11 @@
      antes era un bloque apilado con el botón ocupando todo el ancho, mucho
      más alto de lo necesario para una card que ahora vive en una columna
      angosta (ver .col-angosta). */
-  .report-item{background:var(--panel2);border:1px solid var(--border);border-radius:8px;padding:8px 10px;display:flex;align-items:center;justify-content:space-between;gap:8px}
+  /* min-width:0 en el propio ítem (no solo en .info): un hijo de grid/flex sin esto no se
+     encoge más allá del tamaño de su contenido ("automatic minimum size"), así que un
+     nombre largo (ej. el filtro -k crudo de una corrida vieja sin meta.json) desbordaba
+     por encima del botón "Ver" en vez de truncarse con "...". */
+  .report-item{background:var(--panel2);border:1px solid var(--border);border-radius:8px;padding:8px 10px;display:flex;align-items:center;justify-content:space-between;gap:8px;min-width:0}
   .report-item .info{min-width:0}
   .report-item .name{font-weight:600;font-size:12.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   .report-item .date{color:var(--muted);font-size:11px}
