@@ -442,6 +442,8 @@
                 <input type="text" id="wmVersion-android" placeholder="Versión (ej: 721)" style="display:none;max-width:140px">
               </div>
               <div class="hint" id="wmAmbienteHint-android">SBX no usa número de versión.</div>
+              <label>Portada <span class="muted">(opcional — ej: ALEM-DEV, o la ruta completa de una nota; vacío = cada test usa su URL por defecto)</span></label>
+              <input type="text" id="wmPortada-android" placeholder="ej: ALEM-DEV">
               <div class="actions">
                 <button onclick="dispatchWebmobile()" id="btnWmDispatch">Disparar corrida</button>
               </div>
@@ -463,6 +465,8 @@
                 <input type="text" id="wmVersion-ios" placeholder="Versión (ej: 721)" style="display:none;max-width:140px">
               </div>
               <div class="hint" id="wmAmbienteHint-ios">SBX no usa número de versión.</div>
+              <label>Portada <span class="muted">(opcional — ej: ALEM-DEV, o la ruta completa de una nota; vacío = cada test usa su URL por defecto)</span></label>
+              <input type="text" id="wmPortada-ios" placeholder="ej: ALEM-DEV">
               <div class="actions">
                 <button onclick="dispatchWebmobileIos()" id="btnWmIosDispatch">Disparar corrida iOS</button>
               </div>
@@ -554,6 +558,10 @@
                 <div>
                   <label>APK <span class="muted">(opcional, nombre del archivo dentro de la carpeta de APKs)</span></label>
                   <input type="text" id="anApk" placeholder="vacío = el más reciente">
+                </div>
+                <div>
+                  <label>Sección <span class="muted">(opcional, ej: Deportes, Portada; vacío = pantalla de inicio)</span></label>
+                  <input type="text" id="anSeccion" placeholder="vacío = pantalla de inicio">
                 </div>
               </div>
               <div class="actions">
@@ -1150,12 +1158,13 @@ async function dispatchWebmobile(){
   const amb = leerAmbienteWebmobile("android");
   if(!amb) return;
   const filtro = selectedCasosFiltro();
+  const portada = document.getElementById("wmPortada-android").value.trim();
   const btn = document.getElementById("btnWmDispatch");
   btn.disabled = true; btn.innerHTML = `<span class="spinner"></span> Disparando…`;
   try{
     await gh(`/repos/${WEBMOBILE_OWNER}/${WEBMOBILE_REPO}/actions/workflows/${WEBMOBILE_WORKFLOW}/dispatches`, {
       method: "POST",
-      body: JSON.stringify({ ref: "main", inputs: { filtro, ambiente: amb.ambiente, version: amb.version } })
+      body: JSON.stringify({ ref: "main", inputs: { filtro, ambiente: amb.ambiente, version: amb.version, portada } })
     });
     toast(filtro ? `Corrida disparada (${amb.ambiente.toUpperCase()} · filtro: ${filtro})` : `Corrida disparada (${amb.ambiente.toUpperCase()} · suite completa)`, "ok");
     setTimeout(loadRunsWebmobile, 2500);
@@ -1172,6 +1181,7 @@ async function dispatchWebmobileIos(){
   if(!amb) return;
   const endpoint = document.getElementById("wmIosEndpoint").value.trim();
   const filtro = selectedCasosFiltro();
+  const portada = document.getElementById("wmPortada-ios").value.trim();
   if(!endpoint){ toast("Pegá la URL del endpoint de AWS Device Farm primero", "error"); return; }
 
   const btn = document.getElementById("btnWmIosDispatch");
@@ -1179,7 +1189,7 @@ async function dispatchWebmobileIos(){
   try{
     await gh(`/repos/${WEBMOBILE_OWNER}/${WEBMOBILE_REPO}/actions/workflows/${WEBMOBILE_IOS_WORKFLOW}/dispatches`, {
       method: "POST",
-      body: JSON.stringify({ ref: "main", inputs: { appium_endpoint: endpoint, filtro, ambiente: amb.ambiente, version: amb.version } })
+      body: JSON.stringify({ ref: "main", inputs: { appium_endpoint: endpoint, filtro, ambiente: amb.ambiente, version: amb.version, portada } })
     });
     toast(`Corrida iOS disparada (${amb.ambiente.toUpperCase()})`, "ok");
     setTimeout(loadRunsWebmobile, 2500);
@@ -1567,12 +1577,13 @@ async function dispatchAppNativa(){
   if(!TOKEN){ toast("Configurá el token primero", "error"); return; }
   const filtro = selectedCasosFiltroAppNativa();
   const apk = document.getElementById("anApk").value.trim();
+  const seccion = document.getElementById("anSeccion").value.trim();
   const btn = document.getElementById("btnAnDispatch");
   btn.disabled = true; btn.innerHTML = `<span class="spinner"></span> Disparando…`;
   try{
     await gh(`/repos/${WEBMOBILE_OWNER}/${WEBMOBILE_REPO}/actions/workflows/${APPNATIVA_WORKFLOW}/dispatches`, {
       method: "POST",
-      body: JSON.stringify({ ref: "main", inputs: { filtro, apk } })
+      body: JSON.stringify({ ref: "main", inputs: { filtro, apk, seccion } })
     });
     toast(filtro ? `Corrida disparada (filtro: ${filtro})` : "Corrida disparada (suite completa)", "ok");
     setTimeout(loadRunsAppNativa, 2500);
