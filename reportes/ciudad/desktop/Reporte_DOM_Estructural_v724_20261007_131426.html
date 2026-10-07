@@ -1,0 +1,295 @@
+
+    <html><head><meta charset="utf-8">
+    <title>Reporte de Regresión Ciudad Magazine Desktop - Versión 724</title>
+    <style>
+    body { font-family: Arial; background:#f7f7f7; margin:20px; }
+    h1 { color:#1e3a8a; border-bottom:3px solid #bfdbfe; padding-bottom:10px; }
+    h2 { margin-top:40px; color:#555; border-bottom:2px solid #ccc; padding-bottom:5px; }
+    code { background:#eee; padding:2px 4px; border-radius:3px; }
+    .container { display:flex; gap:20px; margin-bottom:40px; border:1px solid #eee; padding:10px; background:#fafafa; overflow-x:auto; }
+    .container > div { flex:1; min-width:480px; }
+    img { width:100%; height:auto; border:3px solid #ccc; border-radius:4px; display:block; }
+    .highlight-box { position:absolute; pointer-events:none; z-index:1000; border-left:15px solid transparent; border-right:15px solid transparent; border-top:30px solid #ffcc00; transform:translateX(-50%); }
+    </style></head>
+    <body>
+    <h1>Reporte de Regresión Ciudad Magazine Desktop - Versión 724</h1>
+    <p><strong>Versión Testeada:</strong> <code>724</code></p>
+    <p><strong>Fecha y Hora:</strong> 07/10/2026 13:14:26</p>
+    <p><strong>Tiempo Total:</strong> 0:04:15</p>
+    <p><strong>Umbral de Tolerancia:</strong> 3 píxeles.</p>
+    <p><strong>Resumen global:</strong> <span style="font-weight:bold; color:green;">✅ Todas las URLs pasaron la prueba estructural. Apto para deployar a PROD.</span></p>
+    
+<div style="position: sticky; top: 0; z-index: 500; background: #f7f7f7;
+            padding: 10px 0 8px 0; margin: 0 -20px; border-bottom: 2px solid #ddd;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.08);">
+  <div style="display: flex; flex-wrap: wrap; gap: 8px 24px; font-size: 0.82em;
+              color: #555; padding: 0 20px;">
+    <div style="flex: 1 1 220px;"><span style="color:red; font-weight:bold;">■ Rojo</span>: falla grave (elemento ausente/nuevo, o cambio de tamaño/estilo confirmado visualmente).</div>
+    <div style="flex: 1 1 220px;"><span style="color:blue; font-weight:bold;">■ Azul</span>: desplazamiento menor sin cambio de tamaño.</div>
+    <div style="flex: 1 1 220px;"><span style="color:#ff8c00; font-weight:bold;">■ Naranja</span>: el DOM detectó una diferencia pero la confirmación visual (crop + diff) mostró que la región es igual — probablemente un falso positivo.</div>
+    <div style="flex: 1 1 220px;"><span style="color:#7c3aed; font-weight:bold;">■ Violeta</span>: desplazamiento en cascada — un solo elemento anterior cambió de tamaño y corrió a los siguientes; no son N fallas independientes.</div>
+  </div>
+</div>
+
+    <hr/>
+    
+        <div style="border: 2px solid #ddd; padding: 15px; margin-top: 20px; border-radius: 8px;">
+            <h2>Homepage</h2>
+            <p><strong>URL Base (V1):</strong> <a href="https://www.ciudad.com.ar/" target="_blank"><code>https://www.ciudad.com.ar/</code></a></p>
+            <p><strong>URL Comparada (V2):</strong> <a href="https://www.ciudad.com.ar/?d=724" target="_blank"><code>https://www.ciudad.com.ar/?d=724</code></a></p>
+            <p><strong>Resultado:</strong> <span style="font-weight:bold; color:green;">✅ No se encontraron diferencias.</span></p>
+            <p><strong>Tiempo de Ejecución:</strong> 0:00:44</p>
+            <details>
+                <summary style="cursor:pointer; font-weight:bold; color:#1e3a8a;">Detalle de diferencias</summary>
+                <div id="diff-list-homepage" style="margin-top:10px; background:#fff; padding:10px; border:1px solid #eee;">
+                    <ul><li>✅ No se encontraron diferencias.</li></ul>
+                </div>
+            </details>
+            <details>
+                <summary style="cursor:pointer; font-weight:bold; color:#1e3a8a;">Contexto Visual</summary>
+                <div class='container' id='container-homepage'>
+                    <div><h4>Versión Base (V1)</h4><img src='homepage_V724_base_20261007_131426.png' alt='V1'></div>
+                    <div id="image-container-homepage" style="position:relative;">
+                        <h4>Versión Nueva (V2)</h4><img id='screenshot-homepage' src='homepage_V724_diff_20261007_131426.png' alt='V2'>
+                        <div id="highlight-box-homepage" class="highlight-box" style="display:none;"></div>
+                    </div>
+                </div>
+            </details>
+        </div>
+        
+        <div style="border: 2px solid #ddd; padding: 15px; margin-top: 20px; border-radius: 8px;">
+            <h2>Cine y series</h2>
+            <p><strong>URL Base (V1):</strong> <a href="https://www.ciudad.com.ar/cine-y-series/" target="_blank"><code>https://www.ciudad.com.ar/cine-y-series/</code></a></p>
+            <p><strong>URL Comparada (V2):</strong> <a href="https://www.ciudad.com.ar/cine-y-series/?d=724" target="_blank"><code>https://www.ciudad.com.ar/cine-y-series/?d=724</code></a></p>
+            <p><strong>Resultado:</strong> <span style="font-weight:bold; color:green;">✅ No se encontraron diferencias.</span></p>
+            <p><strong>Tiempo de Ejecución:</strong> 0:00:25</p>
+            <details>
+                <summary style="cursor:pointer; font-weight:bold; color:#1e3a8a;">Detalle de diferencias</summary>
+                <div id="diff-list-cine_y_series" style="margin-top:10px; background:#fff; padding:10px; border:1px solid #eee;">
+                    <ul><li>✅ No se encontraron diferencias.</li></ul>
+                </div>
+            </details>
+            <details>
+                <summary style="cursor:pointer; font-weight:bold; color:#1e3a8a;">Contexto Visual</summary>
+                <div class='container' id='container-cine_y_series'>
+                    <div><h4>Versión Base (V1)</h4><img src='cine_y_series_V724_base_20261007_131426.png' alt='V1'></div>
+                    <div id="image-container-cine_y_series" style="position:relative;">
+                        <h4>Versión Nueva (V2)</h4><img id='screenshot-cine_y_series' src='cine_y_series_V724_diff_20261007_131426.png' alt='V2'>
+                        <div id="highlight-box-cine_y_series" class="highlight-box" style="display:none;"></div>
+                    </div>
+                </div>
+            </details>
+        </div>
+        
+        <div style="border: 2px solid #ddd; padding: 15px; margin-top: 20px; border-radius: 8px;">
+            <h2>Listado</h2>
+            <p><strong>URL Base (V1):</strong> <a href="https://www.ciudad.com.ar/lo-ultimo/" target="_blank"><code>https://www.ciudad.com.ar/lo-ultimo/</code></a></p>
+            <p><strong>URL Comparada (V2):</strong> <a href="https://www.ciudad.com.ar/lo-ultimo/?d=724" target="_blank"><code>https://www.ciudad.com.ar/lo-ultimo/?d=724</code></a></p>
+            <p><strong>Resultado:</strong> <span style="font-weight:bold; color:green;">✅ No se encontraron diferencias.</span></p>
+            <p><strong>Tiempo de Ejecución:</strong> 0:00:26</p>
+            <details>
+                <summary style="cursor:pointer; font-weight:bold; color:#1e3a8a;">Detalle de diferencias</summary>
+                <div id="diff-list-listado" style="margin-top:10px; background:#fff; padding:10px; border:1px solid #eee;">
+                    <ul><li>✅ No se encontraron diferencias.</li></ul>
+                </div>
+            </details>
+            <details>
+                <summary style="cursor:pointer; font-weight:bold; color:#1e3a8a;">Contexto Visual</summary>
+                <div class='container' id='container-listado'>
+                    <div><h4>Versión Base (V1)</h4><img src='listado_V724_base_20261007_131426.png' alt='V1'></div>
+                    <div id="image-container-listado" style="position:relative;">
+                        <h4>Versión Nueva (V2)</h4><img id='screenshot-listado' src='listado_V724_diff_20261007_131426.png' alt='V2'>
+                        <div id="highlight-box-listado" class="highlight-box" style="display:none;"></div>
+                    </div>
+                </div>
+            </details>
+        </div>
+        
+        <div style="border: 2px solid #ddd; padding: 15px; margin-top: 20px; border-radius: 8px;">
+            <h2>Vivo</h2>
+            <p><strong>URL Base (V1):</strong> <a href="https://www.ciudad.com.ar/vivo/" target="_blank"><code>https://www.ciudad.com.ar/vivo/</code></a></p>
+            <p><strong>URL Comparada (V2):</strong> <a href="https://www.ciudad.com.ar/vivo/?d=724" target="_blank"><code>https://www.ciudad.com.ar/vivo/?d=724</code></a></p>
+            <p><strong>Resultado:</strong> <span style="font-weight:bold; color:green;">✅ No se encontraron diferencias.</span></p>
+            <p><strong>Tiempo de Ejecución:</strong> 0:00:24</p>
+            <details>
+                <summary style="cursor:pointer; font-weight:bold; color:#1e3a8a;">Detalle de diferencias</summary>
+                <div id="diff-list-vivo" style="margin-top:10px; background:#fff; padding:10px; border:1px solid #eee;">
+                    <ul><li>✅ No se encontraron diferencias.</li></ul>
+                </div>
+            </details>
+            <details>
+                <summary style="cursor:pointer; font-weight:bold; color:#1e3a8a;">Contexto Visual</summary>
+                <div class='container' id='container-vivo'>
+                    <div><h4>Versión Base (V1)</h4><img src='vivo_V724_base_20261007_131426.png' alt='V1'></div>
+                    <div id="image-container-vivo" style="position:relative;">
+                        <h4>Versión Nueva (V2)</h4><img id='screenshot-vivo' src='vivo_V724_diff_20261007_131426.png' alt='V2'>
+                        <div id="highlight-box-vivo" class="highlight-box" style="display:none;"></div>
+                    </div>
+                </div>
+            </details>
+        </div>
+        
+        <div style="border: 2px solid #ddd; padding: 15px; margin-top: 20px; border-radius: 8px;">
+            <h2>Article</h2>
+            <p><strong>URL Base (V1):</strong> <a href="https://www.ciudad.com.ar/espectaculos/2025/12/23/el-feroz-descargo-de-mauro-icardi-contra-nicolas-payarola-y-wanda-nara-felices-fiestas/" target="_blank"><code>https://www.ciudad.com.ar/espectaculos/2025/12/23/el-feroz-descargo-de-mauro-icardi-contra-nicolas-payarola-y-wanda-nara-felices-fiestas/</code></a></p>
+            <p><strong>URL Comparada (V2):</strong> <a href="https://www.ciudad.com.ar/espectaculos/2025/12/23/el-feroz-descargo-de-mauro-icardi-contra-nicolas-payarola-y-wanda-nara-felices-fiestas/?d=724" target="_blank"><code>https://www.ciudad.com.ar/espectaculos/2025/12/23/el-feroz-descargo-de-mauro-icardi-contra-nicolas-payarola-y-wanda-nara-felices-fiestas/?d=724</code></a></p>
+            <p><strong>Resultado:</strong> <span style="font-weight:bold; color:green;">✅ No se encontraron diferencias.</span></p>
+            <p><strong>Tiempo de Ejecución:</strong> 0:00:27</p>
+            <details>
+                <summary style="cursor:pointer; font-weight:bold; color:#1e3a8a;">Detalle de diferencias</summary>
+                <div id="diff-list-article" style="margin-top:10px; background:#fff; padding:10px; border:1px solid #eee;">
+                    <ul><li>✅ No se encontraron diferencias.</li></ul>
+                </div>
+            </details>
+            <details>
+                <summary style="cursor:pointer; font-weight:bold; color:#1e3a8a;">Contexto Visual</summary>
+                <div class='container' id='container-article'>
+                    <div><h4>Versión Base (V1)</h4><img src='article_V724_base_20261007_131426.png' alt='V1'></div>
+                    <div id="image-container-article" style="position:relative;">
+                        <h4>Versión Nueva (V2)</h4><img id='screenshot-article' src='article_V724_diff_20261007_131426.png' alt='V2'>
+                        <div id="highlight-box-article" class="highlight-box" style="display:none;"></div>
+                    </div>
+                </div>
+            </details>
+        </div>
+        
+        <div style="border: 2px solid #ddd; padding: 15px; margin-top: 20px; border-radius: 8px;">
+            <h2>AMP</h2>
+            <p><strong>URL Base (V1):</strong> <a href="https://www.ciudad.com.ar/videos/magazine/2025/12/23/empezar-el-dia-programa-del-231225-recibimos-a-brenda-di-aloy/?outputType=amp" target="_blank"><code>https://www.ciudad.com.ar/videos/magazine/2025/12/23/empezar-el-dia-programa-del-231225-recibimos-a-brenda-di-aloy/?outputType=amp</code></a></p>
+            <p><strong>URL Comparada (V2):</strong> <a href="https://www.ciudad.com.ar/videos/magazine/2025/12/23/empezar-el-dia-programa-del-231225-recibimos-a-brenda-di-aloy/?outputType=amp&d=724" target="_blank"><code>https://www.ciudad.com.ar/videos/magazine/2025/12/23/empezar-el-dia-programa-del-231225-recibimos-a-brenda-di-aloy/?outputType=amp&d=724</code></a></p>
+            <p><strong>Resultado:</strong> <span style="font-weight:bold; color:green;">✅ No se encontraron diferencias.</span></p>
+            <p><strong>Tiempo de Ejecución:</strong> 0:00:26</p>
+            <details>
+                <summary style="cursor:pointer; font-weight:bold; color:#1e3a8a;">Detalle de diferencias</summary>
+                <div id="diff-list-amp" style="margin-top:10px; background:#fff; padding:10px; border:1px solid #eee;">
+                    <ul><li>✅ No se encontraron diferencias.</li></ul>
+                </div>
+            </details>
+            <details>
+                <summary style="cursor:pointer; font-weight:bold; color:#1e3a8a;">Contexto Visual</summary>
+                <div class='container' id='container-amp'>
+                    <div><h4>Versión Base (V1)</h4><img src='amp_V724_base_20261007_131426.png' alt='V1'></div>
+                    <div id="image-container-amp" style="position:relative;">
+                        <h4>Versión Nueva (V2)</h4><img id='screenshot-amp' src='amp_V724_diff_20261007_131426.png' alt='V2'>
+                        <div id="highlight-box-amp" class="highlight-box" style="display:none;"></div>
+                    </div>
+                </div>
+            </details>
+        </div>
+        
+        <div style="border: 2px solid #ddd; padding: 15px; margin-top: 20px; border-radius: 8px;">
+            <h2>Video</h2>
+            <p><strong>URL Base (V1):</strong> <a href="https://www.ciudad.com.ar/videos/magazine/2025/12/23/empezar-el-dia-programa-del-231225-recibimos-a-brenda-di-aloy/" target="_blank"><code>https://www.ciudad.com.ar/videos/magazine/2025/12/23/empezar-el-dia-programa-del-231225-recibimos-a-brenda-di-aloy/</code></a></p>
+            <p><strong>URL Comparada (V2):</strong> <a href="https://www.ciudad.com.ar/videos/magazine/2025/12/23/empezar-el-dia-programa-del-231225-recibimos-a-brenda-di-aloy/?d=724" target="_blank"><code>https://www.ciudad.com.ar/videos/magazine/2025/12/23/empezar-el-dia-programa-del-231225-recibimos-a-brenda-di-aloy/?d=724</code></a></p>
+            <p><strong>Resultado:</strong> <span style="font-weight:bold; color:green;">✅ No se encontraron diferencias.</span></p>
+            <p><strong>Tiempo de Ejecución:</strong> 0:00:25</p>
+            <details>
+                <summary style="cursor:pointer; font-weight:bold; color:#1e3a8a;">Detalle de diferencias</summary>
+                <div id="diff-list-video" style="margin-top:10px; background:#fff; padding:10px; border:1px solid #eee;">
+                    <ul><li>✅ No se encontraron diferencias.</li></ul>
+                </div>
+            </details>
+            <details>
+                <summary style="cursor:pointer; font-weight:bold; color:#1e3a8a;">Contexto Visual</summary>
+                <div class='container' id='container-video'>
+                    <div><h4>Versión Base (V1)</h4><img src='video_V724_base_20261007_131426.png' alt='V1'></div>
+                    <div id="image-container-video" style="position:relative;">
+                        <h4>Versión Nueva (V2)</h4><img id='screenshot-video' src='video_V724_diff_20261007_131426.png' alt='V2'>
+                        <div id="highlight-box-video" class="highlight-box" style="display:none;"></div>
+                    </div>
+                </div>
+            </details>
+        </div>
+        
+        <div style="border: 2px solid #ddd; padding: 15px; margin-top: 20px; border-radius: 8px;">
+            <h2>Longform</h2>
+            <p><strong>URL Base (V1):</strong> <a href="https://www.ciudad.com.ar/espectaculos/2025/08/15/a-20-anos-de-la-noche-del-10-la-resurreccion-de-diego-maradona/" target="_blank"><code>https://www.ciudad.com.ar/espectaculos/2025/08/15/a-20-anos-de-la-noche-del-10-la-resurreccion-de-diego-maradona/</code></a></p>
+            <p><strong>URL Comparada (V2):</strong> <a href="https://www.ciudad.com.ar/espectaculos/2025/08/15/a-20-anos-de-la-noche-del-10-la-resurreccion-de-diego-maradona/?d=724" target="_blank"><code>https://www.ciudad.com.ar/espectaculos/2025/08/15/a-20-anos-de-la-noche-del-10-la-resurreccion-de-diego-maradona/?d=724</code></a></p>
+            <p><strong>Resultado:</strong> <span style="font-weight:bold; color:green;">✅ No se encontraron diferencias.</span></p>
+            <p><strong>Tiempo de Ejecución:</strong> 0:00:34</p>
+            <details>
+                <summary style="cursor:pointer; font-weight:bold; color:#1e3a8a;">Detalle de diferencias</summary>
+                <div id="diff-list-longform" style="margin-top:10px; background:#fff; padding:10px; border:1px solid #eee;">
+                    <ul><li>✅ No se encontraron diferencias.</li></ul>
+                </div>
+            </details>
+            <details>
+                <summary style="cursor:pointer; font-weight:bold; color:#1e3a8a;">Contexto Visual</summary>
+                <div class='container' id='container-longform'>
+                    <div><h4>Versión Base (V1)</h4><img src='longform_V724_base_20261007_131426.png' alt='V1'></div>
+                    <div id="image-container-longform" style="position:relative;">
+                        <h4>Versión Nueva (V2)</h4><img id='screenshot-longform' src='longform_V724_diff_20261007_131426.png' alt='V2'>
+                        <div id="highlight-box-longform" class="highlight-box" style="display:none;"></div>
+                    </div>
+                </div>
+            </details>
+        </div>
+        
+    <div id="offscreen-toast" style="display:none; position:fixed; bottom:20px; left:50%; transform:translateX(-50%);
+        background:#1e293b; color:#fff; padding:10px 18px; border-radius:6px; font-size:0.85em; z-index:2000;
+        box-shadow:0 4px 12px rgba(0,0,0,0.3); max-width:600px; text-align:center;"></div>
+    <script>
+    let lastHighlightedItem = null;
+    let offscreenToastTimer = null;
+    function showOffscreenToast(msg) {
+        const toast = document.getElementById('offscreen-toast');
+        if (!toast) return;
+        toast.textContent = msg;
+        toast.style.display = 'block';
+        if (offscreenToastTimer) clearTimeout(offscreenToastTimer);
+        offscreenToastTimer = setTimeout(() => { toast.style.display = 'none'; }, 4000);
+    }
+    function highlightElement(urlId, coordsStr, clickedItem) {
+        if (lastHighlightedItem) lastHighlightedItem.style.backgroundColor = 'transparent';
+        clickedItem.style.backgroundColor = '#fffacd';
+        lastHighlightedItem = clickedItem;
+        const screenshot = document.getElementById(`screenshot-${urlId}`);
+        const highlightBox = document.getElementById(`highlight-box-${urlId}`);
+        if (!screenshot || !highlightBox) return;
+        const doHighlight = () => {
+            // Guard contra clientWidth/naturalWidth en 0 (imagen todavía no
+            // terminó de cargar/decodificar cuando se hizo click): sin esto
+            // scaleFactor da NaN, las coordenadas del recuadro y del scroll
+            // también dan NaN, y window.scrollTo({top: NaN}) hace que el
+            // navegador interprete NaN como 0 y salte al principio de la
+            // página en vez de a la falla clickeada. Bug real reportado por
+            // el usuario (El Doce desktop v721): click en una falla grave
+            // scrolleaba siempre hacia arriba.
+            if (!screenshot.naturalWidth || !screenshot.clientWidth) return;
+            const [origX, origY, origW, origH] = coordsStr.split(',').map(Number);
+            // Elementos posicionados fuera de pantalla por el propio sitio
+            // (patrón común para ocultar visualmente contenido, ej. un panel
+            // de búsqueda o un menú colapsado: left:-9999px o similar) no
+            // tienen ninguna posición real dentro de la captura. Sin este
+            // guard, el scroll se calculaba igual con esas coordenadas
+            // negativas/absurdas y terminaba en un punto arbitrario de la
+            // imagen (ni arriba de todo ni cerca de nada relevante) —
+            // confuso para quien hace click esperando ver la falla resaltada.
+            // Bug real reportado por el usuario sobre El Doce desktop v721
+            // (Deportes / Estadísticas deportes), con el fix anterior (NaN
+            // → scroll a 0) ya desplegado: el click seguía sin llevar a un
+            // lugar útil, solo que ahora a un punto random en vez de arriba.
+            const fueraDePantalla = origX < 0 || origY < 0 ||
+                origX > screenshot.naturalWidth || origY > screenshot.naturalHeight;
+            if (fueraDePantalla) {
+                highlightBox.style.display = 'none';
+                screenshot.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                showOffscreenToast('⚠️ Este elemento está posicionado fuera de la pantalla visible por el propio sitio (oculto por CSS) — no aparece en la captura, por eso no se puede resaltar.');
+                return;
+            }
+            const scaleFactor = screenshot.clientWidth / screenshot.naturalWidth;
+            highlightBox.style.display = 'block';
+            highlightBox.style.left = (origX * scaleFactor + (origW * scaleFactor / 2)) + "px";
+            highlightBox.style.top = (origY * scaleFactor - 35) + "px";
+            const rect = screenshot.getBoundingClientRect();
+            window.scrollTo({ top: window.pageYOffset + rect.top + (origY * scaleFactor) - 200, behavior: 'smooth' });
+        };
+        if (screenshot.complete) {
+            doHighlight();
+        } else {
+            screenshot.addEventListener('load', doHighlight, { once: true });
+        }
+    }
+    </script>
+    </body></html>
+    
