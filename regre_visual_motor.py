@@ -387,6 +387,25 @@ def obtener_estructura_dom(driver, incluir_texto=True, espera_scroll=2):
         original_size = driver.get_window_size()
         driver.set_window_size(original_size['width'], total_height)
         time.sleep(1)
+        # Chrome headless descuenta del alto pedido el "marco" del navegador (~150px):
+        # la ventana pedida es de total_height pero el area visible (window.innerHeight)
+        # queda mas corta, y la captura full-page sale cortada abajo (ej: se perdian los
+        # ultimos links del footer de Ciudad Magazine). Se compensa hasta que el alto
+        # visible alcance al de la pagina.
+        alto_ventana = total_height
+        for _ in range(4):
+            visible, pagina = driver.execute_script(
+                "return [window.innerHeight, document.documentElement.scrollHeight];")
+            # Ojo: NO usar body.scrollHeight aca; en algunos sitios (Ciudad, El Doce) vale
+            # innerHeight + ~200px (un elemento desborda el body) y el bucle nunca converge.
+            if visible >= pagina:
+                break
+            alto_ventana += int(pagina - visible) + 4
+            driver.set_window_size(original_size['width'], alto_ventana)
+            time.sleep(0.5)
+        else:
+            print(f"     ⚠️ La ventana no alcanzo el alto de la pagina ({visible}px de {pagina}px): "
+                  f"la captura puede salir cortada abajo.")
         esperar_fuentes(driver)  # el resize puede revelar contenido lazy-loaded con su propia fuente
 
         js = JS_EXTRACCION.replace('INCLUIR_TEXTO', 'true' if incluir_texto else 'false')
