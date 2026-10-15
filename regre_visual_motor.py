@@ -495,7 +495,7 @@ def ejecutar_con_reintentos(url, modo, config, intentos_max=REINTENTOS_MAX):
 
 def procesar_url(url_description, base_url, version_number, modo, config,
                   umbral_pixeles, usar_confirmacion_visual, comparar_estilos,
-                  usar_linea_base_ruido=True):
+                  usar_linea_base_ruido=True, confirmar_con=None):
     url1 = base_url
     url2 = f"{base_url}&d={version_number}" if '?' in base_url else f"{base_url}?d={version_number}"
 
@@ -533,6 +533,11 @@ def procesar_url(url_description, base_url, version_number, modo, config,
                                                         comparar_estilos=comparar_estilos)
             fallas, descartadas_ruido = core.filtrar_ruido(fallas, core.claves_de_ruido(fallas_base))
             print(f"     Ruido descartado (cambia solo entre dos cargas de V1): {descartadas_ruido} diferencias")
+    claves_fallas = {(f['selector'], f['tipo']) for f in fallas}
+    descartadas_reintento = 0
+    if confirmar_con is not None:
+        fallas, descartadas_reintento = core.confirmar_fallas(fallas, confirmar_con)
+        print(f"     Reintento: {descartadas_reintento} diferencias no se repitieron (desfase de cache/contenido en vivo)")
     otras_fallas, cascadas = core.agrupar_cascadas(fallas)
 
     if usar_confirmacion_visual and png_v1 and png_v2:
@@ -552,6 +557,8 @@ def procesar_url(url_description, base_url, version_number, modo, config,
         'consolidado': consolidado, 'cascadas': cascadas,
         'png_v1': png_v1, 'png_v2': png_v2,
         'ruido_descartado': descartadas_ruido,
+        'claves_fallas': claves_fallas,
+        'reintento_descartadas': descartadas_reintento,
     }
 
 
@@ -931,6 +938,11 @@ def generar_reporte(all_results, version_number, output_dir, timestamp, umbral_p
 # MAIN
 # =====================================================================
 
+def _tiene_graves(r):
+    return (any(c['gravedad'] == 'grave' for c in r['consolidado'])
+            or any(c.get('grave') for c in (r.get('cascadas') or [])))
+
+
 def main(base_urls_map, producto_nombre="Sitio", output_dir_base=os.path.join('reportes', 'sitio')):
     """Punto de entrada genérico. Cada script de producto (regre_visual_tn.py,
     regre_visual_eltrece.py, regre_visual_eldoce.py, regre_visual_ciudad.py)
@@ -956,6 +968,11 @@ def main(base_urls_map, producto_nombre="Sitio", output_dir_base=os.path.join('r
                          help="No comparar estilos computados (solo geometría).")
     parser.add_argument("--sin-linea-base-ruido", action="store_true",
                          help="No captura V1 por segunda vez (mas rapido, pero sin filtrar el contenido que cambia solo).")
+    parser.add_argument("--reintentar-fallas", action="store_true",
+                         help="Si una URL tiene fallas graves, la vuelve a correr tras --espera-reintento segundos y "
+                              "solo reporta las fallas que se repiten (filtra desfases de cache entre prod y el mirror).")
+    parser.add_argument("--espera-reintento", type=int, default=90,
+                         help="Segundos de espera antes del reintento (default 90; el cache de ARC dura ~60-120s).")
     parser.add_argument("--fallar-si-graves", action="store_true",
                          help="Sale con codigo 1 si hay fallas graves (util para CI; en GitHub Actions los pasos "
                               "siguientes necesitan 'if: always()' para subir el reporte).")
@@ -1003,6 +1020,12 @@ def main(base_urls_map, producto_nombre="Sitio", output_dir_base=os.path.join('r
         r = procesar_url(descripcion, base_url, args.version, args.modo, config,
                           args.tolerancia, not args.sin_confirmacion_visual, not args.sin_estilos,
                           not args.sin_linea_base_ruido)
+        if args.reintentar_fallas and not r['fatal'] and _tiene_graves(r):
+            print(f"  ↻ Fallas graves: reintentando en {args.espera_reintento}s para descartar desfase de cache...")
+            time.sleep(args.espera_reintento)
+            r = procesar_url(descripcion, base_url, args.version, args.modo, config,
+                              args.tolerancia, not args.sin_confirmacion_visual, not args.sin_estilos,
+                              not args.sin_linea_base_ruido, confirmar_con=r['claves_fallas'])
         r['description'] = descripcion
         r['url_id'] = url_id
         r['time_elapsed'] = format_time(time.time() - start_url)

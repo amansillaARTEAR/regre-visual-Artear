@@ -795,6 +795,22 @@ def test_linea_base_vacia_no_filtra_nada():
     print("OK: sin linea base no se filtra nada")
 
 
+def test_confirmar_por_reintento_descarta_lo_que_no_se_repite():
+    """Una falla que aparece solo en una de las dos corridas (desfase de cache)
+    se descarta; la que aparece en ambas (cambio real) se conserva."""
+    primera = {('footer > li', 'AUSENTE V2'), ('h1.titulo', 'DIFERENCIA ESTILO (FONT-SIZE)')}
+    reintento = [
+        {'selector': 'h1.titulo', 'tipo': 'DIFERENCIA ESTILO (FONT-SIZE)'},   # se repite -> real
+        {'selector': 'div.otra', 'tipo': 'DIFERENCIA ALTURA (H)'},            # nueva -> no confirmada
+    ]
+    ok, descartadas = core.confirmar_fallas(reintento, primera)
+    assert [f['selector'] for f in ok] == ['h1.titulo'], ok
+    assert descartadas == 1
+    ok2, d2 = core.confirmar_fallas([], primera)
+    assert ok2 == [] and d2 == 0
+    print("OK: el reintento conserva lo que se repite y descarta lo que no")
+
+
 if __name__ == '__main__':
     tests = [v for k, v in list(globals().items()) if k.startswith('test_')]
     fallidos = 0
