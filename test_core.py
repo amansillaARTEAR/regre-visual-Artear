@@ -762,6 +762,55 @@ def test_elemento_parcialmente_visible_en_el_borde_si_se_compara():
     print("OK: un elemento apenas cortado en el borde (no oculto del todo) se sigue comparando normalmente")
 
 
+def test_linea_base_de_ruido_descarta_lo_que_cambia_solo():
+    """Un contador que cambia de alto entre dos cargas de V1 es ruido: no debe
+    reportarse cuando tambien difiere en V2. Un cambio real (que NO aparece en
+    la linea base) debe seguir reportandose."""
+    v1 = [
+        item('div', 'div.contador', 0, 0, 100, 20, class_attr='contador', order_index=0),
+        item('p', 'p.titulo', 0, 50, 100, 30, class_attr='titulo', order_index=1),
+    ]
+    v1b = [  # segunda carga de V1: el contador cambio solo
+        item('div', 'div.contador', 0, 0, 100, 60, class_attr='contador', order_index=0),
+        item('p', 'p.titulo', 0, 50, 100, 30, class_attr='titulo', order_index=1),
+    ]
+    v2 = [  # V2: el contador cambio (ruido) y el titulo cambio de ancho (real)
+        item('div', 'div.contador', 0, 0, 100, 60, class_attr='contador', order_index=0),
+        item('p', 'p.titulo', 0, 50, 140, 30, class_attr='titulo', order_index=1),
+    ]
+    ruido = core.claves_de_ruido(core.comparar_estructura_dom(v1, v1b, umbral_pixeles=3, comparar_estilos=False))
+    fallas = core.comparar_estructura_dom(v1, v2, umbral_pixeles=3, comparar_estilos=False)
+    filtradas, descartadas = core.filtrar_ruido(fallas, ruido)
+    selectores = {f['selector'] for f in filtradas}
+    assert descartadas >= 1, "debio descartar al menos el cambio del contador"
+    assert 'div.contador' not in selectores, f"el ruido no se filtro: {selectores}"
+    assert 'p.titulo' in selectores, f"el cambio real desaparecio: {selectores}"
+    print("OK: la linea base descarta el ruido y conserva el cambio real")
+
+
+def test_linea_base_vacia_no_filtra_nada():
+    fallas = [{'selector': 'a', 'tipo': 'X'}]
+    filtradas, descartadas = core.filtrar_ruido(fallas, set())
+    assert filtradas == fallas and descartadas == 0
+    print("OK: sin linea base no se filtra nada")
+
+
+def test_confirmar_por_reintento_descarta_lo_que_no_se_repite():
+    """Una falla que aparece solo en una de las dos corridas (desfase de cache)
+    se descarta; la que aparece en ambas (cambio real) se conserva."""
+    primera = {('footer > li', 'AUSENTE V2'), ('h1.titulo', 'DIFERENCIA ESTILO (FONT-SIZE)')}
+    reintento = [
+        {'selector': 'h1.titulo', 'tipo': 'DIFERENCIA ESTILO (FONT-SIZE)'},   # se repite -> real
+        {'selector': 'div.otra', 'tipo': 'DIFERENCIA ALTURA (H)'},            # nueva -> no confirmada
+    ]
+    ok, descartadas = core.confirmar_fallas(reintento, primera)
+    assert [f['selector'] for f in ok] == ['h1.titulo'], ok
+    assert descartadas == 1
+    ok2, d2 = core.confirmar_fallas([], primera)
+    assert ok2 == [] and d2 == 0
+    print("OK: el reintento conserva lo que se repite y descarta lo que no")
+
+
 if __name__ == '__main__':
     tests = [v for k, v in list(globals().items()) if k.startswith('test_')]
     fallidos = 0

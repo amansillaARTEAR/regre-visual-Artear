@@ -603,6 +603,34 @@ def comparar_estructura_dom(data_v1, data_v2, umbral_pixeles=UMBRAL_PIXELES_TOLE
     return fallas
 
 
+def claves_de_ruido(fallas_base):
+    """Claves (selector, tipo) de las diferencias que aparecen al comparar
+    V1 contra una SEGUNDA captura de V1 (misma URL, sin ?d=). Si el sitio
+    cambia solo entre dos cargas (noticias, cotizaciones, ads, rotadores),
+    esas diferencias no pueden atribuirse a la versión nueva."""
+    return {(f['selector'], f['tipo']) for f in fallas_base}
+
+
+def filtrar_ruido(fallas, claves):
+    """Descarta las fallas V1-vs-V2 cuya clave (selector, tipo) ya aparece
+    como ruido en la linea base. Devuelve (fallas_filtradas, cantidad_descartada)."""
+    if not claves:
+        return fallas, 0
+    filtradas = [f for f in fallas if (f['selector'], f['tipo']) not in claves]
+    return filtradas, len(fallas) - len(filtradas)
+
+
+def confirmar_fallas(fallas_reintento, claves_primera_corrida):
+    """Confirmacion por reintento: de las fallas de la segunda corrida, solo
+    se conservan las que YA habian aparecido en la primera (mismo selector y
+    tipo). Un desfase de cache entre PROD y VNP es aleatorio y no suele
+    repetirse; un cambio real de diseño aparece en las dos corridas.
+    Devuelve (fallas_confirmadas, cantidad_descartada)."""
+    confirmadas = [f for f in fallas_reintento
+                   if (f['selector'], f['tipo']) in claves_primera_corrida]
+    return confirmadas, len(fallas_reintento) - len(confirmadas)
+
+
 def _falla(selector, tipo, diff, v1, v2, coords_v2, coords_v1, order_index, delta_y=None, delta=None):
     return {
         'selector': selector, 'tipo': tipo, 'diff': diff, 'v1': v1, 'v2': v2,
