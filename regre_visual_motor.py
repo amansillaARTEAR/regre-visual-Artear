@@ -54,6 +54,7 @@ import time
 import argparse
 import datetime
 from collections import defaultdict
+from html import escape as esc
 
 from PIL import Image
 
@@ -512,6 +513,14 @@ def procesar_url(url_description, base_url, version_number, modo, config,
         print("  [V1'] Obteniendo linea base de ruido...")
         data_v1b, _ = ejecutar_con_reintentos(url1, modo, config)
 
+    info_elementos = {}
+    for d in list(data_v2 or []) + list(data_v1 or []):
+        if isinstance(d, dict) and d.get('selector') and d['selector'] != 'FATAL ERROR':
+            clase = d.get('class_attr')
+            info_elementos.setdefault(d['selector'], {
+                'tag': d.get('tag', ''), 'clase': clase if isinstance(clase, str) else '',
+                'texto': (d.get('texto') or d.get('texto_subtree') or '').strip()})
+
     es_fatal = (
         any(isinstance(d, dict) and d.get('selector') == 'FATAL ERROR' for d in data_v1) or
         any(isinstance(d, dict) and d.get('selector') == 'FATAL ERROR' for d in data_v2)
@@ -558,6 +567,7 @@ def procesar_url(url_description, base_url, version_number, modo, config,
         'png_v1': png_v1, 'png_v2': png_v2,
         'ruido_descartado': descartadas_ruido,
         'claves_fallas': claves_fallas,
+        'info_elementos': info_elementos,
         'reintento_descartadas': descartadas_reintento,
     }
 
@@ -645,8 +655,72 @@ LEYENDA_HTML = """
 """
 
 
+# ---------------------------------------------------------------------
+# DESCRIPCIONES EN LENGUAJE CLARO (reporte)
+# ---------------------------------------------------------------------
+NOMBRE_ESTILO = {
+    'COLOR': 'color de texto', 'BGCOLOR': 'color de fondo', 'FONTSIZE': 'tamaño de fuente',
+    'FONTWEIGHT': 'grosor de fuente', 'FONTFAMILY': 'tipo de fuente', 'TEXTALIGN': 'alineación del texto',
+    'MARGINTOP': 'margen superior', 'MARGINRIGHT': 'margen derecho',
+    'MARGINBOTTOM': 'margen inferior', 'MARGINLEFT': 'margen izquierdo',
+    'PADDINGTOP': 'relleno superior (padding)', 'PADDINGRIGHT': 'relleno derecho (padding)',
+    'PADDINGBOTTOM': 'relleno inferior (padding)', 'PADDINGLEFT': 'relleno izquierdo (padding)',
+}
+
+
+def _num(v):
+    return f"{v:.0f}" if isinstance(v, (int, float)) else str(v)
+
+
+def etiqueta_elemento(selector, info):
+    """Nombre legible: <tag> + texto visible, en vez del selector truncado."""
+    i = (info or {}).get(selector) or {}
+    tag = i.get('tag') or (selector.split('>')[-1].strip().split(':')[0].split('.')[0].split('#')[0] if selector else 'elemento')
+    texto = (i.get('texto') or '').strip()
+    clase = (i.get('clase') or '').split()
+    partes = f"<b>&lt;{esc(tag)}&gt;</b>"
+    if texto:
+        partes += f" «{esc(texto[:70])}{'…' if len(texto) > 70 else ''}»"
+    elif clase:
+        partes += f" <span style='color:#666'>(clase: {esc(clase[0])})</span>"
+    return partes
+
+
+def describir_falla(f):
+    """Una falla individual en lenguaje claro: que paso y con que valores."""
+    tipo, v1, v2, diff = f['tipo'], f['v1'], f['v2'], f['diff']
+    if tipo == 'AUSENTE V2':
+        return "🔴 Está en <b>PROD</b> pero <b>falta en el VNP</b>"
+    if tipo == 'NUEVO EN V2':
+        return "🟢 Aparece <b>solo en el VNP</b> (no existe en PROD)"
+    if tipo == 'DIFERENCIA POSICIÓN (Y)':
+        sentido = 'hacia abajo' if v2 > v1 else 'hacia arriba'
+        return f"Se movió <b>{_num(diff)}px {sentido}</b> (distancia desde el tope de la página: PROD {_num(v1)}px → VNP {_num(v2)}px)"
+    if tipo == 'DIFERENCIA POSICIÓN (X)':
+        sentido = 'hacia la derecha' if v2 > v1 else 'hacia la izquierda'
+        return f"Se movió <b>{_num(diff)}px {sentido}</b> (PROD {_num(v1)}px → VNP {_num(v2)}px desde el borde izquierdo)"
+    if tipo == 'DIFERENCIA ALTURA (H)':
+        return f"Cambió su <b>alto</b>: PROD {_num(v1)}px → VNP {_num(v2)}px ({'+' if v2 > v1 else '−'}{_num(diff)}px)"
+    if tipo == 'DIFERENCIA ANCHO (W)':
+        return f"Cambió su <b>ancho</b>: PROD {_num(v1)}px → VNP {_num(v2)}px ({'+' if v2 > v1 else '−'}{_num(diff)}px)"
+    if tipo.startswith('DIFERENCIA ESTILO'):
+        clave = tipo.replace('DIFERENCIA ESTILO (', '').rstrip(')')
+        return (f"Cambió el <b>{esc(NOMBRE_ESTILO.get(clave, clave.lower()))}</b>: "
+                f"PROD <code>{esc(str(v1))}</code> → VNP <code>{esc(str(v2))}</code>")
+    return f"{esc(tipo)}: PROD {esc(str(v1))} → VNP {esc(str(v2))}"
+
+
+LEYENDA_REPORTE = (
+    "<div style='font-size:0.85em; color:#555; background:#f6f6f6; border-radius:4px; padding:6px 10px; margin-bottom:8px;'>"
+    "<b>Cómo leer esto:</b> <b>PROD</b> = la versión publicada (V1) · <b>VNP</b> = versión no publicada, la que se valida (V2). "
+    "<b>G</b> = diferencia grave · <b>C</b> = varios elementos movidos por una sola causa (cascada, a revisar). "
+    "Hacé click en un hallazgo para verlo resaltado en la captura.</div>"
+)
+
+
 def construir_html_fallas(consolidado, cascadas, data_v2_por_selector, url_id):
-    html = "<ul>"
+    info = data_v2_por_selector or {}
+    html = LEYENDA_REPORTE + "<ul>"
 
     DESC_CASCADA = {
         'DIFERENCIA POSICIÓN (Y)': ('se movieron', 'verticalmente'),
@@ -681,11 +755,20 @@ def construir_html_fallas(consolidado, cascadas, data_v2_por_selector, url_id):
                          f"Es un cambio de diseño real: revisar si fue intencional antes de deployar.")
                 titulo = "❌ GRAVE — cambio de estilo repetido:"
             else:
-                verbo, eje = DESC_CASCADA.get(c.get('tipo'), ('se movieron', 'verticalmente'))
-                resumen = f"{c['cantidad']} elementos {verbo} {c['delta_y']:.0f}px" + (f" {eje}" if eje else "")
-                causa = (f"Causa probable: un solo elemento anterior del DOM cambió de tamaño y arrastró a los "
-                         f"{c['cantidad']} de abajo — no son {c['cantidad']} regresiones independientes, es 1 sola causa raíz "
-                         f"(empezando por <code>{c['primer_selector'][:60]}</code>).")
+                tipo_c = c.get('tipo')
+                d = c['delta_y']
+                if tipo_c == 'DIFERENCIA POSICIÓN (Y)':
+                    resumen = f"{c['cantidad']} elementos se movieron <b>{abs(d):.0f}px hacia {'abajo' if d > 0 else 'arriba'}</b>"
+                elif tipo_c == 'DIFERENCIA POSICIÓN (X)':
+                    resumen = f"{c['cantidad']} elementos se movieron <b>{abs(d):.0f}px hacia la {'derecha' if d > 0 else 'izquierda'}</b>"
+                elif tipo_c == 'DIFERENCIA ALTURA (H)':
+                    resumen = f"{c['cantidad']} elementos <b>{'crecieron' if d > 0 else 'se achicaron'} {abs(d):.0f}px de alto</b>"
+                else:
+                    resumen = f"{c['cantidad']} elementos <b>{'crecieron' if d > 0 else 'se achicaron'} {abs(d):.0f}px de ancho</b>"
+                causa = (f"Es un efecto en cadena: un elemento anterior cambió y empujó al resto, así que no son "
+                         f"{c['cantidad']} problemas distintos sino 1 solo. Primer elemento afectado: "
+                         f"{etiqueta_elemento(c['primer_selector'], info)}. "
+                         f"<br><span style='color:#888'>Ubicación: <code>{esc(c['primer_selector'])}</code></span>")
                 titulo = "⚠️ Revisar — desplazamiento en cascada:"
             html += f"""
             <li class='diff-item' style='color: {color}; border-bottom: 1px dotted #ccc; padding: 5px 0; cursor: pointer;'
@@ -714,7 +797,7 @@ def construir_html_fallas(consolidado, cascadas, data_v2_por_selector, url_id):
             v1_display = f"{f['v1']:.2f}" if isinstance(f['v1'], (int, float)) else str(f['v1'])
             v2_display = f"{f['v2']:.2f}" if isinstance(f['v2'], (int, float)) else str(f['v2'])
             diff_display = f"{f['diff']:.2f}px" if isinstance(f['diff'], (int, float)) else str(f['diff'])
-            detalle_lineas.append(f"Tipo: <b>{f['tipo']}</b> | V1: {v1_display} | V2: {v2_display} | Diff: {diff_display}{nota_visual}")
+            detalle_lineas.append(f"• {describir_falla(f)}{nota_visual}")
         detalle_consolidado = "<div style='margin-top:5px; border-left:2px solid #ccc; padding-left:5px;'>" + "<br>".join(detalle_lineas) + "</div>"
 
         html += f"""
@@ -723,9 +806,10 @@ def construir_html_fallas(consolidado, cascadas, data_v2_por_selector, url_id):
             onclick="highlightElement('{url_id}', '{coords_str}', this)"
             data-coords="{coords_str}">
             <span style="background:{color}; color:#fff; border-radius:3px; padding:1px 6px; font-size:0.8em; font-weight:bold; margin-right:6px;">{item.get('_num', '')}</span>
-            <span style="font-weight: bold;">Elemento:</span> <code>{item['selector'][:80]}</code>
-            <br><span style="font-weight: bold;">Gravedad:</span> <span style='color:{color};'>{item['gravedad'].upper()}</span>
+            <span style="font-weight: bold;">Elemento:</span> {etiqueta_elemento(item['selector'], info)}
+            <span style='color:{color}; font-size:0.85em;'>· {item['gravedad'].upper()}</span>
             {detalle_consolidado}
+            <div style="font-size:0.8em; color:#888; margin-top:3px;">Ubicación en la página: <code>{esc(item['selector'])}</code></div>
         </li>
         """
 
@@ -794,7 +878,7 @@ def generar_reporte(all_results, version_number, output_dir, timestamp, umbral_p
             resumen_texto = "✅ No se encontraron diferencias."
 
         fallas_html = "<li>Error grave, sin datos.</li>" if r['fatal'] else construir_html_fallas(
-            r['consolidado'], r['cascadas'], {}, r['url_id']
+            r['consolidado'], r['cascadas'], r.get('info_elementos', {}), r['url_id']
         )
 
         img1_tag = f"<img src='{r['filename1']}' alt='V1'>" if r.get('filename1') else "<p>Sin captura</p>"
@@ -803,8 +887,8 @@ def generar_reporte(all_results, version_number, output_dir, timestamp, umbral_p
         all_details_html += f"""
         <div style="border: 2px solid #ddd; padding: 15px; margin-top: 20px; border-radius: 8px;">
             <h2>{r['description']}</h2>
-            <p><strong>URL Base (V1):</strong> <a href="{r['url1']}" target="_blank"><code>{r['url1']}</code></a></p>
-            <p><strong>URL Comparada (V2):</strong> <a href="{r['url2']}" target="_blank"><code>{r['url2']}</code></a></p>
+            <p><strong>URL PROD (V1):</strong> <a href="{r['url1']}" target="_blank"><code>{r['url1']}</code></a></p>
+            <p><strong>URL VNP (V2):</strong> <a href="{r['url2']}" target="_blank"><code>{r['url2']}</code></a></p>
             <p><strong>Resultado:</strong> <span style="font-weight:bold; color:{alert};">{resumen_texto}</span></p>
             <p><strong>Tiempo de Ejecución:</strong> {r['time_elapsed']}</p>
             <details>
@@ -816,9 +900,9 @@ def generar_reporte(all_results, version_number, output_dir, timestamp, umbral_p
             <details>
                 <summary style="cursor:pointer; font-weight:bold; color:#1e3a8a;">Contexto Visual</summary>
                 <div class='container' id='container-{r["url_id"]}'>
-                    <div><h4>Versión Base (V1)</h4>{img1_tag}</div>
+                    <div><h4>PROD (V1)</h4>{img1_tag}</div>
                     <div id="image-container-{r['url_id']}" style="position:relative;">
-                        <h4>Versión Nueva (V2)</h4>{img2_tag}
+                        <h4>VNP (V2) — con diferencias marcadas</h4>{img2_tag}
                         <div id="highlight-box-{r['url_id']}" class="highlight-box" style="display:none;"></div>
                     </div>
                 </div>
@@ -970,7 +1054,7 @@ def main(base_urls_map, producto_nombre="Sitio", output_dir_base=os.path.join('r
                          help="No captura V1 por segunda vez (mas rapido, pero sin filtrar el contenido que cambia solo).")
     parser.add_argument("--reintentar-fallas", action="store_true",
                          help="Si una URL tiene fallas graves, la vuelve a correr tras --espera-reintento segundos y "
-                              "solo reporta las fallas que se repiten (filtra desfases de cache entre prod y el mirror).")
+                              "solo reporta las fallas que se repiten (filtra desfases de cache entre PROD y VNP).")
     parser.add_argument("--espera-reintento", type=int, default=90,
                          help="Segundos de espera antes del reintento (default 90; el cache de ARC dura ~60-120s).")
     parser.add_argument("--fallar-si-graves", action="store_true",
