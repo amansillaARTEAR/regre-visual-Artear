@@ -494,7 +494,8 @@ def ejecutar_con_reintentos(url, modo, config, intentos_max=REINTENTOS_MAX):
 # =====================================================================
 
 def procesar_url(url_description, base_url, version_number, modo, config,
-                  umbral_pixeles, usar_confirmacion_visual, comparar_estilos):
+                  umbral_pixeles, usar_confirmacion_visual, comparar_estilos,
+                  usar_linea_base_ruido=True):
     url1 = base_url
     url2 = f"{base_url}&d={version_number}" if '?' in base_url else f"{base_url}?d={version_number}"
 
@@ -502,6 +503,14 @@ def procesar_url(url_description, base_url, version_number, modo, config,
     data_v1, png_v1 = ejecutar_con_reintentos(url1, modo, config)
     print(f"  [V2] Obteniendo datos estructurales...")
     data_v2, png_v2 = ejecutar_con_reintentos(url2, modo, config)
+
+    # Linea base de ruido: una SEGUNDA captura de V1 (despues de V2, asi encierra
+    # el mismo intervalo de tiempo). Lo que cambia entre V1 y V1' es contenido
+    # vivo (noticias, cotizaciones, ads) y no puede atribuirse a la version nueva.
+    data_v1b = None
+    if usar_linea_base_ruido:
+        print("  [V1'] Obteniendo linea base de ruido...")
+        data_v1b, _ = ejecutar_con_reintentos(url1, modo, config)
 
     es_fatal = (
         any(isinstance(d, dict) and d.get('selector') == 'FATAL ERROR' for d in data_v1) or
@@ -515,6 +524,15 @@ def procesar_url(url_description, base_url, version_number, modo, config,
 
     fallas = core.comparar_estructura_dom(data_v1, data_v2, umbral_pixeles=umbral_pixeles,
                                            comparar_estilos=comparar_estilos)
+    descartadas_ruido = 0
+    if data_v1b is not None:
+        if any(isinstance(d, dict) and d.get('selector') == 'FATAL ERROR' for d in data_v1b):
+            print("     ⚠️ No se pudo obtener la linea base de ruido; se reporta sin filtrarla.")
+        else:
+            fallas_base = core.comparar_estructura_dom(data_v1, data_v1b, umbral_pixeles=umbral_pixeles,
+                                                        comparar_estilos=comparar_estilos)
+            fallas, descartadas_ruido = core.filtrar_ruido(fallas, core.claves_de_ruido(fallas_base))
+            print(f"     Ruido descartado (cambia solo entre dos cargas de V1): {descartadas_ruido} diferencias")
     otras_fallas, cascadas = core.agrupar_cascadas(fallas)
 
     if usar_confirmacion_visual and png_v1 and png_v2:
@@ -533,6 +551,7 @@ def procesar_url(url_description, base_url, version_number, modo, config,
         'url1': url1, 'url2': url2, 'fatal': False,
         'consolidado': consolidado, 'cascadas': cascadas,
         'png_v1': png_v1, 'png_v2': png_v2,
+        'ruido_descartado': descartadas_ruido,
     }
 
 
@@ -917,6 +936,13 @@ def main(base_urls_map, producto_nombre="Sitio", output_dir_base=os.path.join('r
     regre_visual_eltrece.py, regre_visual_eldoce.py, regre_visual_ciudad.py)
     llama a esta función pasando su propio BASE_URLS_MAP, nombre de producto
     (para el título del reporte) y carpeta base de reportes."""
+    # En consolas de Windows (cp1252) los emojis de los prints tiran UnicodeEncodeError.
+    for stream in (sys.stdout, sys.stderr):
+        try:
+            stream.reconfigure(encoding='utf-8')
+        except Exception:
+            pass
+
     parser = argparse.ArgumentParser(
         description=f"Regresión visual/estructural {producto_nombre} (desktop o mobile).")
     parser.add_argument("version", help="Número de versión a testear (?d=VERSION)")
@@ -928,6 +954,11 @@ def main(base_urls_map, producto_nombre="Sitio", output_dir_base=os.path.join('r
                          help="Desactiva el crop+diff visual (más rápido, pero sin ese filtro de falsos positivos).")
     parser.add_argument("--sin-estilos", action="store_true",
                          help="No comparar estilos computados (solo geometría).")
+    parser.add_argument("--sin-linea-base-ruido", action="store_true",
+                         help="No captura V1 por segunda vez (mas rapido, pero sin filtrar el contenido que cambia solo).")
+    parser.add_argument("--fallar-si-graves", action="store_true",
+                         help="Sale con codigo 1 si hay fallas graves (util para CI; en GitHub Actions los pasos "
+                              "siguientes necesitan 'if: always()' para subir el reporte).")
     args = parser.parse_args()
 
     if not args.version.isdigit():
@@ -970,7 +1001,8 @@ def main(base_urls_map, producto_nombre="Sitio", output_dir_base=os.path.join('r
 
         print(f"\n[{idx}/{len(urls_map)}] {descripcion}")
         r = procesar_url(descripcion, base_url, args.version, args.modo, config,
-                          args.tolerancia, not args.sin_confirmacion_visual, not args.sin_estilos)
+                          args.tolerancia, not args.sin_confirmacion_visual, not args.sin_estilos,
+                          not args.sin_linea_base_ruido)
         r['description'] = descripcion
         r['url_id'] = url_id
         r['time_elapsed'] = format_time(time.time() - start_url)
@@ -1007,3 +1039,11 @@ def main(base_urls_map, producto_nombre="Sitio", output_dir_base=os.path.join('r
     if "GITHUB_OUTPUT" in os.environ:
         with open(os.environ["GITHUB_OUTPUT"], "a") as f:
             f.write(f"summary_text={resumen}\n")
+
+    if args.fallar_si_graves:
+        hay_graves = any(
+            r.get('fatal') or any(c['gravedad'] == 'grave' for c in r['consolidado'])
+            or any(c.get('grave') for c in (r.get('cascadas') or []))
+            for r in all_results)
+        if hay_graves:
+            sys.exit(1)
