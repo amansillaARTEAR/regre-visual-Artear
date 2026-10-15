@@ -623,7 +623,7 @@ def filtrar_ruido(fallas, claves):
 def confirmar_fallas(fallas_reintento, claves_primera_corrida):
     """Confirmacion por reintento: de las fallas de la segunda corrida, solo
     se conservan las que YA habian aparecido en la primera (mismo selector y
-    tipo). Un desfase de cache entre prod y el mirror es aleatorio y no suele
+    tipo). Un desfase de cache entre PROD y VNP es aleatorio y no suele
     repetirse; un cambio real de diseño aparece en las dos corridas.
     Devuelve (fallas_confirmadas, cantidad_descartada)."""
     confirmadas = [f for f in fallas_reintento
