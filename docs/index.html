@@ -395,7 +395,7 @@
         <div class="card">
           <h2><span><span class="paso-badge">Paso 2</span>Generar casos de prueba</span></h2>
           <p class="muted" style="margin-top:0">
-            Claude analiza el ticket aplicando diseño de casos de QA: deriva el escenario <b>positivo</b> (camino feliz) y,
+            La IA analiza el ticket aplicando diseño de casos de QA: deriva el escenario <b>positivo</b> (camino feliz) y,
             cuando el ticket da pie a ello, un escenario <b>negativo</b> y uno de <b>borde</b> — documentados en formato
             Given-When-Then. Genera el código automatizado para cada uno y abre un <b>Pull Request</b> para que los
             revises antes de sumarlos — no se activa solo.
@@ -516,7 +516,7 @@
         <div class="card">
           <h2><span><span class="paso-badge">Paso 2</span>Generar casos de prueba</span></h2>
           <p class="muted" style="margin-top:0">
-            Claude analiza el ticket aplicando diseño de casos de QA: deriva el escenario <b>positivo</b> (camino feliz) y,
+            La IA analiza el ticket aplicando diseño de casos de QA: deriva el escenario <b>positivo</b> (camino feliz) y,
             cuando el ticket da pie a ello, un escenario <b>negativo</b> y uno de <b>borde</b> — documentados en formato
             Given-When-Then. Genera el código automatizado para cada uno y abre un <b>Pull Request</b> para que los
             revises antes de sumarlos — no se activa solo.
@@ -1206,7 +1206,7 @@ let jiraXmlContenido = "";
 // descripción, todo el historial de cambios, watchers y adjuntos en base64 — puede pesar
 // cientos de KB aunque sea un solo ticket. GitHub Actions limita el total de inputs de un
 // workflow_dispatch a 65.535 caracteres, así que en vez de mandar el XML crudo, lo parseamos
-// acá y nos quedamos solo con lo que le sirve a Claude para escribir el caso de prueba.
+// acá y nos quedamos solo con lo que le sirve a la IA para escribir el caso de prueba.
 function extraerTicketDeXml(xmlText){
   let doc;
   try{ doc = new DOMParser().parseFromString(xmlText, "text/xml"); } catch(e){ return null; }
