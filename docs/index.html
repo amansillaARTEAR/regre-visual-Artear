@@ -1699,10 +1699,18 @@ function cfgReportesAppNativa(plat){
 
 // Nombre legible de un reporte iOS a partir del filtro -k de pytest (ej. "test_reg08 or test_reg04"
 // -> "iOS · REG-08, REG-04"); sin filtro es la regresión completa.
+const NOMBRES_REG = {
+  "01":"Navbar", "02":"Home", "03":"Secciones", "04":"Vivo", "05":"Radio", "06":"Nota y compartir",
+  "07":"Ajustes", "08":"Switch de notificación", "09":"Campana", "10":"Redes", "11":"Juegos",
+  "12":"Deeplink nota", "13":"Deeplink sección", "14":"Deeplink vivo", "15":"Estabilidad final", "16":"Tags de nota"
+};
 function nombreReporteIos(filtro){
   const f = (filtro || "").trim();
   if(!f || f === "suite completa") return "iOS · Regresión completa";
-  const regs = [...f.matchAll(/test_reg(\d+)/gi)].map(m => "REG-" + m[1]);
+  const regs = [...f.matchAll(/test_reg(\d+)/gi)].map(m => {
+    const n = String(Number(m[1])).padStart(2, "0");
+    return "REG-" + n + (NOMBRES_REG[n] ? " " + NOMBRES_REG[n] : "");
+  });
   return "iOS · " + (regs.length ? regs.join(", ") : f);
 }
 
@@ -1751,7 +1759,7 @@ async function loadReportesAppNativa(plat){
       // Los reportes iOS viejos se publicaron con el nombre de relleno "TN-iOS-DeviceFarm":
       // para esos se usa el título del run de Actions.
       if(nombre === "TN-iOS-DeviceFarm") nombre = null;
-      if(!nombre) nombre = info ? info.titulo : `Run ${c.name}`;
+      if(!nombre) nombre = plat === "ios" ? "TN iOS · Regresión" : (info ? info.titulo : `Run ${c.name}`);
       let casos = "";
       if(plat === "ios"){
         let filtro = meta && meta.filtro;
