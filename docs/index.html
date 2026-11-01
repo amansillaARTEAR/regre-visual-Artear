@@ -575,9 +575,16 @@
             <div style="flex:1 1 300px">
               <h3>iOS (Device Farm)</h3>
               <p class="muted" style="margin-top:0">
-                Instala el <code>.ipa</code> en un dispositivo remoto de Device Farm. Pendiente: falta el acceso a la cuenta de AWS.
+                Requiere crear la sesión a mano en <a href="https://us-west-2.console.aws.amazon.com/devicefarm/home?region=us-west-2#/mobile/projects" target="_blank">Device Farm</a> (proyecto "Ale M" → "Remote access") y pegar acá el Appium endpoint.
               </p>
-              <div class="hint">Todavía no disponible.</div>
+              <label>Appium endpoint de la sesión</label>
+              <input type="text" id="anIosEndpoint" placeholder="https://...devicefarm...amazonaws.com/wd/hub/...">
+              <label>Bundle id <span class="muted">(opcional, el de las capabilities de la sesión)</span></label>
+              <input type="text" id="anIosBundle" placeholder="vacío = el que informe la sesión">
+              <div class="actions">
+                <button onclick="dispatchAppNativaIos()" id="btnAnIosDispatch">Disparar corrida iOS</button>
+              </div>
+              <div class="hint">Usa los casos tildados arriba (ninguno = suite completa). Los deeplinks (REG-12 a 14) se omiten en iOS: no son concluyentes en Device Farm. La sesión dura ~2 h.</div>
             </div>
 
           </div>
@@ -600,6 +607,14 @@
             Reporte HTML (con evidencias) de cada corrida, publicado automáticamente al final de cada ejecución. Se guardan las últimas 10; las más viejas se borran solas.
           </p>
           <div id="anReporteWrap"><div class="empty">Configurá el token para ver los reportes.</div></div>
+        </div>
+
+        <div class="card">
+          <h2>
+            Reportes publicados — iOS
+            <button class="ghost" onclick="loadReportesAppNativa('ios')">↻ Actualizar</button>
+          </h2>
+          <div id="anReporteWrapIos"><div class="empty">Configurá el token para ver los reportes.</div></div>
         </div>
 
       </div>
@@ -631,6 +646,7 @@ const WEBMOBILE_WORKFLOW = "webmobile.yml";
 const WEBMOBILE_IOS_WORKFLOW = "webmobile-ios.yml";
 const WEBMOBILE_GENERAR_WORKFLOW = "generar-caso-desde-jira.yml";
 const APPNATIVA_WORKFLOW = "app-nativa.yml";
+const APPNATIVA_IOS_WORKFLOW = "app-nativa-ios.yml";
 const APPNATIVA_GENERAR_WORKFLOW = "generar-caso-desde-jira-app.yml";
 // Carpeta fija que usa CARPETA_APKS en app-nativa.yml (y correr.ps1 para corridas manuales).
 // Ojo: NO es la carpeta apks\ del checkout del runner (actions-runner\_work\...) -- esa la
@@ -687,7 +703,7 @@ function showView(view){
   document.getElementById("viewSub").textContent = VIEW_META[view].sub;
   localStorage.setItem("qa_tools_view", view);
   if(view === "webmobile" && TOKEN){ loadRunsWebmobile(); loadRunnerStatusWebmobile(); cargarCasosWebmobile(); }
-  else if(view === "appnativa" && TOKEN){ loadRunsAppNativa(); loadRunnerStatusWebmobile(); loadReportesAppNativa(); cargarCasosAppNativa(); }
+  else if(view === "appnativa" && TOKEN){ loadRunsAppNativa(); loadRunnerStatusWebmobile(); loadReportesAppNativa(); loadReportesAppNativa("ios"); cargarCasosAppNativa(); }
   else { document.getElementById("wmRunnerBadge").style.display = "none"; }
 }
 
@@ -1597,12 +1613,34 @@ async function dispatchAppNativa(){
   }
 }
 
+async function dispatchAppNativaIos(){
+  if(!TOKEN){ toast("Configurá el token primero", "error"); return; }
+  const filtro = selectedCasosFiltroAppNativa();
+  const endpoint = document.getElementById("anIosEndpoint").value.trim();
+  const bundle_id = document.getElementById("anIosBundle").value.trim();
+  if(!endpoint){ toast("Pegá la URL del endpoint de AWS Device Farm primero", "error"); return; }
+  const btn = document.getElementById("btnAnIosDispatch");
+  btn.disabled = true; btn.innerHTML = `<span class="spinner"></span> Disparando…`;
+  try{
+    await gh(`/repos/${WEBMOBILE_OWNER}/${WEBMOBILE_REPO}/actions/workflows/${APPNATIVA_IOS_WORKFLOW}/dispatches`, {
+      method: "POST",
+      body: JSON.stringify({ ref: "main", inputs: { appium_endpoint: endpoint, filtro, bundle_id } })
+    });
+    toast(filtro ? `Corrida iOS disparada (filtro: ${filtro})` : "Corrida iOS disparada (suite completa)", "ok");
+    setTimeout(loadRunsAppNativa, 2500);
+  } catch(e){
+    toast("Error al disparar: " + e.message, "error");
+  } finally {
+    btn.disabled = false; btn.textContent = "Disparar corrida iOS";
+  }
+}
+
 async function loadRunsAppNativa(){
   if(!TOKEN) return;
   const wrap = document.getElementById("anRunsTableWrap");
   try{
     const data = await ghJson(`/repos/${WEBMOBILE_OWNER}/${WEBMOBILE_REPO}/actions/runs?per_page=20`);
-    const runs = data.workflow_runs.filter(r => r.path.endsWith(APPNATIVA_WORKFLOW));
+    const runs = data.workflow_runs.filter(r => r.path.endsWith(APPNATIVA_WORKFLOW) || r.path.endsWith(APPNATIVA_IOS_WORKFLOW));
     if(!runs.length){ wrap.innerHTML = `<div class="empty">Todavía no hay corridas.</div>`; return; }
     wrap.innerHTML = `
       <table>
@@ -1649,14 +1687,22 @@ function parcharPushStateEnIframe(html){
   return html.includes("<head>") ? html.replace("<head>", "<head>" + parche) : parche + html;
 }
 
-async function loadReportesAppNativa(){
+// plat: "android" (default) o "ios" -- cada plataforma publica en su propia rama de reportes.
+function cfgReportesAppNativa(plat){
+  return plat === "ios"
+    ? { branch: "reportes-appnativa-ios", runsPath: "reportes/appnativa/ios/runs", workflow: APPNATIVA_IOS_WORKFLOW, wrapId: "anReporteWrapIos", titulo: "App Nativa — iOS" }
+    : { branch: APPNATIVA_REPORT_BRANCH, runsPath: APPNATIVA_REPORT_RUNS_PATH, workflow: APPNATIVA_WORKFLOW, wrapId: "anReporteWrap", titulo: "App Nativa — Android" };
+}
+
+async function loadReportesAppNativa(plat){
   if(!TOKEN) return;
-  const wrap = document.getElementById("anReporteWrap");
+  const cfg = cfgReportesAppNativa(plat);
+  const wrap = document.getElementById(cfg.wrapId);
   wrap.innerHTML = `<div class="empty"><span class="spinner"></span> Buscando…</div>`;
   try{
     // Cada corrida publica en su propia carpeta (reportes/appnativa/android/runs/<run_id>),
     // así que acá se lista TODO lo que haya en runs/, no un único reporte.html fijo.
-    const listing = await ghJson(`/repos/${WEBMOBILE_OWNER}/${WEBMOBILE_REPO}/contents/${APPNATIVA_REPORT_RUNS_PATH}?ref=${APPNATIVA_REPORT_BRANCH}`);
+    const listing = await ghJson(`/repos/${WEBMOBILE_OWNER}/${WEBMOBILE_REPO}/contents/${cfg.runsPath}?ref=${cfg.branch}`);
     const carpetas = Array.isArray(listing) ? listing.filter(f => f.type === "dir") : [];
     if(!carpetas.length) throw new Error("no hay corridas publicadas");
     // El nombre de cada carpeta es el run id de GitHub Actions, siempre creciente -- ordenar
@@ -1669,7 +1715,7 @@ async function loadReportesAppNativa(){
     let infoPorRun = {};
     try{
       const data = await ghJson(`/repos/${WEBMOBILE_OWNER}/${WEBMOBILE_REPO}/actions/runs?per_page=100`);
-      data.workflow_runs.filter(r => r.path.endsWith(APPNATIVA_WORKFLOW)).forEach(r => {
+      data.workflow_runs.filter(r => r.path.endsWith(cfg.workflow)).forEach(r => {
         infoPorRun[String(r.id)] = { titulo: r.display_title || r.name, fecha: r.created_at };
       });
     } catch(e){ /* sin esto igual se puede listar, solo que más pelado */ }
@@ -1684,7 +1730,7 @@ async function loadReportesAppNativa(){
       const info = infoPorRun[c.name];
       let nombre = null;
       try{
-        const meta = JSON.parse(await ghRawRepo(WEBMOBILE_OWNER, WEBMOBILE_REPO, `${c.path}/meta.json`, APPNATIVA_REPORT_BRANCH, false));
+        const meta = JSON.parse(await ghRawRepo(WEBMOBILE_OWNER, WEBMOBILE_REPO, `${c.path}/meta.json`, cfg.branch, false));
         if(meta.apk){
           const ticket = meta.apk.match(/^[A-Za-z]+-\d+/);
           nombre = ticket ? ticket[0] : meta.apk;
@@ -1700,7 +1746,7 @@ async function loadReportesAppNativa(){
           <div class="name" title="${esc(it.nombre)}">${esc(it.nombre)}</div>
           <div class="date">${it.fecha ? fmtDate(it.fecha) : ""}</div>
         </div>
-        <button class="secondary" onclick="verReporteAppNativa('${it.runId}')">Ver</button>
+        <button class="secondary" onclick="verReporteAppNativa('${it.runId}', '${plat || "android"}')">Ver</button>
       </div>
     `).join("")}</div>`;
   } catch(e){
@@ -1708,23 +1754,24 @@ async function loadReportesAppNativa(){
   }
 }
 
-async function verReporteAppNativa(runId){
+async function verReporteAppNativa(runId, plat){
+  const cfg = cfgReportesAppNativa(plat);
   const modalBg = document.getElementById("modalBg");
   const frame = document.getElementById("modalFrame");
-  document.getElementById("modalTitle").textContent = "App Nativa — Android";
+  document.getElementById("modalTitle").textContent = cfg.titulo;
   frame.srcdoc = `<body style="font-family:sans-serif;padding:40px;color:#666">Cargando reporte…</body>`;
   modalBg.classList.add("open");
   try{
-    const path = `${APPNATIVA_REPORT_RUNS_PATH}/${runId}`;
-    const listing = await ghJson(`/repos/${WEBMOBILE_OWNER}/${WEBMOBILE_REPO}/contents/${path}?ref=${APPNATIVA_REPORT_BRANCH}`);
+    const path = `${cfg.runsPath}/${runId}`;
+    const listing = await ghJson(`/repos/${WEBMOBILE_OWNER}/${WEBMOBILE_REPO}/contents/${path}?ref=${cfg.branch}`);
     const htmlFile = listing.find(f => f.name.endsWith(".html"));
     if(!htmlFile) throw new Error("no se encontró reporte.html en la rama");
-    let html = await ghRawRepo(WEBMOBILE_OWNER, WEBMOBILE_REPO, htmlFile.path, APPNATIVA_REPORT_BRANCH, false);
+    let html = await ghRawRepo(WEBMOBILE_OWNER, WEBMOBILE_REPO, htmlFile.path, cfg.branch, false);
     const evidDir = listing.find(f => f.name === "evidencias" && f.type === "dir");
     if(evidDir){
-      const evidencias = await ghJson(`/repos/${WEBMOBILE_OWNER}/${WEBMOBILE_REPO}/contents/${evidDir.path}?ref=${APPNATIVA_REPORT_BRANCH}`);
+      const evidencias = await ghJson(`/repos/${WEBMOBILE_OWNER}/${WEBMOBILE_REPO}/contents/${evidDir.path}?ref=${cfg.branch}`);
       await Promise.all(evidencias.map(async f => {
-        const blob = await ghRawRepo(WEBMOBILE_OWNER, WEBMOBILE_REPO, f.path, APPNATIVA_REPORT_BRANCH, true);
+        const blob = await ghRawRepo(WEBMOBILE_OWNER, WEBMOBILE_REPO, f.path, cfg.branch, true);
         const url = URL.createObjectURL(blob);
         html = html.split(`evidencias/${f.name}`).join(url);
       }));
