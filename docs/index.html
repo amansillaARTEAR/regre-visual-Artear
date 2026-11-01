@@ -579,6 +579,8 @@
               </p>
               <label>Appium endpoint de la sesión</label>
               <input type="text" id="anIosEndpoint" placeholder="https://...devicefarm...amazonaws.com/wd/hub/...">
+              <label>Build / ticket <span class="muted">(nombre del reporte, ej: TN-10.10.0-50005410.ipa o AMR-2087)</span></label>
+              <input type="text" id="anIosApp" placeholder="ej: TN-10.10.0-50005410.ipa">
               <label>Bundle id <span class="muted">(opcional, el de las capabilities de la sesión)</span></label>
               <input type="text" id="anIosBundle" placeholder="vacío = el que informe la sesión">
               <div class="actions">
@@ -1618,13 +1620,14 @@ async function dispatchAppNativaIos(){
   const filtro = selectedCasosFiltroAppNativa();
   const endpoint = document.getElementById("anIosEndpoint").value.trim();
   const bundle_id = document.getElementById("anIosBundle").value.trim();
+  const app = document.getElementById("anIosApp").value.trim();
   if(!endpoint){ toast("Pegá la URL del endpoint de AWS Device Farm primero", "error"); return; }
   const btn = document.getElementById("btnAnIosDispatch");
   btn.disabled = true; btn.innerHTML = `<span class="spinner"></span> Disparando…`;
   try{
     await gh(`/repos/${WEBMOBILE_OWNER}/${WEBMOBILE_REPO}/actions/workflows/${APPNATIVA_IOS_WORKFLOW}/dispatches`, {
       method: "POST",
-      body: JSON.stringify({ ref: "main", inputs: { appium_endpoint: endpoint, filtro, bundle_id } })
+      body: JSON.stringify({ ref: "main", inputs: { appium_endpoint: endpoint, filtro, bundle_id, app } })
     });
     toast(filtro ? `Corrida iOS disparada (filtro: ${filtro})` : "Corrida iOS disparada (suite completa)", "ok");
     setTimeout(loadRunsAppNativa, 2500);
@@ -1741,29 +1744,31 @@ async function loadReportesAppNativa(plat){
       try{
         meta = JSON.parse(await ghRawRepo(WEBMOBILE_OWNER, WEBMOBILE_REPO, `${c.path}/meta.json`, cfg.branch, false));
         if(meta.apk){
-          const ticket = meta.apk.match(/^[A-Za-z]+-\d+/);
+          const ticket = meta.apk.match(/^[A-Za-z]+-\d+(?!\d|\.\d)/);  // "TN-10.10.0..." es una versión, no un ticket
           nombre = ticket ? ticket[0] : meta.apk;
         }
       } catch(e){ /* sin meta.json -- se cae al fallback de abajo */ }
+      // Los reportes iOS viejos se publicaron con el nombre de relleno "TN-iOS-DeviceFarm":
+      // para esos se usa el título del run de Actions.
+      if(nombre === "TN-iOS-DeviceFarm") nombre = null;
+      if(!nombre) nombre = info ? info.titulo : `Run ${c.name}`;
+      let casos = "";
       if(plat === "ios"){
-        // En iOS el .ipa es siempre el mismo ("TN-iOS-DeviceFarm"), no sirve de nombre: se usan
-        // los casos corridos (meta.filtro, o el filtro que figura en el título del run de Actions).
         let filtro = meta && meta.filtro;
         if(filtro === undefined || filtro === null){
           const m = info && info.titulo.match(/— (.*) por @/);
           filtro = m ? m[1] : "";
         }
-        nombre = nombreReporteIos(filtro);
+        casos = nombreReporteIos(filtro).replace("iOS · ", "");
       }
-      if(!nombre) nombre = info ? info.titulo : `Run ${c.name}`;
-      return { runId: c.name, nombre, fecha: info ? info.fecha : null };
+      return { runId: c.name, nombre, fecha: info ? info.fecha : null, casos };
     }));
 
     wrap.innerHTML = `<div class="reports-list">${items.map(it => `
       <div class="report-item">
         <div class="info">
           <div class="name" title="${esc(it.nombre)}">${esc(it.nombre)}</div>
-          <div class="date">${it.fecha ? fmtDate(it.fecha) : ""}</div>
+          <div class="date">${[it.fecha ? fmtDate(it.fecha) : "", it.casos].filter(Boolean).join(" · ")}</div>
         </div>
         <button class="secondary" onclick="verReporteAppNativa('${it.runId}', '${plat || "android"}')">Ver</button>
       </div>
