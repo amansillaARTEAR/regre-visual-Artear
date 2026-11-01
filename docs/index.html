@@ -644,6 +644,7 @@ const WEBMOBILE_GENERADOS_DIR = "appium-mobile-web-qa/tests/generados";
 // con su propio nombre de grupo por defecto para los casos que no traen "# Componente:".
 const APPNATIVA_TEST_FILES = [
   { path: "appium-native-app-qa/tests/test_smoke.py", componente: "Smoke" },
+  { path: "appium-native-app-qa/tests/test_regresion.py", componente: "Regresión completa" },
   { path: "appium-native-app-qa/tests/test_amr2083.py", componente: "AMR-2083 · Navbar" }
 ];
 const APPNATIVA_GENERADOS_DIR = "appium-native-app-qa/tests/generados";
@@ -1451,8 +1452,10 @@ function renderCasosTableAppNativa(){
     if(!grupos.has(c.componente)) grupos.set(c.componente, []);
     grupos.get(c.componente).push(c);
   });
+  const FIJOS = ["Smoke", "Regresión completa"];
+  const orden = n => { const i = FIJOS.indexOf(n); return i < 0 ? FIJOS.length : i; };
   const nombresGrupo = [...grupos.keys()].sort((a, b) =>
-    a === "Smoke" ? -1 : b === "Smoke" ? 1 : a.localeCompare(b));
+    orden(a) - orden(b) || a.localeCompare(b));
 
   body.innerHTML = nombresGrupo.map(nombreGrupo => {
     const casos = grupos.get(nombreGrupo);
