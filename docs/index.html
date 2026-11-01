@@ -602,7 +602,7 @@
 
         <div class="card">
           <h2>
-            Reportes publicados
+            Reportes publicados — Android
             <button class="ghost" onclick="loadReportesAppNativa()">↻ Actualizar</button>
           </h2>
           <p class="muted" style="margin-top:0">
@@ -1760,15 +1760,15 @@ async function loadReportesAppNativa(plat){
       // para esos se usa el título del run de Actions.
       if(nombre === "TN-iOS-DeviceFarm") nombre = null;
       if(!nombre) nombre = plat === "ios" ? "TN iOS · Regresión" : (info ? info.titulo : `Run ${c.name}`);
-      let casos = "";
-      if(plat === "ios"){
-        let filtro = meta && meta.filtro;
-        if(filtro === undefined || filtro === null){
-          const m = info && info.titulo.match(/— (.*) por @/);
-          filtro = m ? m[1] : "";
-        }
-        casos = nombreReporteIos(filtro).replace("iOS · ", "");
+      // Casos corridos: del meta.json (reportes nuevos) o, en los viejos, del filtro que figura en
+      // el título del run de Actions.
+      let filtro = meta && meta.filtro;
+      if(filtro === undefined || filtro === null){
+        const m = info && info.titulo.match(/— (.*) por @/);
+        filtro = m ? m[1] : null;
       }
+      let casos = filtro === null ? "" : nombreReporteIos(filtro).replace("iOS · ", "");
+      if(casos.length > 90) casos = casos.slice(0, 87) + "…";
       return { runId: c.name, nombre, fecha: info ? info.fecha : null, casos };
     }));
 
