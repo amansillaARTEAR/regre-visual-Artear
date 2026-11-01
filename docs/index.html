@@ -1694,6 +1694,15 @@ function cfgReportesAppNativa(plat){
     : { branch: APPNATIVA_REPORT_BRANCH, runsPath: APPNATIVA_REPORT_RUNS_PATH, workflow: APPNATIVA_WORKFLOW, wrapId: "anReporteWrap", titulo: "App Nativa — Android" };
 }
 
+// Nombre legible de un reporte iOS a partir del filtro -k de pytest (ej. "test_reg08 or test_reg04"
+// -> "iOS · REG-08, REG-04"); sin filtro es la regresión completa.
+function nombreReporteIos(filtro){
+  const f = (filtro || "").trim();
+  if(!f || f === "suite completa") return "iOS · Regresión completa";
+  const regs = [...f.matchAll(/test_reg(\d+)/gi)].map(m => "REG-" + m[1]);
+  return "iOS · " + (regs.length ? regs.join(", ") : f);
+}
+
 async function loadReportesAppNativa(plat){
   if(!TOKEN) return;
   const cfg = cfgReportesAppNativa(plat);
@@ -1728,14 +1737,24 @@ async function loadReportesAppNativa(plat){
     // run id a secas si tampoco se encontró el run.
     const items = await Promise.all(carpetas.map(async c => {
       const info = infoPorRun[c.name];
-      let nombre = null;
+      let nombre = null, meta = null;
       try{
-        const meta = JSON.parse(await ghRawRepo(WEBMOBILE_OWNER, WEBMOBILE_REPO, `${c.path}/meta.json`, cfg.branch, false));
+        meta = JSON.parse(await ghRawRepo(WEBMOBILE_OWNER, WEBMOBILE_REPO, `${c.path}/meta.json`, cfg.branch, false));
         if(meta.apk){
           const ticket = meta.apk.match(/^[A-Za-z]+-\d+/);
           nombre = ticket ? ticket[0] : meta.apk;
         }
       } catch(e){ /* sin meta.json -- se cae al fallback de abajo */ }
+      if(plat === "ios"){
+        // En iOS el .ipa es siempre el mismo ("TN-iOS-DeviceFarm"), no sirve de nombre: se usan
+        // los casos corridos (meta.filtro, o el filtro que figura en el título del run de Actions).
+        let filtro = meta && meta.filtro;
+        if(filtro === undefined || filtro === null){
+          const m = info && info.titulo.match(/— (.*) por @/);
+          filtro = m ? m[1] : "";
+        }
+        nombre = nombreReporteIos(filtro);
+      }
       if(!nombre) nombre = info ? info.titulo : `Run ${c.name}`;
       return { runId: c.name, nombre, fecha: info ? info.fecha : null };
     }));
