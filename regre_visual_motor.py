@@ -191,6 +191,16 @@ def forzar_carga_contenido(driver, espera_scroll=2):
 # =====================================================================
 
 JS_EXTRACCION = """
+    // Recorta por caracteres reales (code points), no por unidades UTF-16:
+    // un .slice() comun puede partir un emoji a la mitad y dejar un
+    // "surrogate" suelto, que chromedriver no puede deserializar
+    // ("cannot deserialize the result value received from Runtime.callFunctionOn").
+    // Caso real: titulo de Shorts de El Trece con emojis, v738.
+    function cortar(s, n) {
+        var arr = Array.from(s || '');
+        return (n < 0 ? arr.slice(n) : arr.slice(0, n)).join('');
+    }
+
     function getCssSelector(el) {
         if (!(el instanceof Element)) return;
         var path = [];
@@ -252,7 +262,7 @@ JS_EXTRACCION = """
                 texto += el.childNodes[c].textContent;
             }
         }
-        texto = texto.trim().slice(0, 60);
+        texto = cortar(texto.trim(), 60);
 
         // Texto de todo el subárbol (no solo hijos de texto directos), para
         // detectar contenido real distinto en wrappers de tarjetas cuyo
@@ -261,7 +271,7 @@ JS_EXTRACCION = """
         // elementos emparejados por posición son en verdad "la misma tarjeta"
         // o dos noticias distintas de un listado que se actualiza en vivo —
         // no forma parte del fingerprint de identidad.
-        var textoSubtree = (el.innerText || el.textContent || '').trim().replace(/\\s+/g, ' ').slice(0, 80);
+        var textoSubtree = cortar((el.innerText || el.textContent || '').trim().replace(/\\s+/g, ' '), 80);
 
         // Identidad visual del subárbol: muchas tarjetas de un carrusel/grilla
         // "destacados"/"recomendados" son solo una imagen + poco o nada de
@@ -285,7 +295,7 @@ JS_EXTRACCION = """
         }
         // Solo el path (sin query params de cache-busting/resize) para que no
         // cuente como "distinta" la misma imagen servida con otro tamaño.
-        imgSrc = imgSrc.split('?')[0].slice(-120);
+        imgSrc = cortar(imgSrc.split('?')[0], -120);
 
         // Señal de contenido para contenedores de ads (ad-slot, banner-container,
         // etc.): la creatividad se renderiza en un <iframe> de otro origen, así
@@ -300,7 +310,7 @@ JS_EXTRACCION = """
         if (iframeEl) {
             iframeSrc = iframeEl.getAttribute('src') || iframeEl.getAttribute('id') || iframeEl.getAttribute('name') || '';
         }
-        iframeSrc = iframeSrc.slice(-200);
+        iframeSrc = cortar(iframeSrc, -200);
 
         data.push({
             tag: el.tagName.toLowerCase(),
