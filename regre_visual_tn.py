@@ -36,6 +36,7 @@ BASE_URLS_MAP = {
     "https://tn.com.ar/juegos/": "Juegos",
     "https://tn.com.ar/elecciones-2025/": "Elecciones",
     "https://tn.com.ar/internacional/": "Internacional",
+    "https://tn.com.ar/anses/": "Anses",
     "https://tn.com.ar/deportes/automovilismo/2025/11/07/el-posteo-que-williams-le-dedico-a-colapinto-despues-de-ser-confirmado-en-alpine-para-la-temporada-2026-de-f1/": "Article",
     "https://tn.com.ar/videos/videos/2026/04/26/asi-se-ve-una-tormenta-electrica-desde-las-alturas/": "Video",
     "https://tn.com.ar/economia/2025/11/09/vivir-a-credito-crece-el-endeudamiento-cotidiano-y-hasta-el-40-del-sueldo-se-destina-a-pagar-la-tarjeta/": "Longform c/fondo",
