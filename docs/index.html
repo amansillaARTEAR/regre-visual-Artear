@@ -1657,9 +1657,14 @@ async function dispatchAppNativaIos(){
   // Cada suite tiene sus casos: regresión = test_regNN, smoke = test_0N_* (los mismos de Android).
   // Un caso de otra suite no existe y dejaría la corrida con 0 pruebas.
   const usbSel = document.getElementById("anIosDestino").value === "usb";
-  const suite = usbSel ? document.getElementById("anIosUsbSuite").value : "regresion";
-  const propio = suite === "smoke" ? /^test_0\d_/i : /^test_reg\d+/i;
   const tildados = [...casosSeleccionadosAn];
+  // Con casos tildados la suite se deduce de ellos (en el iPhone por cable); sin tildar, manda el selector.
+  const hayReg = tildados.some(c => /^test_reg\d+/i.test(c));
+  const haySmoke = tildados.some(c => /^test_0\d_/i.test(c));
+  let suite = usbSel ? document.getElementById("anIosUsbSuite").value : "regresion";
+  if(usbSel && hayReg && !haySmoke) suite = "regresion";
+  else if(usbSel && haySmoke && !hayReg) suite = "smoke";
+  const propio = suite === "smoke" ? /^test_0\d_/i : /^test_reg\d+/i;
   const casosIos = tildados.filter(c => propio.test(c));
   if(tildados.length && !casosIos.length){
     toast(`Los casos tildados no son de la suite ${suite === "smoke" ? "Smoke" : "Regresión"}. Destildalos (Limpiar selección) o tildá los que correspondan.`, "error");
