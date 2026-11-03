@@ -1649,7 +1649,15 @@ function onCambioDestinoIos(){
 
 async function dispatchAppNativaIos(){
   if(!TOKEN){ toast("Configurá el token primero", "error"); return; }
-  const filtro = selectedCasosFiltroAppNativa();
+  // La suite iOS son los test_regNN; los casos de Android (test_01_...) no existen acá y dejarían la corrida vacía.
+  const tildados = [...casosSeleccionadosAn];
+  const casosIos = tildados.filter(c => /^test_regd+/i.test(c));
+  if(tildados.length && !casosIos.length){
+    toast("Los casos tildados son de Android y no existen en iOS. Destildalos (Limpiar selección) o tildá casos REG-xx.", "error");
+    return;
+  }
+  if(casosIos.length < tildados.length) toast("Se ignoraron los casos de Android tildados; en iOS corren solo los REG-xx.", "ok");
+  const filtro = casosIos.join(" or ");
   const app = document.getElementById("anIosApp").value.trim();
   const usb = document.getElementById("anIosDestino").value === "usb";
   let workflow, inputs;
