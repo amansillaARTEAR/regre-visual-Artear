@@ -836,7 +836,8 @@ function agregarUrl(name){
 function onUrlSearchInput(){
   const producto = document.getElementById("producto").value;
   const q = document.getElementById("urlSearch").value.trim().toLowerCase();
-  const disponibles = (PRODUCTOS[producto] || []).filter(name => !urlsSeleccionadas.includes(name));
+  const disponibles = (PRODUCTOS[producto] || []).filter(name => !urlsSeleccionadas.includes(name))
+    .sort((a, b) => a.localeCompare(b, 'es', {sensitivity: 'base'}));
   const filtradas = q ? disponibles.filter(name => name.toLowerCase().includes(q)) : disponibles;
   const box = document.getElementById("urlSuggestions");
   if(filtradas.length === 0){
