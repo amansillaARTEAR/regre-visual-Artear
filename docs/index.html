@@ -591,6 +591,11 @@
                   Corre en el iPhone conectado por cable a la PC del runner, con el mismo WebDriverAgent que usa Mobile View.
                   Necesita el runner prendido, el iPhone desbloqueado y la app ya instalada.
                 </p>
+                <label>Suite</label>
+                <select id="anIosUsbSuite">
+                  <option value="regresion" selected>Regresión (REG-xx)</option>
+                  <option value="smoke">Smoke (los mismos casos SMK que en Android)</option>
+                </select>
                 <label>App a probar</label>
                 <select id="anIosUsbApp">
                   <option value="com.cmd.tn" selected>TN (producción) — com.cmd.tn</option>
@@ -1649,21 +1654,25 @@ function onCambioDestinoIos(){
 
 async function dispatchAppNativaIos(){
   if(!TOKEN){ toast("Configurá el token primero", "error"); return; }
-  // La suite iOS son los test_regNN; los casos de Android (test_01_...) no existen acá y dejarían la corrida vacía.
+  // Cada suite tiene sus casos: regresión = test_regNN, smoke = test_0N_* (los mismos de Android).
+  // Un caso de otra suite no existe y dejaría la corrida con 0 pruebas.
+  const usbSel = document.getElementById("anIosDestino").value === "usb";
+  const suite = usbSel ? document.getElementById("anIosUsbSuite").value : "regresion";
+  const propio = suite === "smoke" ? /^test_0\d_/i : /^test_reg\d+/i;
   const tildados = [...casosSeleccionadosAn];
-  const casosIos = tildados.filter(c => /^test_regd+/i.test(c));
+  const casosIos = tildados.filter(c => propio.test(c));
   if(tildados.length && !casosIos.length){
-    toast("Los casos tildados son de Android y no existen en iOS. Destildalos (Limpiar selección) o tildá casos REG-xx.", "error");
+    toast(`Los casos tildados no son de la suite ${suite === "smoke" ? "Smoke" : "Regresión"}. Destildalos (Limpiar selección) o tildá los que correspondan.`, "error");
     return;
   }
-  if(casosIos.length < tildados.length) toast("Se ignoraron los casos de Android tildados; en iOS corren solo los REG-xx.", "ok");
+  if(casosIos.length < tildados.length) toast("Se ignoraron los casos tildados que no son de esta suite.", "ok");
   const filtro = casosIos.join(" or ");
   const app = document.getElementById("anIosApp").value.trim();
   const usb = document.getElementById("anIosDestino").value === "usb";
   let workflow, inputs;
   if(usb){
     workflow = APPNATIVA_IOS_USB_WORKFLOW;
-    inputs = { filtro, app, bundle_id: document.getElementById("anIosUsbApp").value };
+    inputs = { filtro, app, bundle_id: document.getElementById("anIosUsbApp").value, suite };
   } else {
     const endpoint = document.getElementById("anIosEndpoint").value.trim();
     if(!endpoint){ toast("Pegá la URL del endpoint de AWS Device Farm primero", "error"); return; }
