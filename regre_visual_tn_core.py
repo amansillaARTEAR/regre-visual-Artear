@@ -528,6 +528,15 @@ def comparar_estructura_dom(data_v1, data_v2, umbral_pixeles=UMBRAL_PIXELES_TOLE
     """
     pares, solo_v1, solo_v2 = emparejar_elementos(data_v1, data_v2)
 
+    # Fingerprints presentes en cada versión: un AUSENTE/NUEVO cuyo
+    # fingerprint existe en LAS DOS es un desparejo de cantidad de un
+    # elemento repetido (ej: el ícono de play de las cards de video), no
+    # un elemento que desapareció. Solo se usa como dato informativo para
+    # detectar_actualizaciones_contenido.
+    fps_v1 = {construir_fingerprint(it) for it in data_v1 if not elemento_excluido(it)}
+    fps_v2 = {construir_fingerprint(it) for it in data_v2 if not elemento_excluido(it)}
+    fps_ambas = (fps_v1 & fps_v2) - {None}
+
     fallas = []
 
     for item1, item2, debil in pares:
@@ -592,7 +601,7 @@ def comparar_estructura_dom(data_v1, data_v2, umbral_pixeles=UMBRAL_PIXELES_TOLE
         coords_v1 = {'x': item1['x'], 'y': item1['y'], 'width': item1['width'], 'height': item1['height']}
         f = _falla(item1.get('selector'), 'AUSENTE V2', 'N/A', 'N/A', 'N/A',
                    coords_v1, coords_v1, item1.get('order_index', 0))
-        f.update(_datos_contenido(item1))
+        f.update(_datos_contenido(item1, fps_ambas))
         fallas.append(f)
 
     for item2 in solo_v2:
@@ -601,13 +610,13 @@ def comparar_estructura_dom(data_v1, data_v2, umbral_pixeles=UMBRAL_PIXELES_TOLE
         coords_v2 = {'x': item2['x'], 'y': item2['y'], 'width': item2['width'], 'height': item2['height']}
         f = _falla(item2.get('selector'), 'NUEVO EN V2', 'N/A', 'N/A', 'N/A',
                    coords_v2, coords_v2, item2.get('order_index', 0))
-        f.update(_datos_contenido(item2))
+        f.update(_datos_contenido(item2, fps_ambas))
         fallas.append(f)
 
     return fallas
 
 
-def _datos_contenido(item):
+def _datos_contenido(item, fps_ambas=frozenset()):
     """Datos del elemento REAL de la falla (V1 para AUSENTE, V2 para NUEVO).
     Campos extra, solo informativos: no cambian la clave (selector, tipo).
     Se usan para la etiqueta del reporte y para detectar_actualizaciones_contenido.
@@ -623,6 +632,9 @@ def _datos_contenido(item):
         'texto_propio': texto_propio,
         'texto_etiqueta': texto_propio or (item.get('texto_subtree', '') or '').strip(),
         'clase': clase if isinstance(clase, str) else '',
+        'img_src': (item.get('img_src', '') or '').strip(),
+        'identidad_debil': _identidad_es_debil(item),
+        'grupo_en_ambas': construir_fingerprint(item) in fps_ambas,
     }
 
 
@@ -876,14 +888,31 @@ TAGS_DE_CONTENIDO = ('a', 'span', 'p', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6')
 
 # Máxima distancia (en niveles de DOM) entre la nota que salió y la que
 # entró para considerarlas parte del mismo bloque/listado.
-PROFUNDIDAD_BLOQUE_CONTENIDO = 4
+PROFUNDIDAD_BLOQUE_CONTENIDO = 6
 
 
 def _es_candidata_contenido(f):
+    """Titular/hora con texto propio, o link-imagen de la card (<a> sin
+    texto pero con imagen, ej: a.card__image / a.card__genoa__video)."""
+    if f['tipo'] not in ('AUSENTE V2', 'NUEVO EN V2') or not f.get('selector'):
+        return False
+    if f.get('tag') not in TAGS_DE_CONTENIDO:
+        return False
+    return bool(f.get('texto_propio')) or (f.get('tag') == 'a' and bool(f.get('img_src')))
+
+
+def _clase_contenido(f):
+    """Para emparejar lo que salió con lo que entró: mismo tag y mismo
+    tipo (con texto vs solo imagen)."""
+    return (f.get('tag'), bool(f.get('texto_propio')))
+
+
+def _es_repetido_por_cantidad(f):
+    """AUSENTE/NUEVO de un elemento sin identidad propia (sin id ni texto)
+    cuyo fingerprint existe en las dos versiones: solo cambió CUÁNTOS hay
+    (ej: una nota con video menos -> un ícono de play menos)."""
     return (f['tipo'] in ('AUSENTE V2', 'NUEVO EN V2')
-            and f.get('tag') in TAGS_DE_CONTENIDO
-            and bool(f.get('texto_propio'))
-            and bool(f.get('selector')))
+            and f.get('identidad_debil') and f.get('grupo_en_ambas'))
 
 
 def _prefijo_comun(sel1, sel2):
@@ -922,7 +951,7 @@ def detectar_actualizaciones_contenido(fallas, cascadas):
     """
     estructurales = [f['selector'] for f in fallas
                      if f['tipo'] in ('AUSENTE V2', 'NUEVO EN V2') and f.get('selector')
-                     and not _es_candidata_contenido(f)]
+                     and not _es_candidata_contenido(f) and not _es_repetido_por_cantidad(f)]
 
     def tiene_ancestro_estructural(sel):
         return any(sel.startswith(e + ' > ') for e in estructurales)
@@ -937,7 +966,7 @@ def detectar_actualizaciones_contenido(fallas, cascadas):
     for s in salieron:
         mejor, mejor_prefijo = None, None
         for e in entraron:
-            if id(e) in usadas or e.get('tag') != s.get('tag'):
+            if id(e) in usadas or _clase_contenido(e) != _clase_contenido(s):
                 continue
             comun, largo = _prefijo_comun(s['selector'], e['selector'])
             if not comun or largo - len(comun) > PROFUNDIDAD_BLOQUE_CONTENIDO:
@@ -956,6 +985,13 @@ def detectar_actualizaciones_contenido(fallas, cascadas):
     if not bloques:
         return fallas, cascadas, []
 
+    # Elementos repetidos que solo cambiaron de cantidad (ver
+    # _es_repetido_por_cantidad): con una actualización de contenido
+    # confirmada en la página, son su consecuencia. Se agrupan en la
+    # primera actualización en vez de quedar como GRAVE sueltos. Sin
+    # actualización confirmada (return de arriba) siguen como estaban.
+    repetidos = [f for f in fallas if id(f) not in usadas and _es_repetido_por_cantidad(f)]
+    usadas.update(id(f) for f in repetidos)
     fallas_restantes = [f for f in fallas if id(f) not in usadas]
 
     actualizaciones = []
@@ -969,14 +1005,26 @@ def detectar_actualizaciones_contenido(fallas, cascadas):
             and all((s or '').startswith(prefijo + ' > ') for s in c['selectores'])
         ]
         cascadas_restantes = [c for c in cascadas_restantes if c not in relacionadas]
+        # Movimientos sueltos (Y/X, sin cambio de tamaño ni estilo) dentro del
+        # mismo bloque: las notas que quedaron se corrieron un lugar.
+        sel_con_otra = {f['selector'] for f in fallas_restantes
+                        if f['tipo'] not in ('DIFERENCIA POSICIÓN (Y)', 'DIFERENCIA POSICIÓN (X)')}
+        corridos = [f for f in fallas_restantes
+                    if f['tipo'] in ('DIFERENCIA POSICIÓN (Y)', 'DIFERENCIA POSICIÓN (X)')
+                    and (f.get('selector') or '').startswith(prefijo + ' > ')
+                    and f['selector'] not in sel_con_otra]
+        fallas_restantes = [f for f in fallas_restantes if f not in corridos]
         actualizaciones.append({
             'tipo_actualizacion': True,
             'bloque': prefijo,
             'salieron': salieron_b,
             'entraron': entraron_b,
             'cascadas': relacionadas,
+            'repetidos': [],
+            'corridos': corridos,
             'coords_v2': entraron_b[0]['coords_v2'],
         })
+    actualizaciones[0]['repetidos'] = repetidos
 
     return fallas_restantes, cascadas_restantes, actualizaciones
 

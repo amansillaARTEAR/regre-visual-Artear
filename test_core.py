@@ -901,6 +901,43 @@ def test_ausente_trae_datos_del_elemento_de_prod():
     print("OK: AUSENTE V2 conserva el texto del elemento de PROD")
 
 
+
+_LISTA = 'div#fusion-app > main > div:nth-child(7) > div'
+
+
+def _listado_cards(notas, y0=500, alto=200):
+    """Listado tipo /ultimas-noticias/: article > a.card__image (imagen) +
+    div > header > h2 > a (titular, 6 niveles bajo la lista). Las notas con
+    video llevan además un div.icon__container (sin texto)."""
+    data, oi = [], 0
+    for i, (titulo, video) in enumerate(notas):
+        art = f'{_LISTA} > article' if i == 0 else f'{_LISTA} > article:nth-child({i + 1})'
+        y = y0 + i * alto
+        data.append(item('article', art, 0, y, 600, alto, class_attr='card', order_index=oi, texto_subtree=titulo)); oi += 1
+        data.append(item('a', f'{art} > a', 0, y, 200, 120, class_attr='card__image', order_index=oi,
+                         img_src=f'/img/{titulo}.jpg')); oi += 1
+        if video:
+            data.append(item('div', f'{art} > a > div:nth-child(2)', 10, y + 10, 30, 30,
+                             class_attr='icon__container', order_index=oi)); oi += 1
+        data.append(item('a', f'{art} > div > header > h2 > a', 220, y, 380, 60, class_attr='link',
+                         texto=titulo, order_index=oi)); oi += 1
+    return data
+
+
+def test_listado_ultimas_noticias_4_notas_nuevas():
+    """Caso real TN Listado v749: entraron 4 notas arriba y salieron 4
+    abajo. Antes: 11 GRAVES. Ahora: 0 graves, 1 actualización."""
+    prod = [(f'Nota vieja {i}', i % 2 == 0) for i in range(1, 17)]
+    vnp = [(f'Nota nueva {i}', False) for i in range(1, 5)] + prod[:12]
+    consolidado, cascadas, acts = _pipeline(_listado_cards(prod), _listado_cards(vnp))
+    graves = [c for c in consolidado if c['gravedad'] == 'grave']
+    assert not graves, [(g['selector'], [f['tipo'] for f in g['fallas']]) for g in graves]
+    assert len(acts) == 1, acts
+    titulares_ent = sorted(f['texto_propio'] for f in acts[0]['entraron'] if f['texto_propio'])
+    assert titulares_ent == [f'Nota nueva {i}' for i in range(1, 5)], titulares_ent
+    print("OK: Listado con 4 notas nuevas -> 1 actualización de contenido, 0 graves")
+
+
 if __name__ == '__main__':
     tests = [v for k, v in list(globals().items()) if k.startswith('test_')]
     fallidos = 0

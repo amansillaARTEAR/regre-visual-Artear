@@ -687,7 +687,7 @@ LEYENDA_HTML = """
               color: #555; padding: 0 20px;">
     <div style="flex: 1 1 220px;"><span style="color:red; font-weight:bold;">■ Rojo</span>: falla grave (elemento ausente/nuevo, o cambio de tamaño/estilo confirmado visualmente).</div>
     <div style="flex: 1 1 220px;"><span style="color:blue; font-weight:bold;">■ Azul</span>: desplazamiento menor sin cambio de tamaño.</div>
-    <div style="flex: 1 1 220px;"><span style="color:#ff8c00; font-weight:bold;">■ Naranja</span>: el DOM detectó una diferencia pero la confirmación visual (crop + diff) mostró que la región es igual — probablemente un falso positivo.</div>
+    <div style="flex: 1 1 220px;"><span style="color:#ff8c00; font-weight:bold;">■ Naranja</span>: probable falso positivo. En el código de la página hay una diferencia, pero al comparar las imágenes de PROD y VNP esa zona se ve igual.</div>
     <div style="flex: 1 1 220px;"><span style="color:#7c3aed; font-weight:bold;">■ Violeta</span>: desplazamiento en cascada — un solo elemento anterior cambió de tamaño y corrió a los siguientes; no son N fallas independientes.</div>
     <div style="flex: 1 1 220px;"><span style="color:#0891b2; font-weight:bold;">■ Celeste</span>: actualización de contenido — en un listado entraron/salieron notas entre PROD y VNP (caché por edición en vivo). Esperable, no es grave.</div>
   </div>
@@ -782,8 +782,9 @@ def construir_html_actualizacion(act, info, url_id):
 
     def lista(fallas):
         # Titulares (a/h*/p) con su hora (span) al lado si hay una por nota.
-        titulares = [f for f in fallas if f.get('tag') != 'span']
-        horas = [f for f in fallas if f.get('tag') == 'span']
+        con_texto = [f for f in fallas if f.get('texto_propio')]  # los links-imagen no tienen texto
+        titulares = [f for f in con_texto if f.get('tag') != 'span']
+        horas = [f for f in con_texto if f.get('tag') == 'span']
         if not titulares:
             return ", ".join(f"«{_texto_corto(f.get('texto_propio'))}»" for f in horas)
         if len(horas) == len(titulares):
@@ -791,13 +792,22 @@ def construir_html_actualizacion(act, info, url_id):
                              for t, h in zip(titulares, horas))
         return ", ".join(f"«{_texto_corto(t.get('texto_propio'))}»" for t in titulares)
 
-    n_ent = len([f for f in act['entraron'] if f.get('tag') != 'span']) or len(act['entraron'])
-    n_sal = len([f for f in act['salieron'] if f.get('tag') != 'span']) or len(act['salieron'])
+    def notas(fallas):
+        con_texto = [f for f in fallas if f.get('texto_propio')]
+        return len([f for f in con_texto if f.get('tag') != 'span']) or len(con_texto) or len(fallas)
+    n_ent = notas(act['entraron'])
+    n_sal = notas(act['salieron'])
     extra_cascada = ""
     if act.get('cascadas'):
         movidos = sum(c.get('cantidad', 0) for c in act['cascadas'])
         extra_cascada = (f"<br>Por eso {movidos} elementos del listado se corrieron de lugar "
                          f"(no se listan aparte, es el mismo efecto).")
+    if act.get('corridos'):
+        extra_cascada += (f"<br>{len(act['corridos'])} elemento(s) del mismo bloque se corrieron de lugar "
+                          f"por la nota nueva (no se listan aparte).")
+    if act.get('repetidos'):
+        extra_cascada += (f"<br>También cambió la cantidad de {len(act['repetidos'])} elemento(s) repetido(s) "
+                          f"de las cards (ej: ícono de video), porque las notas nuevas no son del mismo tipo.")
     color = '#0891b2'
     return f"""
             <li class='diff-item' style='color: {color}; border-bottom: 1px dotted #ccc; padding: 5px 0; cursor: pointer;'
@@ -892,7 +902,7 @@ def construir_html_fallas(consolidado, cascadas, data_v2_por_selector, url_id, a
         for f in item['fallas']:
             nota_visual = ""
             if f.get('degradado_por_visual'):
-                nota_visual = " — <i>degradado: sin impacto visual confirmado</i>"
+                nota_visual = " — <i>en la imagen se ve igual (probable falso positivo)</i>"
             v1_display = f"{f['v1']:.2f}" if isinstance(f['v1'], (int, float)) else str(f['v1'])
             v2_display = f"{f['v2']:.2f}" if isinstance(f['v2'], (int, float)) else str(f['v2'])
             diff_display = f"{f['diff']:.2f}px" if isinstance(f['diff'], (int, float)) else str(f['diff'])
