@@ -811,6 +811,96 @@ def test_confirmar_por_reintento_descarta_lo_que_no_se_repite():
     print("OK: el reintento conserva lo que se repite y descarta lo que no")
 
 
+
+# ---------------------------------------------------------------------
+# Actualización de contenido (caso real TN Homepage v749 desktop)
+# ---------------------------------------------------------------------
+_BLOQUE = 'div#fusion-app > main > div:nth-child(30) > div > div:nth-child(2) > div'
+
+
+def _listado(notas, y0=1000, alto=64):
+    """Arma el DOM de un listado tipo «Últimas noticias»: por nota, un
+    wrapper div (sin texto propio), un h2 con el <a> del titular y la hora
+    en <time> > <span> (time no se extrae, igual que en el motor)."""
+    data, oi = [], 0
+    for i, (titulo, hora) in enumerate(notas):
+        nth = 'div' if i == 0 else f'div:nth-child({2 * i + 1})'
+        base = f'{_BLOQUE} > {nth}'
+        y = y0 + i * alto
+        sub = f'{hora} {titulo}'
+        data.append(item('div', base, 0, y, 300, alto, class_attr='lista-item', order_index=oi, texto_subtree=sub)); oi += 1
+        data.append(item('span', f'{base} > time > span', 0, y, 40, 12, class_attr='hora', texto=hora, order_index=oi)); oi += 1
+        data.append(item('h2', f'{base} > h2', 0, y + 14, 300, 40, class_attr='titulo', order_index=oi, texto_subtree=titulo)); oi += 1
+        data.append(item('a', f'{base} > h2 > a', 0, y + 14, 300, 40, class_attr='link', texto=titulo, order_index=oi)); oi += 1
+    return data
+
+
+def _pipeline(v1, v2):
+    fallas = core.comparar_estructura_dom(v1, v2)
+    otras, cascadas = core.agrupar_cascadas(fallas)
+    otras, cascadas, acts = core.detectar_actualizaciones_contenido(otras, cascadas)
+    return core.consolidar_fallas(otras), cascadas, acts
+
+
+def test_listado_actualizado_es_contenido_no_grave():
+    """Entró una nota arriba, el resto bajó un lugar y la última salió.
+    Antes: 4 GRAVES + 1 cascada. Ahora: 0 graves y 1 actualización de
+    contenido con la cascada adentro."""
+    notas_prod = [('Los mensajes de despedida', '15:40'), ('El ingreso de dólares', '15:34'),
+                  ('Daniela Christiansson contó', '15:16'), ('Protección de cultivos', '15:15'),
+                  ('La FIA le aplicó una multa', '15:09')]
+    notas_vnp = [('Adiós a la música hecha con IA', '15:47')] + notas_prod[:4]
+    consolidado, cascadas, acts = _pipeline(_listado(notas_prod), _listado(notas_vnp))
+    graves = [c for c in consolidado if c['gravedad'] == 'grave']
+    assert not graves, graves
+    assert not cascadas, cascadas
+    assert len(acts) == 1, acts
+    a = acts[0]
+    assert sorted(f['texto_propio'] for f in a['entraron']) == ['15:47', 'Adiós a la música hecha con IA']
+    assert sorted(f['texto_propio'] for f in a['salieron']) == ['15:09', 'La FIA le aplicó una multa']
+    assert len(a['cascadas']) == 1 and a['cascadas'][0]['cantidad'] == 8, a['cascadas']
+    print("OK: listado actualizado por caché -> 1 actualización de contenido, 0 graves")
+
+
+def test_titular_faltante_sin_reemplazo_sigue_grave():
+    """Si falta un titular y no entró otro en su lugar, puede ser un bug
+    real (el componente no lo renderiza): sigue GRAVE."""
+    notas = [('Nota uno', '10:00'), ('Nota dos', '09:00')]
+    v1 = _listado(notas)
+    v2 = [d for d in _listado(notas) if not (d['tag'] == 'a' and d['texto'] == 'Nota dos')]
+    consolidado, cascadas, acts = _pipeline(v1, v2)
+    assert not acts, acts
+    graves = [c for c in consolidado if c['gravedad'] == 'grave']
+    assert len(graves) == 1 and graves[0]['fallas'][0]['tipo'] == 'AUSENTE V2', consolidado
+    print("OK: titular faltante sin reemplazo sigue siendo GRAVE")
+
+
+def test_bloque_estructural_faltante_sigue_grave():
+    """Si falta el contenedor (componente entero), no es actualización de
+    contenido aunque adentro haya titulares y entre otro: sigue GRAVE."""
+    v1 = [
+        item('div', 'main > div.modulo', 0, 0, 300, 100, class_attr='modulo-destacado', order_index=0),
+        item('a', 'main > div.modulo > h2 > a', 0, 10, 300, 40, class_attr='link', texto='Nota vieja', order_index=1),
+    ]
+    v2 = [
+        item('a', 'main > div > h2 > a', 0, 10, 300, 40, class_attr='link', texto='Nota nueva', order_index=0),
+    ]
+    consolidado, cascadas, acts = _pipeline(v1, v2)
+    assert not acts, acts
+    assert sum(1 for c in consolidado if c['gravedad'] == 'grave') == 3, consolidado
+    print("OK: componente entero faltante sigue siendo GRAVE")
+
+
+def test_ausente_trae_datos_del_elemento_de_prod():
+    """La etiqueta de un AUSENTE tiene que ser la nota de PROD que salió,
+    no la que en VNP ocupa ese mismo selector."""
+    v1 = [item('a', 'ul > li > a', 0, 0, 100, 20, class_attr='x', texto='Sale', order_index=0)]
+    fallas = core.comparar_estructura_dom(v1, [])
+    assert fallas[0]['tipo'] == 'AUSENTE V2'
+    assert fallas[0]['texto_etiqueta'] == 'Sale' and fallas[0]['tag'] == 'a', fallas[0]
+    print("OK: AUSENTE V2 conserva el texto del elemento de PROD")
+
+
 if __name__ == '__main__':
     tests = [v for k, v in list(globals().items()) if k.startswith('test_')]
     fallidos = 0

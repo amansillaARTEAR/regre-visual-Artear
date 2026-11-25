@@ -590,17 +590,40 @@ def comparar_estructura_dom(data_v1, data_v2, umbral_pixeles=UMBRAL_PIXELES_TOLE
         if elemento_fuera_de_pantalla(item1):
             continue
         coords_v1 = {'x': item1['x'], 'y': item1['y'], 'width': item1['width'], 'height': item1['height']}
-        fallas.append(_falla(item1.get('selector'), 'AUSENTE V2', 'N/A', 'N/A', 'N/A',
-                              coords_v1, coords_v1, item1.get('order_index', 0)))
+        f = _falla(item1.get('selector'), 'AUSENTE V2', 'N/A', 'N/A', 'N/A',
+                   coords_v1, coords_v1, item1.get('order_index', 0))
+        f.update(_datos_contenido(item1))
+        fallas.append(f)
 
     for item2 in solo_v2:
         if elemento_fuera_de_pantalla(item2):
             continue
         coords_v2 = {'x': item2['x'], 'y': item2['y'], 'width': item2['width'], 'height': item2['height']}
-        fallas.append(_falla(item2.get('selector'), 'NUEVO EN V2', 'N/A', 'N/A', 'N/A',
-                              coords_v2, coords_v2, item2.get('order_index', 0)))
+        f = _falla(item2.get('selector'), 'NUEVO EN V2', 'N/A', 'N/A', 'N/A',
+                   coords_v2, coords_v2, item2.get('order_index', 0))
+        f.update(_datos_contenido(item2))
+        fallas.append(f)
 
     return fallas
+
+
+def _datos_contenido(item):
+    """Datos del elemento REAL de la falla (V1 para AUSENTE, V2 para NUEVO).
+    Campos extra, solo informativos: no cambian la clave (selector, tipo).
+    Se usan para la etiqueta del reporte y para detectar_actualizaciones_contenido.
+    Antes la etiqueta de un AUSENTE se buscaba por selector priorizando V2:
+    si el listado se había corrido un lugar, ese selector en V2 apuntaba a
+    OTRA nota y el reporte mostraba el título equivocado (v749 Homepage:
+    decía que faltaba «Protección de cultivos…», que estaba, en vez de
+    «La FIA…», que era la que realmente había salido)."""
+    texto_propio = (item.get('texto', '') or '').strip()
+    clase = item.get('class_attr')
+    return {
+        'tag': item.get('tag', ''),
+        'texto_propio': texto_propio,
+        'texto_etiqueta': texto_propio or (item.get('texto_subtree', '') or '').strip(),
+        'clase': clase if isinstance(clase, str) else '',
+    }
 
 
 def claves_de_ruido(fallas_base):
@@ -841,6 +864,121 @@ def agrupar_cascadas(fallas):
     ]
 
     return otras_fallas, resultado_cascadas
+
+
+# =====================================================================
+# ACTUALIZACIÓN DE CONTENIDO (notas que entran/salen de un listado)
+# =====================================================================
+
+# Tags de texto editorial (titular, volanta, hora). Un AUSENTE/NUEVO de
+# estos tags, con texto propio, es una NOTA que cambió, no un componente.
+TAGS_DE_CONTENIDO = ('a', 'span', 'p', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6')
+
+# Máxima distancia (en niveles de DOM) entre la nota que salió y la que
+# entró para considerarlas parte del mismo bloque/listado.
+PROFUNDIDAD_BLOQUE_CONTENIDO = 4
+
+
+def _es_candidata_contenido(f):
+    return (f['tipo'] in ('AUSENTE V2', 'NUEVO EN V2')
+            and f.get('tag') in TAGS_DE_CONTENIDO
+            and bool(f.get('texto_propio'))
+            and bool(f.get('selector')))
+
+
+def _prefijo_comun(sel1, sel2):
+    p1, p2 = sel1.split(' > '), sel2.split(' > ')
+    comun = []
+    for a, b in zip(p1, p2):
+        if a != b:
+            break
+        comun.append(a)
+    return comun, max(len(p1), len(p2))
+
+
+def detectar_actualizaciones_contenido(fallas, cascadas):
+    """
+    Caso real (TN Homepage v749 desktop, «Últimas noticias»): por el ritmo
+    de edición del sitio, PROD (con caché) y VNP muestran un listado
+    desfasado. En VNP entra una nota nueva arriba, el resto baja un lugar y
+    la última sale. Antes eso daba 4 GRAVES (titular y hora de la que salió
+    + titular y hora de la que entró) y 1 cascada aparte, todo por 1 sola
+    causa esperable.
+
+    Regla (conservadora, para no ocultar bugs reales):
+      - Solo AUSENTE/NUEVO de tags de texto (TAGS_DE_CONTENIDO) con texto
+        propio. Contenedores (div/article/li) no califican nunca.
+      - Si un ancestro del elemento también es AUSENTE/NUEVO, es un cambio
+        estructural (falta o sobra un bloque) -> sigue GRAVE.
+      - Tiene que haber REEMPLAZO: una que salió y otra que entró, mismo tag,
+        dentro del mismo bloque (a <= PROFUNDIDAD_BLOQUE_CONTENIDO niveles).
+        Un titular que falta sin otro que lo reemplace sigue GRAVE.
+    Lo emparejado se saca de las fallas y se devuelve como "actualización de
+    contenido" (informativa, no grave, NO se descarta: se lista en el
+    reporte). Una cascada geométrica no grave con TODOS sus selectores
+    dentro del bloque se agrupa adentro de la actualización (es su efecto).
+
+    Devuelve (fallas_restantes, cascadas_restantes, actualizaciones).
+    """
+    estructurales = [f['selector'] for f in fallas
+                     if f['tipo'] in ('AUSENTE V2', 'NUEVO EN V2') and f.get('selector')
+                     and not _es_candidata_contenido(f)]
+
+    def tiene_ancestro_estructural(sel):
+        return any(sel.startswith(e + ' > ') for e in estructurales)
+
+    candidatas = [f for f in fallas
+                  if _es_candidata_contenido(f) and not tiene_ancestro_estructural(f['selector'])]
+    salieron = sorted([f for f in candidatas if f['tipo'] == 'AUSENTE V2'], key=lambda f: f['order_index'])
+    entraron = sorted([f for f in candidatas if f['tipo'] == 'NUEVO EN V2'], key=lambda f: f['order_index'])
+
+    bloques = {}  # prefijo -> {'salieron': [...], 'entraron': [...]}
+    usadas = set()
+    for s in salieron:
+        mejor, mejor_prefijo = None, None
+        for e in entraron:
+            if id(e) in usadas or e.get('tag') != s.get('tag'):
+                continue
+            comun, largo = _prefijo_comun(s['selector'], e['selector'])
+            if not comun or largo - len(comun) > PROFUNDIDAD_BLOQUE_CONTENIDO:
+                continue
+            if mejor is None or len(comun) > len(mejor_prefijo):
+                mejor, mejor_prefijo = e, comun
+        if mejor is None:
+            continue
+        usadas.add(id(mejor))
+        usadas.add(id(s))
+        clave = ' > '.join(mejor_prefijo)
+        b = bloques.setdefault(clave, {'salieron': [], 'entraron': []})
+        b['salieron'].append(s)
+        b['entraron'].append(mejor)
+
+    if not bloques:
+        return fallas, cascadas, []
+
+    fallas_restantes = [f for f in fallas if id(f) not in usadas]
+
+    actualizaciones = []
+    cascadas_restantes = list(cascadas)
+    for prefijo, b in bloques.items():
+        entraron_b = sorted(b['entraron'], key=lambda f: f['order_index'])
+        salieron_b = sorted(b['salieron'], key=lambda f: f['order_index'])
+        relacionadas = [
+            c for c in cascadas_restantes
+            if not c.get('grave') and c.get('selectores')
+            and all((s or '').startswith(prefijo + ' > ') for s in c['selectores'])
+        ]
+        cascadas_restantes = [c for c in cascadas_restantes if c not in relacionadas]
+        actualizaciones.append({
+            'tipo_actualizacion': True,
+            'bloque': prefijo,
+            'salieron': salieron_b,
+            'entraron': entraron_b,
+            'cascadas': relacionadas,
+            'coords_v2': entraron_b[0]['coords_v2'],
+        })
+
+    return fallas_restantes, cascadas_restantes, actualizaciones
 
 
 # =====================================================================
