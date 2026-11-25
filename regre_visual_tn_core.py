@@ -607,15 +607,19 @@ def comparar_estructura_dom(data_v1, data_v2, umbral_pixeles=UMBRAL_PIXELES_TOLE
 
         diff_y = abs(item1['y'] - item2['y'])
         if diff_y > umbral_pixeles:
-            fallas.append(_falla(selector, 'DIFERENCIA POSICIÓN (Y)', diff_y,
-                                  item1['y'], item2['y'], coords_v2, coords_v1, order_index,
-                                  delta_y=item2['y'] - item1['y'], delta=item2['y'] - item1['y']))
+            f = _falla(selector, 'DIFERENCIA POSICIÓN (Y)', diff_y,
+                       item1['y'], item2['y'], coords_v2, coords_v1, order_index,
+                       delta_y=item2['y'] - item1['y'], delta=item2['y'] - item1['y'])
+            f.update(_datos_movido(item2))
+            fallas.append(f)
 
         diff_x = abs(item1['x'] - item2['x'])
         if diff_x > umbral_pixeles:
-            fallas.append(_falla(selector, 'DIFERENCIA POSICIÓN (X)', diff_x,
-                                  item1['x'], item2['x'], coords_v2, coords_v1, order_index,
-                                  delta=item2['x'] - item1['x']))
+            f = _falla(selector, 'DIFERENCIA POSICIÓN (X)', diff_x,
+                       item1['x'], item2['x'], coords_v2, coords_v1, order_index,
+                       delta=item2['x'] - item1['x'])
+            f.update(_datos_movido(item2))
+            fallas.append(f)
 
         if comparar_estilos:
             styles1 = item1.get('styles', {}) or {}
@@ -645,6 +649,12 @@ def comparar_estructura_dom(data_v1, data_v2, umbral_pixeles=UMBRAL_PIXELES_TOLE
         fallas.append(f)
 
     return fallas
+
+
+def _datos_movido(item):
+    """Tag y texto del elemento que se movió (V2). Solo informativo: se usa
+    para marcar en la captura las notas que se corrieron de lugar."""
+    return {'tag': item.get('tag', ''), 'texto_propio': (item.get('texto', '') or '').strip()}
 
 
 def _datos_contenido(item, fps_ambas=frozenset()):
@@ -818,6 +828,10 @@ def agrupar_cascadas(fallas):
                     'primer_selector': primero['selector'],
                     'selectores': [f['selector'] for f in items_ordenados],
                     'coords_v2': primero['coords_v2'],
+                    # Solo informativo (para marcar en la captura).
+                    'movidos': [{'tag': f.get('tag', ''), 'texto_propio': f.get('texto_propio', ''),
+                                 'selector': f['selector'], 'coords_v2': f['coords_v2']}
+                                for f in items_ordenados],
                 })
             else:
                 # Cluster chico: no lo tratamos como cascada, va como falla normal.
@@ -847,6 +861,9 @@ def agrupar_cascadas(fallas):
             if cascada_match:
                 cascada_match['cantidad'] += 1
                 cascada_match['selectores'].append(f['selector'])
+                if 'movidos' in cascada_match:
+                    cascada_match['movidos'].append({'tag': f.get('tag', ''), 'texto_propio': f.get('texto_propio', ''),
+                                                     'selector': f['selector'], 'coords_v2': f['coords_v2']})
             else:
                 aun_sueltas.append(f)
         otras_fallas = aun_sueltas
@@ -956,6 +973,25 @@ def _prefijo_comun(sel1, sel2):
     return comun, max(len(p1), len(p2))
 
 
+def _titulares_movidos(corridos, cascadas, con_otra_falla=frozenset()):
+    """Coordenadas (en VNP) de los titulares que solo se corrieron de lugar:
+    un recuadro por nota, para marcarlas en la captura."""
+    vistos, out = set(), []
+    movidos = list(corridos) + [m for c in cascadas for m in c.get('movidos', [])]
+    for m in movidos:
+        # Si la nota tiene además otra diferencia (tamaño, estilo), no se
+        # marca como "solo corrida": esa diferencia se reporta aparte.
+        if m.get('selector') in con_otra_falla:
+            continue
+        if m.get('tag') in ('a', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6') and m.get('texto_propio'):
+            c = m['coords_v2']
+            clave = (int(c['x']), int(c['y']))
+            if clave not in vistos:
+                vistos.add(clave)
+                out.append(c)
+    return out
+
+
 def detectar_actualizaciones_contenido(fallas, cascadas):
     """
     Caso real (TN Homepage v749 desktop, «Últimas noticias»): por el ritmo
@@ -1053,6 +1089,7 @@ def detectar_actualizaciones_contenido(fallas, cascadas):
             'cascadas': relacionadas,
             'repetidos': [],
             'corridos': corridos,
+            'notas_corridas': _titulares_movidos(corridos, relacionadas, sel_con_otra),
             'coords_v2': entraron_b[0]['coords_v2'],
         })
     actualizaciones[0]['repetidos'] = repetidos

@@ -993,6 +993,28 @@ def test_nuevo_sin_identidad_que_se_ve_igual_no_es_grave():
     print("OK: NUEVO/AUSENTE sin identidad que se ve igual pasa a informativo, el resto sigue GRAVE")
 
 
+
+def test_notas_corridas_se_marcan_salvo_las_que_cambiaron_diseno():
+    """Las notas que solo se corrieron se listan para marcarlas (recuadro
+    punteado). Si una además cambió de diseño, no se marca como "solo
+    corrida" y su diferencia sigue GRAVE."""
+    prod = [('Uno', '1'), ('Dos', '2'), ('Tres', '3'), ('Cuatro', '4'), ('Cinco', '5')]
+    vnp = [('Nueva', '0')] + prod[:4]
+    v1, v2 = _listado(prod), _listado(vnp)
+    _, _, acts = _pipeline(v1, v2)
+    assert len(acts[0]['notas_corridas']) == 4, acts[0]['notas_corridas']
+    for d in v1:
+        if d['tag'] == 'a' and d['texto'] == 'Dos':
+            d['styles'] = {'fontSize': '16px'}
+    for d in v2:
+        if d['tag'] == 'a' and d['texto'] == 'Dos':
+            d['styles'] = {'fontSize': '20px'}
+    consolidado, _, acts = _pipeline(v1, v2)
+    assert len(acts[0]['notas_corridas']) == 3, acts[0]['notas_corridas']
+    assert [c['gravedad'] for c in consolidado] == ['grave'], consolidado
+    print("OK: notas corridas se marcan, la que cambió de diseño sigue GRAVE")
+
+
 if __name__ == '__main__':
     tests = [v for k, v in list(globals().items()) if k.startswith('test_')]
     fallidos = 0

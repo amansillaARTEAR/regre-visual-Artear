@@ -674,6 +674,21 @@ def marcar_fallas_en_captura(png_data, consolidado, cascadas, actualizaciones=No
     for act in (actualizaciones or []):
         for i, f in enumerate(act['entraron']):
             dibujar(f['coords_v2'], 'contenido', act.get('_num', '') if i == 0 else '')
+        # Notas que solo se corrieron de lugar: recuadro celeste fino y
+        # punteado, para que se vea que se revisaron (no se escaparon).
+        for c in act.get('notas_corridas', []):
+            x1, y1 = max(0, int(c['x'])), max(0, int(c['y']))
+            x2 = min(width - 1, int(c['x'] + c['width']))
+            y2 = min(height - 1, int(c['y'] + c['height']))
+            if x2 <= x1 or y2 <= y1:
+                continue
+            color, paso = COLOR_BGR['contenido'], 10
+            for x in range(x1, x2, paso * 2):
+                cv2.line(img, (x, y1), (min(x + paso, x2), y1), color, 2)
+                cv2.line(img, (x, y2), (min(x + paso, x2), y2), color, 2)
+            for y in range(y1, y2, paso * 2):
+                cv2.line(img, (x1, y), (x1, min(y + paso, y2)), color, 2)
+                cv2.line(img, (x2, y), (x2, min(y + paso, y2)), color, 2)
 
     is_success, buffer = cv2.imencode(".png", img)
     return buffer.tobytes() if is_success else None
@@ -812,6 +827,10 @@ def construir_html_actualizacion(act, info, url_id):
     if act.get('repetidos'):
         extra_cascada += (f"<br>También cambió la cantidad de {len(act['repetidos'])} elemento(s) repetido(s) "
                           f"de las cards (ej: ícono de video), porque las notas nuevas no son del mismo tipo.")
+    extra_corridas = ""
+    if act.get('notas_corridas'):
+        extra_corridas = (f"<br><b>Las otras {len(act['notas_corridas'])} nota(s) del listado son las mismas en otro orden "
+                          f"(recuadro celeste punteado), sin cambios de diseño.</b>")
     color = '#0891b2'
     return f"""
             <li class='diff-item' style='color: {color}; border-bottom: 1px dotted #ccc; padding: 5px 0; cursor: pointer;'
@@ -824,7 +843,7 @@ def construir_html_actualizacion(act, info, url_id):
                 <br><span style="font-size: 0.85em; color: #555;">
                 • Entró en VNP: {lista(act['entraron'])}<br>
                 • Salió (estaba en PROD): {lista(act['salieron'])}<br>
-                Es un desfase de caché por la edición en vivo del sitio, no un cambio de la versión.{extra_cascada}
+                Es un desfase de caché por la edición en vivo del sitio, no un cambio de la versión.{extra_cascada}{extra_corridas}
                 <br><span style='color:#888'>Ubicación del bloque: <code>{esc(act['bloque'])}</code></span>
                 </span>
             </li>
