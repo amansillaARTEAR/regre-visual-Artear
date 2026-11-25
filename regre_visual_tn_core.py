@@ -83,6 +83,35 @@ _PATRONES_EXCLUSION_RE = re.compile(
     '|'.join(re.escape(p) for p in PATRONES_EXCLUSION), re.IGNORECASE
 )
 
+# Spinners / loaders / skeletons: indicadores de carga que aparecen o no
+# según en qué momento exacto se sacó la captura, no según la versión.
+# Se matchea por PALABRA dentro de cada clase/id (separada por - o _), no
+# por substring, para no excluir por error clases como "downloads" o
+# "lazyloaded". Ej. que matchean: spinner, notifications-loader,
+# btn2-loading-icon, isLoading, card-skeleton.
+_SPINNER_TOKEN_RE = re.compile(
+    r'(^|[-_])(spinner|spin|loader|loading|isloading|skeleton|shimmer)([-_]|$)', re.IGNORECASE
+)
+
+
+TAMANIO_MAX_SPINNER = 150  # px
+
+
+def elemento_es_spinner(item):
+    """True si el elemento es un indicador de carga: por nombre de clase/id
+    (ver _SPINNER_TOKEN_RE) o porque tiene una animación CSS infinita
+    (todo spinner gira/late en loop) y es chico. La animación la informa el JS de
+    extracción en 'anim_infinita' (si no viene, se ignora esa señal)."""
+    # Solo elementos chicos: un spinner es un ícono. Así no se excluyen
+    # cosas grandes con animación en loop (un ticker, un banner animado),
+    # que se siguen comparando como antes.
+    if (item.get('anim_infinita')
+            and (item.get('width') or 0) <= TAMANIO_MAX_SPINNER
+            and (item.get('height') or 0) <= TAMANIO_MAX_SPINNER):
+        return True
+    tokens = f"{item.get('id_attr') or ''} {item.get('class_attr') or ''}".split()
+    return any(_SPINNER_TOKEN_RE.search(t) for t in tokens)
+
 
 def elemento_fuera_de_pantalla(item):
     """
@@ -119,6 +148,8 @@ def elemento_excluido(item):
     interno de un ad). Los CONTENEDORES de ad-slot (PATRONES_AD_SLOT_CONTENEDOR)
     a propósito NO están acá: esos se comparan (ver comentario arriba).
     """
+    if elemento_es_spinner(item):
+        return True
     id_attr = (item.get('id_attr') or '')
     class_attr = (item.get('class_attr') or '')
     texto = f"{id_attr} {class_attr}"

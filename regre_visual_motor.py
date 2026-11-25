@@ -322,6 +322,10 @@ JS_EXTRACCION = """
             texto_subtree: textoSubtree,
             img_src: imgSrc,
             iframe_src: iframeSrc,
+            // Spinner/loader: animación CSS en loop infinito (ver
+            // core.elemento_es_spinner). Solo informativo para excluirlo.
+            anim_infinita: (compStyle.animationName || 'none') !== 'none' &&
+                           String(compStyle.animationIterationCount || '').indexOf('infinite') !== -1,
             order_index: orderIndex++,
             y: window.pageYOffset + rect.top,
             height: rect.height,

@@ -938,6 +938,35 @@ def test_listado_ultimas_noticias_4_notas_nuevas():
     print("OK: Listado con 4 notas nuevas -> 1 actualización de contenido, 0 graves")
 
 
+
+def test_spinner_no_genera_diferencias():
+    """Un spinner/loader que está en una captura y no en la otra (o con otro
+    tamaño) no es un cambio de la versión: se excluye."""
+    base = [item('h1', 'main > h1', 0, 0, 300, 40, class_attr='titulo', texto='Hola', order_index=0)]
+    v1 = base + [
+        item('div', 'main > div', 0, 50, 40, 40, class_attr='spinner', order_index=1),
+        item('div', 'main > div:nth-child(3)', 0, 100, 600, 400, class_attr='notifications-loader', order_index=2),
+        item('span', 'main > span', 0, 60, 24, 24, class_attr='icono', order_index=3),
+    ]
+    v1[-1]['anim_infinita'] = True
+    fallas = core.comparar_estructura_dom(v1, base)
+    assert not fallas, fallas
+    print("OK: spinners/loaders no generan diferencias")
+
+
+def test_animacion_infinita_grande_se_sigue_comparando():
+    """Algo grande con animación en loop (no es un spinner) sigue
+    comparándose como antes. Tampoco se excluyen clases que solo
+    contienen la palabra (ej. 'downloads')."""
+    v1 = [item('div', 'main > div', 0, 0, 1200, 60, class_attr='ticker', order_index=0),
+          item('div', 'main > section', 0, 100, 300, 40, class_attr='downloads', order_index=1)]
+    v1[0]['anim_infinita'] = True
+    assert not core.elemento_es_spinner(v1[0]) and not core.elemento_es_spinner(v1[1])
+    tipos = [f['tipo'] for f in core.comparar_estructura_dom(v1, [])]
+    assert tipos.count('AUSENTE V2') == 2, tipos
+    print("OK: animación grande y clases parecidas se siguen comparando")
+
+
 if __name__ == '__main__':
     tests = [v for k, v in list(globals().items()) if k.startswith('test_')]
     fallidos = 0
