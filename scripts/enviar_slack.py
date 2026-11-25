@@ -192,7 +192,14 @@ def main():
 
     version = args.version or extraer_version(html_path, args.report_dir)
     resumen, ok = extraer_resumen(html_original)
-    emoji_estado = "✅" if ok else "❌"
+    # El resumen del reporte ya empieza con su propio ícono (✅, ⚠️ o ❌).
+    # Antes se le agregaba otro adelante y en el caso "revisar" quedaba
+    # "❌ ⚠️ Sin diferencias graves...", que se contradice. Solo se agrega
+    # un ícono si el resumen no trae ninguno.
+    if resumen.startswith(("✅", "⚠", "❌")):
+        emoji_estado = ""
+    else:
+        emoji_estado = "✅ " if ok else "❌ "
 
     if args.urls:
         urls_line = f"({args.urls})"
@@ -205,7 +212,7 @@ def main():
         f"📣 *Regresión: {label} ({args.modo})*\n"
         f"{urls_line}\n"
         f"🌐 Entorno: prod (v{version})\n"
-        f"📊 Estado: {emoji_estado} {resumen}"
+        f"📊 Estado: {emoji_estado}{resumen}"
     )
 
     standalone_html = inline_images(html_path, args.report_dir)
