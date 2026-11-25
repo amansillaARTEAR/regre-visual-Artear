@@ -1102,6 +1102,42 @@ def diferencia_visual_normalizada(img_v1, img_v2, coords_v1, coords_v2):
     return float(np.mean(diff)) / 255.0
 
 
+# Corrimiento vertical máximo (px) a probar al comparar la MISMA zona en
+# PROD y VNP para un AUSENTE/NUEVO sin identidad propia: si el resto de la
+# página se corrió unos px (cascada chica), la zona igual tiene que coincidir.
+DESPLAZAMIENTO_MAX_ZONA = 12
+
+
+def _confirmar_ausente_nuevo_debil(img_v1, img_v2, f, umbral):
+    """
+    AUSENTE/NUEVO de un elemento sin id ni texto propio (un wrapper, un
+    contenedor de imagen como aspect_ratio__container, etc.): esos se
+    emparejan por orden de aparición en toda la página, así que si en
+    OTRO lugar hay uno más o uno menos, el que sobra queda marcado como
+    "nuevo"/"falta" aunque en su zona no haya cambiado nada.
+    Caso real (El Trece desktop v749, Recipe Cuccinare): G4 «Aparece solo
+    en el VNP» sobre la imagen de una receta que se ve igual en las dos.
+    Se compara la MISMA zona de la página en PROD y en VNP (probando
+    corrimientos chicos en Y). Si se ve igual, se degrada a informativo.
+    Si el elemento de verdad falta o es nuevo, esa zona se ve distinta y
+    sigue GRAVE.
+    """
+    c = f.get('coords_v2') or {}
+    if not c.get('width') or not c.get('height'):
+        return
+    mejor = None
+    for dy in range(-DESPLAZAMIENTO_MAX_ZONA, DESPLAZAMIENTO_MAX_ZONA + 1, 2):
+        c1 = dict(c, y=c['y'] + dy)
+        ratio = diferencia_visual_normalizada(img_v1, img_v2, c1, c)
+        if ratio is not None and (mejor is None or ratio < mejor):
+            mejor = ratio
+    if mejor is None:
+        return
+    f['confirmado_visualmente'] = mejor
+    if mejor < umbral:
+        f['degradado_por_visual'] = True
+
+
 def confirmar_visualmente(img_v1, img_v2, fallas, umbral=UMBRAL_DIFERENCIA_VISUAL):
     """
     Para cada falla de tipo dimensión/posición (no estilo, no ausente/
@@ -1116,6 +1152,9 @@ def confirmar_visualmente(img_v1, img_v2, fallas, umbral=UMBRAL_DIFERENCIA_VISUA
     }
     for f in fallas:
         f.setdefault('confirmado_visualmente', None)
+        if f['tipo'] in ('AUSENTE V2', 'NUEVO EN V2') and f.get('identidad_debil'):
+            _confirmar_ausente_nuevo_debil(img_v1, img_v2, f, umbral)
+            continue
         if f['tipo'] not in tipos_confirmables:
             continue
         ratio = diferencia_visual_normalizada(img_v1, img_v2, f['coords_v1'], f['coords_v2'])
@@ -1145,6 +1184,15 @@ def clasificar_gravedad(fallas_selector):
     tipos = [f['tipo'] for f in fallas_selector]
 
     if any(t in ('AUSENTE V2', 'NUEVO EN V2') for t in tipos):
+        # Solo baja a informativo si TODOS sus AUSENTE/NUEVO se vieron
+        # iguales en la imagen (ver _confirmar_ausente_nuevo_debil, que
+        # solo aplica a elementos sin id ni texto propio).
+        an = [f for f in fallas_selector if f['tipo'] in ('AUSENTE V2', 'NUEVO EN V2')]
+        if all(f.get('degradado_por_visual') for f in an):
+            otras = [f for f in fallas_selector if f not in an]
+            if all(f.get('degradado_por_visual') or not ('ALTURA' in f['tipo'] or 'ANCHO' in f['tipo']
+                                                         or 'ESTILO' in f['tipo']) for f in otras):
+                return 'informativo'
         return 'grave'
 
     hay_dimension_o_estilo = any(

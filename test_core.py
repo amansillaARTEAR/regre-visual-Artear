@@ -967,6 +967,32 @@ def test_animacion_infinita_grande_se_sigue_comparando():
     print("OK: animación grande y clases parecidas se siguen comparando")
 
 
+
+def test_nuevo_sin_identidad_que_se_ve_igual_no_es_grave():
+    """Caso real El Trece v749 (Recipe Cuccinare, G4): un
+    aspect_ratio__container (sin id ni texto) marcado como «Aparece solo
+    en el VNP» sobre una imagen que se ve igual en PROD y VNP. Si la zona
+    se ve igual (aunque esté corrida unos px) -> informativo. Si se ve
+    distinta, o el elemento tiene texto propio -> sigue GRAVE."""
+    import numpy as np
+    rng = np.random.default_rng(0)
+    img_v1 = rng.integers(0, 255, (400, 400, 3), dtype='uint8')
+    img_v2 = np.roll(img_v1, -4, axis=0)  # toda la página subió 4px (cascada chica)
+    v2 = [item('div', 'article > a > div', 100, 100, 120, 80, class_attr='aspect_ratio__container', order_index=0)]
+    fallas = core.confirmar_visualmente(img_v1, img_v2, core.comparar_estructura_dom([], v2))
+    assert core.consolidar_fallas(fallas)[0]['gravedad'] == 'informativo', fallas
+
+    img_v2_distinta = img_v2.copy()
+    img_v2_distinta[100:180, 100:220] = 0
+    fallas = core.confirmar_visualmente(img_v1, img_v2_distinta, core.comparar_estructura_dom([], v2))
+    assert core.consolidar_fallas(fallas)[0]['gravedad'] == 'grave', fallas
+
+    v2_texto = [item('h2', 'article > h2', 100, 100, 120, 80, class_attr='titulo', texto='Nota', order_index=0)]
+    fallas = core.confirmar_visualmente(img_v1, img_v2, core.comparar_estructura_dom([], v2_texto))
+    assert core.consolidar_fallas(fallas)[0]['gravedad'] == 'grave', fallas
+    print("OK: NUEVO/AUSENTE sin identidad que se ve igual pasa a informativo, el resto sigue GRAVE")
+
+
 if __name__ == '__main__':
     tests = [v for k, v in list(globals().items()) if k.startswith('test_')]
     fallidos = 0
