@@ -1141,11 +1141,11 @@ def generar_reporte(all_results, version_number, output_dir, timestamp, umbral_p
                              f"{esc(', '.join(urls_act))}."))
     # Veredicto primero, sin viñeta, y después el detalle en viñetas.
     if global_color == 'red':
-        veredicto = (COLOR_LEYENDA['grave'], "❌ NO recomendado deployar a PROD sin revisar.")
+        veredicto = (COLOR_LEYENDA['grave'], "NO recomendado deployar a PROD sin revisar.")
     elif global_color == 'orange':
-        veredicto = (COLOR_LEYENDA['cascada'], "⚠️ Revisar los desplazamientos antes de deployar a PROD.")
+        veredicto = (COLOR_LEYENDA['cascada'], "Revisar los desplazamientos antes de deployar a PROD.")
     else:
-        veredicto = (COLOR_LEYENDA['ok'], "✅ Apto para deployar a PROD. Todas las URLs pasaron la prueba estructural.")
+        veredicto = (COLOR_LEYENDA['ok'], "Apto para deployar a PROD. Todas las URLs pasaron la prueba estructural.")
     global_html = (f"<span style='color:{veredicto[0]}; font-weight:bold;'>{veredicto[1]}</span>"
                    + (_lista_coloreada(items_global) if items_global else ""))
 
