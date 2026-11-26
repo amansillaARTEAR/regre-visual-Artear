@@ -1113,8 +1113,11 @@ def detectar_actualizaciones_contenido(fallas, cascadas):
             return prefijo == sel or prefijo.startswith(sel + ' > ')
 
         def ancestro_o_hermano(sel):
+            # También lo de ADENTRO del bloque (ej. el <li> de la nota que
+            # cambió de 2 líneas a 1 y achicó la lista).
             sel = sel or ''
-            return es_ancestro(sel) or (' > ' in sel and es_ancestro(sel.rsplit(' > ', 1)[0]))
+            return (es_ancestro(sel) or sel.startswith(prefijo + ' > ')
+                    or (' > ' in sel and es_ancestro(sel.rsplit(' > ', 1)[0])))
 
         ancestros_alto = [
             c for c in cascadas_restantes

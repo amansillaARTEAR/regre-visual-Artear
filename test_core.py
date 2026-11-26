@@ -1067,6 +1067,12 @@ def test_contenedor_del_bloque_que_crece_y_lo_de_abajo_se_agrupan():
     _, restantes, acts = core.detectar_actualizaciones_contenido(fallas, [alto, abajo, otra])
     assert restantes == [otra], restantes
     assert len(acts[0]['cascadas']) == 2
+    # Caso real TN Videos v749: el bloque se ACHICÓ 20px (un <li> de adentro
+    # pasó de 2 líneas a 1) y lo de abajo SUBIÓ 20px.
+    alto_menos = dict(alto, delta_y=-20, selectores=alto['selectores'] + [f'{L} > li:nth-child(3)'])
+    arriba = dict(abajo, delta_y=-20)
+    _, restantes, acts = core.detectar_actualizaciones_contenido(fallas, [alto_menos, arriba])
+    assert not restantes and len(acts[0]['cascadas']) == 2, restantes
     print("OK: el crecimiento del bloque y lo que bajó por eso se agrupan, otra causa sigue aparte")
 
 
