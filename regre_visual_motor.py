@@ -1139,13 +1139,15 @@ def generar_reporte(all_results, version_number, output_dir, timestamp, umbral_p
         items_global.append((COLOR_LEYENDA['contenido'],
                              f"🔄 {total_actualizaciones} actualización(es) de contenido esperable(s) por caché en: "
                              f"{esc(', '.join(urls_act))}."))
+    # Veredicto primero, sin viñeta, y después el detalle en viñetas.
     if global_color == 'red':
-        items_global.append((COLOR_LEYENDA['grave'], "<b>NO recomendado deployar a PROD sin revisar.</b>"))
+        veredicto = (COLOR_LEYENDA['grave'], "❌ NO recomendado deployar a PROD sin revisar.")
     elif global_color == 'orange':
-        items_global.append((COLOR_LEYENDA['cascada'], "<b>Revisar los desplazamientos antes de deployar.</b>"))
+        veredicto = (COLOR_LEYENDA['cascada'], "⚠️ Revisar los desplazamientos antes de deployar a PROD.")
     else:
-        items_global.append((COLOR_LEYENDA['ok'], "<b>✅ Todas las URLs pasaron la prueba estructural. Apto para deployar a PROD.</b>"))
-    global_html = _lista_coloreada(items_global)
+        veredicto = (COLOR_LEYENDA['ok'], "✅ Apto para deployar a PROD. Todas las URLs pasaron la prueba estructural.")
+    global_html = (f"<span style='color:{veredicto[0]}; font-weight:bold;'>{veredicto[1]}</span>"
+                   + (_lista_coloreada(items_global) if items_global else ""))
 
     html = f"""
     <html><head><meta charset="utf-8">
