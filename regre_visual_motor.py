@@ -708,6 +708,20 @@ def marcar_fallas_en_captura(png_data, consolidado, cascadas, actualizaciones=No
 # REPORTE HTML
 # =====================================================================
 
+# Colores de la leyenda (mismos que LEYENDA_HTML) para los resúmenes en viñetas.
+COLOR_LEYENDA = {
+    'grave': 'red', 'menor': 'blue', 'informativo': '#ff8c00',
+    'cascada': '#7c3aed', 'contenido': '#0891b2', 'ok': 'green',
+}
+
+
+def _lista_coloreada(items):
+    """[(color, texto_html)] -> <ul> con una viñeta por item, en su color."""
+    lis = ''.join(f"<li style='color:{color}; font-weight:bold; margin:2px 0;'>{texto}</li>"
+                  for color, texto in items)
+    return f"<ul style='margin:4px 0 8px 0;'>{lis}</ul>"
+
+
 LEYENDA_HTML = """
 <div style="position: sticky; top: 0; z-index: 500; background: #f7f7f7;
             padding: 10px 0 8px 0; margin: 0 -20px; border-bottom: 2px solid #ddd;
@@ -975,6 +989,8 @@ def generar_reporte(all_results, version_number, output_dir, timestamp, umbral_p
     sites_con_grave = 0
     sites_con_cascada = 0
     total_actualizaciones = 0
+    # Para el resumen global en viñetas (nombres de URL por categoría).
+    urls_graves, urls_cascada, urls_act = [], [], []
 
     for r in all_results:
         graves = [c for c in r['consolidado'] if c['gravedad'] == 'grave']
@@ -1036,6 +1052,28 @@ def generar_reporte(all_results, version_number, output_dir, timestamp, umbral_p
             resumen_texto += (f" 🔄 {len(actualizaciones)} actualización(es) de contenido "
                               f"(esperable por caché, ver detalle).")
 
+        # Resultado de la URL en viñetas, con los mismos colores de la leyenda.
+        # (resumen_texto se mantiene igual por compatibilidad.)
+        items_res = []
+        if r['fatal']:
+            items_res.append((COLOR_LEYENDA['grave'], "❌ Error grave en la ejecución de Selenium (ver logs)."))
+        else:
+            if total_graves:
+                items_res.append((COLOR_LEYENDA['grave'], f"❌ {total_graves} diferencia(s) grave(s)."))
+                urls_graves.append(r['description'])
+            if cascadas_revisar:
+                items_res.append((COLOR_LEYENDA['cascada'],
+                                  f"⚠️ {len(cascadas_revisar)} desplazamiento(s) en cascada para revisar "
+                                  f"(puede ser contenido que cambió de tamaño, o un bug de layout)."))
+                urls_cascada.append(r['description'])
+            if actualizaciones:
+                items_res.append((COLOR_LEYENDA['contenido'],
+                                  f"🔄 {len(actualizaciones)} actualización(es) de contenido (esperable por caché)."))
+                urls_act.append(r['description'])
+            if not items_res:
+                items_res.append((COLOR_LEYENDA['ok'], "✅ No se encontraron diferencias."))
+        resultado_html = _lista_coloreada(items_res)
+
         fallas_html = "<li>Error grave, sin datos.</li>" if r['fatal'] else construir_html_fallas(
             r['consolidado'], r['cascadas'], r.get('info_elementos', {}), r['url_id'],
             actualizaciones=actualizaciones
@@ -1049,7 +1087,7 @@ def generar_reporte(all_results, version_number, output_dir, timestamp, umbral_p
             <h2>{r['description']}</h2>
             <p><strong>URL PROD (V1):</strong> <a href="{r['url1']}" target="_blank"><code>{r['url1']}</code></a></p>
             <p><strong>URL VNP (V2):</strong> <a href="{r['url2']}" target="_blank"><code>{r['url2']}</code></a></p>
-            <p><strong>Resultado:</strong> <span style="font-weight:bold; color:{alert};">{resumen_texto}</span></p>
+            <div><strong>Resultado:</strong> <span style="display:none">{resumen_texto}</span>{resultado_html}</div>
             <p><strong>Tiempo de Ejecución:</strong> {r['time_elapsed']}</p>
             <details>
                 <summary style="cursor:pointer; font-weight:bold; color:#1e3a8a;">Detalle de diferencias</summary>
@@ -1083,6 +1121,32 @@ def generar_reporte(all_results, version_number, output_dir, timestamp, umbral_p
     if total_actualizaciones:
         global_text += f' 🔄 {total_actualizaciones} actualización(es) de contenido esperable(s) por caché.'
 
+    # Resumen global en viñetas, cada una con el color de su referencia.
+    # global_text queda igual (lo usan Slack y GITHUB_OUTPUT): va en un span
+    # oculto, primero, para que el script de Slack lo siga encontrando.
+    n_urls = len(all_results)
+    fatales = [r['description'] for r in all_results if r.get('fatal')]
+    items_global = []
+    if urls_graves or fatales:
+        nombres = ', '.join(fatales + urls_graves)
+        items_global.append((COLOR_LEYENDA['grave'],
+                             f"❌ Diferencias graves en {len(fatales) + len(urls_graves)} de {n_urls} URLs: {esc(nombres)}."))
+    if urls_cascada:
+        items_global.append((COLOR_LEYENDA['cascada'],
+                             f"⚠️ Desplazamientos en cascada para revisar en {len(urls_cascada)} de {n_urls} URLs: "
+                             f"{esc(', '.join(urls_cascada))}."))
+    if urls_act:
+        items_global.append((COLOR_LEYENDA['contenido'],
+                             f"🔄 {total_actualizaciones} actualización(es) de contenido esperable(s) por caché en: "
+                             f"{esc(', '.join(urls_act))}."))
+    if global_color == 'red':
+        items_global.append((COLOR_LEYENDA['grave'], "<b>NO recomendado deployar a PROD sin revisar.</b>"))
+    elif global_color == 'orange':
+        items_global.append((COLOR_LEYENDA['cascada'], "<b>Revisar los desplazamientos antes de deployar.</b>"))
+    else:
+        items_global.append((COLOR_LEYENDA['ok'], "<b>✅ Todas las URLs pasaron la prueba estructural. Apto para deployar a PROD.</b>"))
+    global_html = _lista_coloreada(items_global)
+
     html = f"""
     <html><head><meta charset="utf-8">
     <title>Reporte de Regresión {producto_nombre} {modo.capitalize()} - Versión {version_number}</title>
@@ -1102,7 +1166,7 @@ def generar_reporte(all_results, version_number, output_dir, timestamp, umbral_p
     <p><strong>Fecha y Hora:</strong> {format_date(timestamp)} {timestamp.split('_')[1][:2]}:{timestamp.split('_')[1][2:4]}:{timestamp.split('_')[1][4:6]}</p>
     <p><strong>Tiempo Total:</strong> {format_time(tiempo_total)}</p>
     <p><strong>Umbral de Tolerancia:</strong> {umbral_pixeles} píxeles.</p>
-    <p><strong>Resumen global:</strong> <span style="font-weight:bold; color:{global_color};">{global_text}</span></p>
+    <div><strong>Resumen global:</strong> <span style="display:none">{global_text}</span>{global_html}</div>
     {LEYENDA_HTML}
     <hr/>
     {all_details_html}
