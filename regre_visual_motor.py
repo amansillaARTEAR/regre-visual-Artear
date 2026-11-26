@@ -728,11 +728,11 @@ LEYENDA_HTML = """
             box-shadow: 0 2px 6px rgba(0,0,0,0.08);">
   <div style="display: flex; flex-wrap: wrap; gap: 8px 24px; font-size: 0.82em;
               color: #555; padding: 0 20px;">
-    <div style="flex: 1 1 220px;"><span style="color:red; font-weight:bold;">■ Rojo</span>: falla grave (elemento ausente/nuevo, o cambio de tamaño/estilo confirmado visualmente).</div>
-    <div style="flex: 1 1 220px;"><span style="color:blue; font-weight:bold;">■ Azul</span>: desplazamiento menor sin cambio de tamaño.</div>
-    <div style="flex: 1 1 220px;"><span style="color:#ff8c00; font-weight:bold;">■ Naranja</span>: probable falso positivo. En el código de la página hay una diferencia, pero al comparar las imágenes de PROD y VNP esa zona se ve igual.</div>
-    <div style="flex: 1 1 220px;"><span style="color:#7c3aed; font-weight:bold;">■ Violeta</span>: desplazamiento en cascada — un solo elemento anterior cambió de tamaño y corrió a los siguientes; no son N fallas independientes.</div>
-    <div style="flex: 1 1 220px;"><span style="color:#0891b2; font-weight:bold;">■ Celeste</span>: actualización de contenido — en un listado entraron/salieron notas entre PROD y VNP (caché por edición en vivo). Esperable, no es grave.</div>
+    <div style="flex: 1 1 220px;"><span style="color:red; font-weight:bold;">■ Rojo</span>: diferencia grave (falta o sobra un elemento, o cambió su tamaño o estilo).</div>
+    <div style="flex: 1 1 220px;"><span style="color:blue; font-weight:bold;">■ Azul</span>: se movió, sin cambiar de tamaño.</div>
+    <div style="flex: 1 1 220px;"><span style="color:#ff8c00; font-weight:bold;">■ Naranja</span>: probable falso positivo (cambió el código, pero en la imagen se ve igual).</div>
+    <div style="flex: 1 1 220px;"><span style="color:#7c3aed; font-weight:bold;">■ Violeta</span>: varios elementos corridos por una sola causa.</div>
+    <div style="flex: 1 1 220px;"><span style="color:#0891b2; font-weight:bold;">■ Celeste</span>: notas que entraron o salieron por caché. Esperable, no es grave.</div>
   </div>
 </div>
 """
