@@ -386,7 +386,9 @@ def esperar_fuentes(driver, timeout=5):
 # datos que se comparan. Cualquier error se ignora.
 # ---------------------------------------------------------------------
 JS_DIAG_CHEVRONS = """
-    var out = [];
+    var out = ['media hover=' + matchMedia('(hover: hover)').matches +
+               ' pointer_fine=' + matchMedia('(pointer: fine)').matches +
+               ' ancho=' + window.innerWidth];
     var btns = document.querySelectorAll('.horizontal-scroll__container [class*="button_arrow"]');
     for (var i = 0; i < btns.length && i < 6; i++) {
         var b = btns[i], cs = getComputedStyle(b), r = b.getBoundingClientRect();
@@ -504,6 +506,16 @@ def ejecutar_selenium_para_estructura(url, modo, config):
     options.add_argument("--log-level=3")
     options.add_experimental_option('excludeSwitches', ['enable-logging'])
     options.add_argument(f"--user-agent={config['user_agent']}")
+    # Chrome headless se declara como dispositivo SIN mouse
+    # ((hover: none) / (pointer: none)). TN oculta los chevrons de los
+    # carruseles (brick Destacadas, etc.) con @media (hover: none), así que
+    # en desktop la captura nunca los mostraba, ni en PROD ni en VNP, y un
+    # bug en ellos no se podía detectar (QAA-96). En desktop se declara una
+    # PC con mouse (hover=2 "hover", pointer=4 "fine"), como la de un
+    # usuario real. En mobile no se toca: "sin hover" es lo correcto.
+    if modo == 'desktop':
+        options.add_argument("--blink-settings=primaryHoverType=2,availableHoverTypes=2,"
+                             "primaryPointerType=4,availablePointerTypes=4")
     options.add_argument("--disable-features=site-per-process")
 
     driver = None
@@ -519,24 +531,6 @@ def ejecutar_selenium_para_estructura(url, modo, config):
         # en un runner compartido de CI. Ahora se aplica en los dos modos.
         driver.execute_cdp_cmd('Network.enable', {})
         driver.execute_cdp_cmd('Network.setBlockedURLs', {"urls": DOMINIOS_BLOQUEADOS})
-
-        # Chrome headless se declara como dispositivo SIN mouse
-        # ((hover: none) / (pointer: none)). TN oculta los chevrons de los
-        # carruseles (brick Destacadas, etc.) con @media (hover: none), así
-        # que en desktop la captura nunca los mostraba, ni en PROD ni en VNP,
-        # y un bug en ellos no se podía detectar (QAA-96). En desktop se
-        # emula una PC con mouse, como la de un usuario real. En mobile no
-        # se toca: ahí "sin hover" es lo correcto (pantalla táctil).
-        if modo == 'desktop':
-            try:
-                driver.execute_cdp_cmd('Emulation.setEmulatedMedia', {'features': [
-                    {'name': 'hover', 'value': 'hover'},
-                    {'name': 'any-hover', 'value': 'hover'},
-                    {'name': 'pointer', 'value': 'fine'},
-                    {'name': 'any-pointer', 'value': 'fine'},
-                ]})
-            except Exception as e:
-                print(f"     ⚠️ No se pudo emular mouse (hover/pointer): {e}")
 
         driver.set_page_load_timeout(config['page_load_timeout'])
         driver.get(url)
