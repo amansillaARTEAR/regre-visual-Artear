@@ -831,6 +831,9 @@ def construir_html_actualizacion(act, info, url_id):
         movidos = sum(c.get('cantidad', 0) for c in act['cascadas'])
         extra_cascada = (f"<br>Por eso {movidos} elementos del listado se corrieron de lugar "
                          f"(no se listan aparte, es el mismo efecto).")
+    if act.get('reubicados'):
+        extra_cascada += (f"<br>{len(act['reubicados']) // 2} elemento(s) con el mismo texto aparecen en otro lugar "
+                          f"del listado (ej: el firmante de una nota que se corrió), no son nuevos.")
     if act.get('corridos'):
         extra_cascada += (f"<br>{len(act['corridos'])} elemento(s) del mismo bloque se corrieron de lugar "
                           f"por la nota nueva (no se listan aparte).")

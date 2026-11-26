@@ -1028,6 +1028,27 @@ def detectar_actualizaciones_contenido(fallas, cascadas):
     salieron = sorted([f for f in candidatas if f['tipo'] == 'AUSENTE V2'], key=lambda f: f['order_index'])
     entraron = sorted([f for f in candidatas if f['tipo'] == 'NUEVO EN V2'], key=lambda f: f['order_index'])
 
+    # Primera pasada: mismo tag y MISMO texto en lo que "salió" y lo que
+    # "entró" = es el mismo elemento en otro lugar, no contenido nuevo.
+    # Caso real (TN Listado v749): el firmante «Uriel Bederman» (h3) de una
+    # nota que solo se corrió quedaba como AUSENTE + NUEVO, y el NUEVO salía
+    # GRAVE porque el emparejamiento general lo cruzaba con otro firmante.
+    # Solo se usan si caen dentro de un bloque con actualización confirmada
+    # (más abajo). Si no, se liberan y siguen como estaban.
+    mismo_texto = []
+    reservadas = set()
+    for s_ in salieron:
+        for e in entraron:
+            if (id(e) not in reservadas and _clase_contenido(e) == _clase_contenido(s_)
+                    and e.get('texto_propio') and e.get('texto_propio') == s_.get('texto_propio')):
+                comun, largo = _prefijo_comun(s_['selector'], e['selector'])
+                if comun and largo - len(comun) <= PROFUNDIDAD_BLOQUE_CONTENIDO:
+                    reservadas.update((id(e), id(s_)))
+                    mismo_texto.append((s_, e, ' > '.join(comun)))
+                    break
+    salieron = [f for f in salieron if id(f) not in reservadas]
+    entraron = [f for f in entraron if id(f) not in reservadas]
+
     bloques = {}  # prefijo -> {'salieron': [...], 'entraron': [...]}
     usadas = set()
     for s in salieron:
@@ -1052,6 +1073,14 @@ def detectar_actualizaciones_contenido(fallas, cascadas):
     if not bloques:
         return fallas, cascadas, []
 
+    # Los "mismo texto" se agregan al bloque confirmado que los contiene.
+    reubicados = defaultdict(list)
+    for s_, e, comun in mismo_texto:
+        destino = next((b for b in bloques if comun == b or comun.startswith(b + ' > ')), None)
+        if destino is not None:
+            reubicados[destino].extend([s_, e])
+            usadas.update((id(s_), id(e)))
+
     # Elementos repetidos que solo cambiaron de cantidad (ver
     # _es_repetido_por_cantidad): con una actualización de contenido
     # confirmada en la página, son su consecuencia. Se agrupan en la
@@ -1071,6 +1100,39 @@ def detectar_actualizaciones_contenido(fallas, cascadas):
             if not c.get('grave') and c.get('selectores')
             and all((s or '').startswith(prefijo + ' > ') for s in c['selectores'])
         ]
+        # Contenedores del bloque que cambiaron de alto por la nota nueva
+        # (ej. la nota entró con un título de 2 líneas): una cascada de ALTO
+        # en la que TODOS los selectores son ancestros del bloque es el
+        # mismo efecto. Y lo que está debajo se corrió exactamente ese mismo
+        # delta en Y. Caso real (TN Homepage v749): «Últimas noticias» del
+        # footer -> footer creció 20px y 13 elementos bajaron 20px.
+        # (Un contenedor ancestro del bloque, o un hermano de uno de ellos:
+        # en una fila flex, la columna de al lado se estira el mismo alto.
+        # Caso real: «Descargate la app de TN», al lado de la lista.)
+        def es_ancestro(sel):
+            return prefijo == sel or prefijo.startswith(sel + ' > ')
+
+        def ancestro_o_hermano(sel):
+            sel = sel or ''
+            return es_ancestro(sel) or (' > ' in sel and es_ancestro(sel.rsplit(' > ', 1)[0]))
+
+        ancestros_alto = [
+            c for c in cascadas_restantes
+            if c not in relacionadas and not c.get('grave') and c.get('tipo') == 'DIFERENCIA ALTURA (H)'
+            and c.get('selectores')
+            and all(ancestro_o_hermano(s) for s in c['selectores'])
+            and any(es_ancestro(s or '') for s in c['selectores'])
+        ]
+        # Mismo delta y mismo sentido: si el contenedor creció, lo de
+        # abajo bajó; si se achicó, subió.
+        deltas_alto = {c.get('delta_y') or 0 for c in ancestros_alto} - {0}
+        corridos_debajo = [
+            c for c in cascadas_restantes
+            if c not in relacionadas and c not in ancestros_alto and not c.get('grave')
+            and c.get('tipo') == 'DIFERENCIA POSICIÓN (Y)' and c.get('delta_y')
+            and any(abs(c['delta_y'] - d) <= CASCADE_Y_EPSILON for d in deltas_alto)
+        ]
+        relacionadas = relacionadas + ancestros_alto + corridos_debajo
         cascadas_restantes = [c for c in cascadas_restantes if c not in relacionadas]
         # Movimientos sueltos (Y/X, sin cambio de tamaño ni estilo) dentro del
         # mismo bloque: las notas que quedaron se corrieron un lugar.
@@ -1088,6 +1150,7 @@ def detectar_actualizaciones_contenido(fallas, cascadas):
             'entraron': entraron_b,
             'cascadas': relacionadas,
             'repetidos': [],
+            'reubicados': reubicados.get(prefijo, []),
             'corridos': corridos,
             'notas_corridas': _titulares_movidos(corridos, relacionadas, sel_con_otra),
             'coords_v2': entraron_b[0]['coords_v2'],

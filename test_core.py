@@ -1015,6 +1015,61 @@ def test_notas_corridas_se_marcan_salvo_las_que_cambiaron_diseno():
     print("OK: notas corridas se marcan, la que cambió de diseño sigue GRAVE")
 
 
+
+def _f_contenido(tipo, selector, tag, texto, oi, y=0):
+    c = {'x': 0, 'y': y, 'width': 100, 'height': 20}
+    f = core._falla(selector, tipo, 'N/A', 'N/A', 'N/A', c, c, oi)
+    f.update({'tag': tag, 'texto_propio': texto, 'texto_etiqueta': texto, 'clase': '',
+              'img_src': '', 'identidad_debil': False, 'grupo_en_ambas': False})
+    return f
+
+
+def test_mismo_texto_en_otro_lugar_dentro_de_actualizacion():
+    """Caso real TN Listado v749: el firmante de una nota que solo se corrió
+    quedaba AUSENTE + NUEVO y el NUEVO salía GRAVE. Dentro de un listado
+    con actualización confirmada, mismo texto en otro lugar = reubicado.
+    Fuera de una actualización, sigue como antes."""
+    L = 'main > div > div'
+    fallas = [
+        _f_contenido('AUSENTE V2', f'{L} > article:nth-child(20) > div > header > h2 > a', 'a', 'Nota vieja', 1),
+        _f_contenido('NUEVO EN V2', f'{L} > article > div > header > h2 > a', 'a', 'Nota nueva', 0),
+        _f_contenido('AUSENTE V2', f'{L} > article:nth-child(5) > div > footer > div > h3', 'h3', 'Uriel', 2),
+        _f_contenido('NUEVO EN V2', f'{L} > article:nth-child(7) > div > footer > div > h3', 'h3', 'Uriel', 3),
+    ]
+    restantes, _, acts = core.detectar_actualizaciones_contenido(fallas, [])
+    assert not restantes, restantes
+    assert len(acts) == 1 and len(acts[0]['reubicados']) == 2, acts
+    assert [f['texto_propio'] for f in acts[0]['entraron']] == ['Nota nueva']
+
+    solo_reubicado = fallas[2:]
+    restantes, _, acts = core.detectar_actualizaciones_contenido(solo_reubicado, [])
+    assert not acts and len(restantes) == 2, (acts, restantes)
+    print("OK: mismo texto en otro lugar se agrupa solo si hay actualización confirmada")
+
+
+def test_contenedor_del_bloque_que_crece_y_lo_de_abajo_se_agrupan():
+    """Caso real TN Homepage v749 (footer «Últimas noticias»): la nota nueva
+    tiene título más largo, los contenedores del bloque crecen 20px y lo de
+    abajo baja 20px. Se agrupa en la actualización. Una cascada con otro
+    delta (otra causa) sigue aparte."""
+    L = 'footer > div:nth-child(2) > div > div:nth-child(2) > ul'
+    fallas = [
+        _f_contenido('AUSENTE V2', f'{L} > li:nth-child(5) > a > span', 'span', 'Sale', 1),
+        _f_contenido('NUEVO EN V2', f'{L} > li > a > span', 'span', 'Entra', 0),
+    ]
+    alto = {'tipo_cascada': True, 'tipo': 'DIFERENCIA ALTURA (H)', 'delta_y': 20, 'cantidad': 3,
+            'selectores': ['footer > div:nth-child(2) > div > div', 'footer > div:nth-child(2) > div',
+                           'footer > div:nth-child(2)'], 'primer_selector': 'footer', 'coords_v2': {}}
+    abajo = {'tipo_cascada': True, 'tipo': 'DIFERENCIA POSICIÓN (Y)', 'delta_y': 20, 'cantidad': 13,
+             'selectores': ['footer > div:nth-child(3)'], 'primer_selector': 'footer > div:nth-child(3)',
+             'coords_v2': {}}
+    otra = dict(abajo, delta_y=300, selectores=['main > div:nth-child(9)'])
+    _, restantes, acts = core.detectar_actualizaciones_contenido(fallas, [alto, abajo, otra])
+    assert restantes == [otra], restantes
+    assert len(acts[0]['cascadas']) == 2
+    print("OK: el crecimiento del bloque y lo que bajó por eso se agrupan, otra causa sigue aparte")
+
+
 if __name__ == '__main__':
     tests = [v for k, v in list(globals().items()) if k.startswith('test_')]
     fallidos = 0
