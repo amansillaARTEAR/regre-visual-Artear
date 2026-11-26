@@ -520,6 +520,24 @@ def ejecutar_selenium_para_estructura(url, modo, config):
         driver.execute_cdp_cmd('Network.enable', {})
         driver.execute_cdp_cmd('Network.setBlockedURLs', {"urls": DOMINIOS_BLOQUEADOS})
 
+        # Chrome headless se declara como dispositivo SIN mouse
+        # ((hover: none) / (pointer: none)). TN oculta los chevrons de los
+        # carruseles (brick Destacadas, etc.) con @media (hover: none), así
+        # que en desktop la captura nunca los mostraba, ni en PROD ni en VNP,
+        # y un bug en ellos no se podía detectar (QAA-96). En desktop se
+        # emula una PC con mouse, como la de un usuario real. En mobile no
+        # se toca: ahí "sin hover" es lo correcto (pantalla táctil).
+        if modo == 'desktop':
+            try:
+                driver.execute_cdp_cmd('Emulation.setEmulatedMedia', {'features': [
+                    {'name': 'hover', 'value': 'hover'},
+                    {'name': 'any-hover', 'value': 'hover'},
+                    {'name': 'pointer', 'value': 'fine'},
+                    {'name': 'any-pointer', 'value': 'fine'},
+                ]})
+            except Exception as e:
+                print(f"     ⚠️ No se pudo emular mouse (hover/pointer): {e}")
+
         driver.set_page_load_timeout(config['page_load_timeout'])
         driver.get(url)
 
