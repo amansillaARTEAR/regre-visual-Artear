@@ -729,9 +729,9 @@ LEYENDA_HTML = """
   <div style="display: flex; flex-wrap: wrap; gap: 8px 24px; font-size: 0.82em;
               color: #555; padding: 0 20px;">
     <div style="flex: 1 1 220px;"><span style="color:red; font-weight:bold;">■ Rojo</span>: diferencia grave (falta o sobra un elemento, o cambió su tamaño o estilo).</div>
-    <div style="flex: 1 1 220px;"><span style="color:blue; font-weight:bold;">■ Azul</span>: se movió, sin cambiar de tamaño.</div>
+    <div style="flex: 1 1 220px;"><span style="color:#7c3aed; font-weight:bold;">■ Violeta</span>: varios elementos corridos por una sola causa (revisar antes de deployar).</div>
+    <div style="flex: 1 1 220px;"><span style="color:blue; font-weight:bold;">■ Azul</span>: un elemento suelto que se movió, sin cambiar de tamaño (menor).</div>
     <div style="flex: 1 1 220px;"><span style="color:#ff8c00; font-weight:bold;">■ Naranja</span>: probable falso positivo (cambió el código, pero en la imagen se ve igual).</div>
-    <div style="flex: 1 1 220px;"><span style="color:#7c3aed; font-weight:bold;">■ Violeta</span>: varios elementos corridos por una sola causa.</div>
     <div style="flex: 1 1 220px;"><span style="color:#0891b2; font-weight:bold;">■ Celeste</span>: notas que entraron o salieron por caché. Esperable, no es grave.</div>
   </div>
 </div>
