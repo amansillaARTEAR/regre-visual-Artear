@@ -379,6 +379,40 @@ def esperar_fuentes(driver, timeout=5):
         pass  # no bloqueamos la corrida por esto; es una mejora best-effort
 
 
+# ---------------------------------------------------------------------
+# DIAGNÓSTICO TEMPORAL (QAA-96): estado de los chevrons de los carruseles
+# (ej. brick Destacadas de TN) en cada paso de la captura, para encontrar
+# en qué paso desaparecen. SOLO LECTURA: no modifica la página ni los
+# datos que se comparan. Cualquier error se ignora.
+# ---------------------------------------------------------------------
+JS_DIAG_CHEVRONS = """
+    var out = [];
+    var btns = document.querySelectorAll('.horizontal-scroll__container [class*="button_arrow"]');
+    for (var i = 0; i < btns.length && i < 6; i++) {
+        var b = btns[i], cs = getComputedStyle(b), r = b.getBoundingClientRect();
+        var brick = b.closest('[class*="brick-"]');
+        var sl = b.closest('.horizontal-scroll__container');
+        sl = sl ? sl.querySelector('.horizontal-scroll__slider') : null;
+        out.push((brick ? (brick.className.match(/brick-[a-z0-9_-]+/) || ['?'])[0] : '?') +
+                 ' ' + (b.className.indexOf('arrow_left') >= 0 ? 'izq' : 'der') +
+                 ' clase_hidden=' + (b.classList.contains('hidden') ? 'si' : 'no') +
+                 ' vis=' + cs.visibility + ' disp=' + cs.display + ' op=' + cs.opacity +
+                 ' rect=' + Math.round(r.x) + ',' + Math.round(r.y) + ',' + Math.round(r.width) + 'x' + Math.round(r.height) +
+                 (sl ? ' slider sw=' + sl.scrollWidth + ' cw=' + sl.clientWidth + ' sl=' + sl.scrollLeft : ''));
+    }
+    return out;
+"""
+
+
+def diag_chevrons(driver, paso):
+    try:
+        lineas = driver.execute_script(JS_DIAG_CHEVRONS) or []
+        for linea in lineas:
+            print(f"     [diag chevrons] {paso}: {linea}")
+    except Exception:
+        pass
+
+
 def obtener_estructura_dom(driver, incluir_texto=True, espera_scroll=2):
     """Devuelve (data, png) para la URL actualmente cargada en el driver."""
     from selenium.webdriver.support.ui import WebDriverWait
@@ -387,11 +421,14 @@ def obtener_estructura_dom(driver, incluir_texto=True, espera_scroll=2):
     try:
         WebDriverWait(driver, 20).until(lambda d: d.execute_script("return document.readyState") == "complete")
         esperar_fuentes(driver)
+        diag_chevrons(driver, '1-cargada')
 
         limpiar_entorno(driver)
         time.sleep(1)
         limpiar_entorno(driver)
+        diag_chevrons(driver, '2-tras-limpieza')
         forzar_carga_contenido(driver, espera_scroll=espera_scroll)
+        diag_chevrons(driver, '3-tras-scroll')
 
         total_height = driver.execute_script(
             "return Math.max(document.body.scrollHeight, document.body.offsetHeight, "
@@ -421,11 +458,13 @@ def obtener_estructura_dom(driver, incluir_texto=True, espera_scroll=2):
             print(f"     ⚠️ La ventana no alcanzo el alto de la pagina ({visible}px de {pagina}px): "
                   f"la captura puede salir cortada abajo.")
         esperar_fuentes(driver)  # el resize puede revelar contenido lazy-loaded con su propia fuente
+        diag_chevrons(driver, '4-tras-agrandar-ventana')
 
         js = JS_EXTRACCION.replace('INCLUIR_TEXTO', 'true' if incluir_texto else 'false')
         result = driver.execute_script(js)
         data = result.get('elements', [])
 
+        diag_chevrons(driver, '5-antes-de-la-captura')
         png = driver.get_screenshot_as_png()
         driver.set_window_size(original_size['width'], original_size['height'])
 
