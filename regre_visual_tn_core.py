@@ -83,6 +83,35 @@ _PATRONES_EXCLUSION_RE = re.compile(
     '|'.join(re.escape(p) for p in PATRONES_EXCLUSION), re.IGNORECASE
 )
 
+# Spinners / loaders / skeletons: indicadores de carga que aparecen o no
+# según en qué momento exacto se sacó la captura, no según la versión.
+# Se matchea por PALABRA dentro de cada clase/id (separada por - o _), no
+# por substring, para no excluir por error clases como "downloads" o
+# "lazyloaded". Ej. que matchean: spinner, notifications-loader,
+# btn2-loading-icon, isLoading, card-skeleton.
+_SPINNER_TOKEN_RE = re.compile(
+    r'(^|[-_])(spinner|spin|loader|loading|isloading|skeleton|shimmer)([-_]|$)', re.IGNORECASE
+)
+
+
+TAMANIO_MAX_SPINNER = 150  # px
+
+
+def elemento_es_spinner(item):
+    """True si el elemento es un indicador de carga: por nombre de clase/id
+    (ver _SPINNER_TOKEN_RE) o porque tiene una animación CSS infinita
+    (todo spinner gira/late en loop) y es chico. La animación la informa el JS de
+    extracción en 'anim_infinita' (si no viene, se ignora esa señal)."""
+    # Solo elementos chicos: un spinner es un ícono. Así no se excluyen
+    # cosas grandes con animación en loop (un ticker, un banner animado),
+    # que se siguen comparando como antes.
+    if (item.get('anim_infinita')
+            and (item.get('width') or 0) <= TAMANIO_MAX_SPINNER
+            and (item.get('height') or 0) <= TAMANIO_MAX_SPINNER):
+        return True
+    tokens = f"{item.get('id_attr') or ''} {item.get('class_attr') or ''}".split()
+    return any(_SPINNER_TOKEN_RE.search(t) for t in tokens)
+
 
 def elemento_fuera_de_pantalla(item):
     """
@@ -119,6 +148,8 @@ def elemento_excluido(item):
     interno de un ad). Los CONTENEDORES de ad-slot (PATRONES_AD_SLOT_CONTENEDOR)
     a propósito NO están acá: esos se comparan (ver comentario arriba).
     """
+    if elemento_es_spinner(item):
+        return True
     id_attr = (item.get('id_attr') or '')
     class_attr = (item.get('class_attr') or '')
     texto = f"{id_attr} {class_attr}"
@@ -528,6 +559,15 @@ def comparar_estructura_dom(data_v1, data_v2, umbral_pixeles=UMBRAL_PIXELES_TOLE
     """
     pares, solo_v1, solo_v2 = emparejar_elementos(data_v1, data_v2)
 
+    # Fingerprints presentes en cada versión: un AUSENTE/NUEVO cuyo
+    # fingerprint existe en LAS DOS es un desparejo de cantidad de un
+    # elemento repetido (ej: el ícono de play de las cards de video), no
+    # un elemento que desapareció. Solo se usa como dato informativo para
+    # detectar_actualizaciones_contenido.
+    fps_v1 = {construir_fingerprint(it) for it in data_v1 if not elemento_excluido(it)}
+    fps_v2 = {construir_fingerprint(it) for it in data_v2 if not elemento_excluido(it)}
+    fps_ambas = (fps_v1 & fps_v2) - {None}
+
     fallas = []
 
     for item1, item2, debil in pares:
@@ -567,15 +607,19 @@ def comparar_estructura_dom(data_v1, data_v2, umbral_pixeles=UMBRAL_PIXELES_TOLE
 
         diff_y = abs(item1['y'] - item2['y'])
         if diff_y > umbral_pixeles:
-            fallas.append(_falla(selector, 'DIFERENCIA POSICIÓN (Y)', diff_y,
-                                  item1['y'], item2['y'], coords_v2, coords_v1, order_index,
-                                  delta_y=item2['y'] - item1['y'], delta=item2['y'] - item1['y']))
+            f = _falla(selector, 'DIFERENCIA POSICIÓN (Y)', diff_y,
+                       item1['y'], item2['y'], coords_v2, coords_v1, order_index,
+                       delta_y=item2['y'] - item1['y'], delta=item2['y'] - item1['y'])
+            f.update(_datos_movido(item2))
+            fallas.append(f)
 
         diff_x = abs(item1['x'] - item2['x'])
         if diff_x > umbral_pixeles:
-            fallas.append(_falla(selector, 'DIFERENCIA POSICIÓN (X)', diff_x,
-                                  item1['x'], item2['x'], coords_v2, coords_v1, order_index,
-                                  delta=item2['x'] - item1['x']))
+            f = _falla(selector, 'DIFERENCIA POSICIÓN (X)', diff_x,
+                       item1['x'], item2['x'], coords_v2, coords_v1, order_index,
+                       delta=item2['x'] - item1['x'])
+            f.update(_datos_movido(item2))
+            fallas.append(f)
 
         if comparar_estilos:
             styles1 = item1.get('styles', {}) or {}
@@ -590,17 +634,49 @@ def comparar_estructura_dom(data_v1, data_v2, umbral_pixeles=UMBRAL_PIXELES_TOLE
         if elemento_fuera_de_pantalla(item1):
             continue
         coords_v1 = {'x': item1['x'], 'y': item1['y'], 'width': item1['width'], 'height': item1['height']}
-        fallas.append(_falla(item1.get('selector'), 'AUSENTE V2', 'N/A', 'N/A', 'N/A',
-                              coords_v1, coords_v1, item1.get('order_index', 0)))
+        f = _falla(item1.get('selector'), 'AUSENTE V2', 'N/A', 'N/A', 'N/A',
+                   coords_v1, coords_v1, item1.get('order_index', 0))
+        f.update(_datos_contenido(item1, fps_ambas))
+        fallas.append(f)
 
     for item2 in solo_v2:
         if elemento_fuera_de_pantalla(item2):
             continue
         coords_v2 = {'x': item2['x'], 'y': item2['y'], 'width': item2['width'], 'height': item2['height']}
-        fallas.append(_falla(item2.get('selector'), 'NUEVO EN V2', 'N/A', 'N/A', 'N/A',
-                              coords_v2, coords_v2, item2.get('order_index', 0)))
+        f = _falla(item2.get('selector'), 'NUEVO EN V2', 'N/A', 'N/A', 'N/A',
+                   coords_v2, coords_v2, item2.get('order_index', 0))
+        f.update(_datos_contenido(item2, fps_ambas))
+        fallas.append(f)
 
     return fallas
+
+
+def _datos_movido(item):
+    """Tag y texto del elemento que se movió (V2). Solo informativo: se usa
+    para marcar en la captura las notas que se corrieron de lugar."""
+    return {'tag': item.get('tag', ''), 'texto_propio': (item.get('texto', '') or '').strip()}
+
+
+def _datos_contenido(item, fps_ambas=frozenset()):
+    """Datos del elemento REAL de la falla (V1 para AUSENTE, V2 para NUEVO).
+    Campos extra, solo informativos: no cambian la clave (selector, tipo).
+    Se usan para la etiqueta del reporte y para detectar_actualizaciones_contenido.
+    Antes la etiqueta de un AUSENTE se buscaba por selector priorizando V2:
+    si el listado se había corrido un lugar, ese selector en V2 apuntaba a
+    OTRA nota y el reporte mostraba el título equivocado (v749 Homepage:
+    decía que faltaba «Protección de cultivos…», que estaba, en vez de
+    «La FIA…», que era la que realmente había salido)."""
+    texto_propio = (item.get('texto', '') or '').strip()
+    clase = item.get('class_attr')
+    return {
+        'tag': item.get('tag', ''),
+        'texto_propio': texto_propio,
+        'texto_etiqueta': texto_propio or (item.get('texto_subtree', '') or '').strip(),
+        'clase': clase if isinstance(clase, str) else '',
+        'img_src': (item.get('img_src', '') or '').strip(),
+        'identidad_debil': _identidad_es_debil(item),
+        'grupo_en_ambas': construir_fingerprint(item) in fps_ambas,
+    }
 
 
 def claves_de_ruido(fallas_base):
@@ -752,6 +828,10 @@ def agrupar_cascadas(fallas):
                     'primer_selector': primero['selector'],
                     'selectores': [f['selector'] for f in items_ordenados],
                     'coords_v2': primero['coords_v2'],
+                    # Solo informativo (para marcar en la captura).
+                    'movidos': [{'tag': f.get('tag', ''), 'texto_propio': f.get('texto_propio', ''),
+                                 'selector': f['selector'], 'coords_v2': f['coords_v2']}
+                                for f in items_ordenados],
                 })
             else:
                 # Cluster chico: no lo tratamos como cascada, va como falla normal.
@@ -781,6 +861,9 @@ def agrupar_cascadas(fallas):
             if cascada_match:
                 cascada_match['cantidad'] += 1
                 cascada_match['selectores'].append(f['selector'])
+                if 'movidos' in cascada_match:
+                    cascada_match['movidos'].append({'tag': f.get('tag', ''), 'texto_propio': f.get('texto_propio', ''),
+                                                     'selector': f['selector'], 'coords_v2': f['coords_v2']})
             else:
                 aun_sueltas.append(f)
         otras_fallas = aun_sueltas
@@ -844,6 +927,243 @@ def agrupar_cascadas(fallas):
 
 
 # =====================================================================
+# ACTUALIZACIÓN DE CONTENIDO (notas que entran/salen de un listado)
+# =====================================================================
+
+# Tags de texto editorial (titular, volanta, hora). Un AUSENTE/NUEVO de
+# estos tags, con texto propio, es una NOTA que cambió, no un componente.
+TAGS_DE_CONTENIDO = ('a', 'span', 'p', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6')
+
+# Máxima distancia (en niveles de DOM) entre la nota que salió y la que
+# entró para considerarlas parte del mismo bloque/listado.
+PROFUNDIDAD_BLOQUE_CONTENIDO = 6
+
+
+def _es_candidata_contenido(f):
+    """Titular/hora con texto propio, o link-imagen de la card (<a> sin
+    texto pero con imagen, ej: a.card__image / a.card__genoa__video)."""
+    if f['tipo'] not in ('AUSENTE V2', 'NUEVO EN V2') or not f.get('selector'):
+        return False
+    if f.get('tag') not in TAGS_DE_CONTENIDO:
+        return False
+    return bool(f.get('texto_propio')) or (f.get('tag') == 'a' and bool(f.get('img_src')))
+
+
+def _clase_contenido(f):
+    """Para emparejar lo que salió con lo que entró: mismo tag y mismo
+    tipo (con texto vs solo imagen)."""
+    return (f.get('tag'), bool(f.get('texto_propio')))
+
+
+def _es_repetido_por_cantidad(f):
+    """AUSENTE/NUEVO de un elemento sin identidad propia (sin id ni texto)
+    cuyo fingerprint existe en las dos versiones: solo cambió CUÁNTOS hay
+    (ej: una nota con video menos -> un ícono de play menos)."""
+    return (f['tipo'] in ('AUSENTE V2', 'NUEVO EN V2')
+            and f.get('identidad_debil') and f.get('grupo_en_ambas'))
+
+
+def _prefijo_comun(sel1, sel2):
+    p1, p2 = sel1.split(' > '), sel2.split(' > ')
+    comun = []
+    for a, b in zip(p1, p2):
+        if a != b:
+            break
+        comun.append(a)
+    return comun, max(len(p1), len(p2))
+
+
+def _titulares_movidos(corridos, cascadas, con_otra_falla=frozenset()):
+    """Coordenadas (en VNP) de los titulares que solo se corrieron de lugar:
+    un recuadro por nota, para marcarlas en la captura."""
+    vistos, out = set(), []
+    movidos = list(corridos) + [m for c in cascadas for m in c.get('movidos', [])]
+    for m in movidos:
+        # Si la nota tiene además otra diferencia (tamaño, estilo), no se
+        # marca como "solo corrida": esa diferencia se reporta aparte.
+        if m.get('selector') in con_otra_falla:
+            continue
+        if m.get('tag') in ('a', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6') and m.get('texto_propio'):
+            c = m['coords_v2']
+            clave = (int(c['x']), int(c['y']))
+            if clave not in vistos:
+                vistos.add(clave)
+                out.append(c)
+    return out
+
+
+def detectar_actualizaciones_contenido(fallas, cascadas):
+    """
+    Caso real (TN Homepage v749 desktop, «Últimas noticias»): por el ritmo
+    de edición del sitio, PROD (con caché) y VNP muestran un listado
+    desfasado. En VNP entra una nota nueva arriba, el resto baja un lugar y
+    la última sale. Antes eso daba 4 GRAVES (titular y hora de la que salió
+    + titular y hora de la que entró) y 1 cascada aparte, todo por 1 sola
+    causa esperable.
+
+    Regla (conservadora, para no ocultar bugs reales):
+      - Solo AUSENTE/NUEVO de tags de texto (TAGS_DE_CONTENIDO) con texto
+        propio. Contenedores (div/article/li) no califican nunca.
+      - Si un ancestro del elemento también es AUSENTE/NUEVO, es un cambio
+        estructural (falta o sobra un bloque) -> sigue GRAVE.
+      - Tiene que haber REEMPLAZO: una que salió y otra que entró, mismo tag,
+        dentro del mismo bloque (a <= PROFUNDIDAD_BLOQUE_CONTENIDO niveles).
+        Un titular que falta sin otro que lo reemplace sigue GRAVE.
+    Lo emparejado se saca de las fallas y se devuelve como "actualización de
+    contenido" (informativa, no grave, NO se descarta: se lista en el
+    reporte). Una cascada geométrica no grave con TODOS sus selectores
+    dentro del bloque se agrupa adentro de la actualización (es su efecto).
+
+    Devuelve (fallas_restantes, cascadas_restantes, actualizaciones).
+    """
+    estructurales = [f['selector'] for f in fallas
+                     if f['tipo'] in ('AUSENTE V2', 'NUEVO EN V2') and f.get('selector')
+                     and not _es_candidata_contenido(f) and not _es_repetido_por_cantidad(f)]
+
+    def tiene_ancestro_estructural(sel):
+        return any(sel.startswith(e + ' > ') for e in estructurales)
+
+    candidatas = [f for f in fallas
+                  if _es_candidata_contenido(f) and not tiene_ancestro_estructural(f['selector'])]
+    salieron = sorted([f for f in candidatas if f['tipo'] == 'AUSENTE V2'], key=lambda f: f['order_index'])
+    entraron = sorted([f for f in candidatas if f['tipo'] == 'NUEVO EN V2'], key=lambda f: f['order_index'])
+
+    # Primera pasada: mismo tag y MISMO texto en lo que "salió" y lo que
+    # "entró" = es el mismo elemento en otro lugar, no contenido nuevo.
+    # Caso real (TN Listado v749): el firmante «Uriel Bederman» (h3) de una
+    # nota que solo se corrió quedaba como AUSENTE + NUEVO, y el NUEVO salía
+    # GRAVE porque el emparejamiento general lo cruzaba con otro firmante.
+    # Solo se usan si caen dentro de un bloque con actualización confirmada
+    # (más abajo). Si no, se liberan y siguen como estaban.
+    mismo_texto = []
+    reservadas = set()
+    for s_ in salieron:
+        for e in entraron:
+            if (id(e) not in reservadas and _clase_contenido(e) == _clase_contenido(s_)
+                    and e.get('texto_propio') and e.get('texto_propio') == s_.get('texto_propio')):
+                comun, largo = _prefijo_comun(s_['selector'], e['selector'])
+                if comun and largo - len(comun) <= PROFUNDIDAD_BLOQUE_CONTENIDO:
+                    reservadas.update((id(e), id(s_)))
+                    mismo_texto.append((s_, e, ' > '.join(comun)))
+                    break
+    salieron = [f for f in salieron if id(f) not in reservadas]
+    entraron = [f for f in entraron if id(f) not in reservadas]
+
+    bloques = {}  # prefijo -> {'salieron': [...], 'entraron': [...]}
+    usadas = set()
+    for s in salieron:
+        mejor, mejor_prefijo = None, None
+        for e in entraron:
+            if id(e) in usadas or _clase_contenido(e) != _clase_contenido(s):
+                continue
+            comun, largo = _prefijo_comun(s['selector'], e['selector'])
+            if not comun or largo - len(comun) > PROFUNDIDAD_BLOQUE_CONTENIDO:
+                continue
+            if mejor is None or len(comun) > len(mejor_prefijo):
+                mejor, mejor_prefijo = e, comun
+        if mejor is None:
+            continue
+        usadas.add(id(mejor))
+        usadas.add(id(s))
+        clave = ' > '.join(mejor_prefijo)
+        b = bloques.setdefault(clave, {'salieron': [], 'entraron': []})
+        b['salieron'].append(s)
+        b['entraron'].append(mejor)
+
+    if not bloques:
+        return fallas, cascadas, []
+
+    # Los "mismo texto" se agregan al bloque confirmado que los contiene.
+    reubicados = defaultdict(list)
+    for s_, e, comun in mismo_texto:
+        destino = next((b for b in bloques if comun == b or comun.startswith(b + ' > ')), None)
+        if destino is not None:
+            reubicados[destino].extend([s_, e])
+            usadas.update((id(s_), id(e)))
+
+    # Elementos repetidos que solo cambiaron de cantidad (ver
+    # _es_repetido_por_cantidad): con una actualización de contenido
+    # confirmada en la página, son su consecuencia. Se agrupan en la
+    # primera actualización en vez de quedar como GRAVE sueltos. Sin
+    # actualización confirmada (return de arriba) siguen como estaban.
+    repetidos = [f for f in fallas if id(f) not in usadas and _es_repetido_por_cantidad(f)]
+    usadas.update(id(f) for f in repetidos)
+    fallas_restantes = [f for f in fallas if id(f) not in usadas]
+
+    actualizaciones = []
+    cascadas_restantes = list(cascadas)
+    for prefijo, b in bloques.items():
+        entraron_b = sorted(b['entraron'], key=lambda f: f['order_index'])
+        salieron_b = sorted(b['salieron'], key=lambda f: f['order_index'])
+        relacionadas = [
+            c for c in cascadas_restantes
+            if not c.get('grave') and c.get('selectores')
+            and all((s or '').startswith(prefijo + ' > ') for s in c['selectores'])
+        ]
+        # Contenedores del bloque que cambiaron de alto por la nota nueva
+        # (ej. la nota entró con un título de 2 líneas): una cascada de ALTO
+        # en la que TODOS los selectores son ancestros del bloque es el
+        # mismo efecto. Y lo que está debajo se corrió exactamente ese mismo
+        # delta en Y. Caso real (TN Homepage v749): «Últimas noticias» del
+        # footer -> footer creció 20px y 13 elementos bajaron 20px.
+        # (Un contenedor ancestro del bloque, o un hermano de uno de ellos:
+        # en una fila flex, la columna de al lado se estira el mismo alto.
+        # Caso real: «Descargate la app de TN», al lado de la lista.)
+        def es_ancestro(sel):
+            return prefijo == sel or prefijo.startswith(sel + ' > ')
+
+        def ancestro_o_hermano(sel):
+            # También lo de ADENTRO del bloque (ej. el <li> de la nota que
+            # cambió de 2 líneas a 1 y achicó la lista).
+            sel = sel or ''
+            return (es_ancestro(sel) or sel.startswith(prefijo + ' > ')
+                    or (' > ' in sel and es_ancestro(sel.rsplit(' > ', 1)[0])))
+
+        ancestros_alto = [
+            c for c in cascadas_restantes
+            if c not in relacionadas and not c.get('grave') and c.get('tipo') == 'DIFERENCIA ALTURA (H)'
+            and c.get('selectores')
+            and all(ancestro_o_hermano(s) for s in c['selectores'])
+            and any(es_ancestro(s or '') for s in c['selectores'])
+        ]
+        # Mismo delta y mismo sentido: si el contenedor creció, lo de
+        # abajo bajó; si se achicó, subió.
+        deltas_alto = {c.get('delta_y') or 0 for c in ancestros_alto} - {0}
+        corridos_debajo = [
+            c for c in cascadas_restantes
+            if c not in relacionadas and c not in ancestros_alto and not c.get('grave')
+            and c.get('tipo') == 'DIFERENCIA POSICIÓN (Y)' and c.get('delta_y')
+            and any(abs(c['delta_y'] - d) <= CASCADE_Y_EPSILON for d in deltas_alto)
+        ]
+        relacionadas = relacionadas + ancestros_alto + corridos_debajo
+        cascadas_restantes = [c for c in cascadas_restantes if c not in relacionadas]
+        # Movimientos sueltos (Y/X, sin cambio de tamaño ni estilo) dentro del
+        # mismo bloque: las notas que quedaron se corrieron un lugar.
+        sel_con_otra = {f['selector'] for f in fallas_restantes
+                        if f['tipo'] not in ('DIFERENCIA POSICIÓN (Y)', 'DIFERENCIA POSICIÓN (X)')}
+        corridos = [f for f in fallas_restantes
+                    if f['tipo'] in ('DIFERENCIA POSICIÓN (Y)', 'DIFERENCIA POSICIÓN (X)')
+                    and (f.get('selector') or '').startswith(prefijo + ' > ')
+                    and f['selector'] not in sel_con_otra]
+        fallas_restantes = [f for f in fallas_restantes if f not in corridos]
+        actualizaciones.append({
+            'tipo_actualizacion': True,
+            'bloque': prefijo,
+            'salieron': salieron_b,
+            'entraron': entraron_b,
+            'cascadas': relacionadas,
+            'repetidos': [],
+            'reubicados': reubicados.get(prefijo, []),
+            'corridos': corridos,
+            'notas_corridas': _titulares_movidos(corridos, relacionadas, sel_con_otra),
+            'coords_v2': entraron_b[0]['coords_v2'],
+        })
+    actualizaciones[0]['repetidos'] = repetidos
+
+    return fallas_restantes, cascadas_restantes, actualizaciones
+
+
+# =====================================================================
 # CONFIRMACIÓN VISUAL (crop + diff) — requiere cv2/numpy, opcional
 # =====================================================================
 
@@ -885,6 +1205,42 @@ def diferencia_visual_normalizada(img_v1, img_v2, coords_v1, coords_v2):
     return float(np.mean(diff)) / 255.0
 
 
+# Corrimiento vertical máximo (px) a probar al comparar la MISMA zona en
+# PROD y VNP para un AUSENTE/NUEVO sin identidad propia: si el resto de la
+# página se corrió unos px (cascada chica), la zona igual tiene que coincidir.
+DESPLAZAMIENTO_MAX_ZONA = 12
+
+
+def _confirmar_ausente_nuevo_debil(img_v1, img_v2, f, umbral):
+    """
+    AUSENTE/NUEVO de un elemento sin id ni texto propio (un wrapper, un
+    contenedor de imagen como aspect_ratio__container, etc.): esos se
+    emparejan por orden de aparición en toda la página, así que si en
+    OTRO lugar hay uno más o uno menos, el que sobra queda marcado como
+    "nuevo"/"falta" aunque en su zona no haya cambiado nada.
+    Caso real (El Trece desktop v749, Recipe Cuccinare): G4 «Aparece solo
+    en el VNP» sobre la imagen de una receta que se ve igual en las dos.
+    Se compara la MISMA zona de la página en PROD y en VNP (probando
+    corrimientos chicos en Y). Si se ve igual, se degrada a informativo.
+    Si el elemento de verdad falta o es nuevo, esa zona se ve distinta y
+    sigue GRAVE.
+    """
+    c = f.get('coords_v2') or {}
+    if not c.get('width') or not c.get('height'):
+        return
+    mejor = None
+    for dy in range(-DESPLAZAMIENTO_MAX_ZONA, DESPLAZAMIENTO_MAX_ZONA + 1, 2):
+        c1 = dict(c, y=c['y'] + dy)
+        ratio = diferencia_visual_normalizada(img_v1, img_v2, c1, c)
+        if ratio is not None and (mejor is None or ratio < mejor):
+            mejor = ratio
+    if mejor is None:
+        return
+    f['confirmado_visualmente'] = mejor
+    if mejor < umbral:
+        f['degradado_por_visual'] = True
+
+
 def confirmar_visualmente(img_v1, img_v2, fallas, umbral=UMBRAL_DIFERENCIA_VISUAL):
     """
     Para cada falla de tipo dimensión/posición (no estilo, no ausente/
@@ -899,6 +1255,9 @@ def confirmar_visualmente(img_v1, img_v2, fallas, umbral=UMBRAL_DIFERENCIA_VISUA
     }
     for f in fallas:
         f.setdefault('confirmado_visualmente', None)
+        if f['tipo'] in ('AUSENTE V2', 'NUEVO EN V2') and f.get('identidad_debil'):
+            _confirmar_ausente_nuevo_debil(img_v1, img_v2, f, umbral)
+            continue
         if f['tipo'] not in tipos_confirmables:
             continue
         ratio = diferencia_visual_normalizada(img_v1, img_v2, f['coords_v1'], f['coords_v2'])
@@ -928,6 +1287,15 @@ def clasificar_gravedad(fallas_selector):
     tipos = [f['tipo'] for f in fallas_selector]
 
     if any(t in ('AUSENTE V2', 'NUEVO EN V2') for t in tipos):
+        # Solo baja a informativo si TODOS sus AUSENTE/NUEVO se vieron
+        # iguales en la imagen (ver _confirmar_ausente_nuevo_debil, que
+        # solo aplica a elementos sin id ni texto propio).
+        an = [f for f in fallas_selector if f['tipo'] in ('AUSENTE V2', 'NUEVO EN V2')]
+        if all(f.get('degradado_por_visual') for f in an):
+            otras = [f for f in fallas_selector if f not in an]
+            if all(f.get('degradado_por_visual') or not ('ALTURA' in f['tipo'] or 'ANCHO' in f['tipo']
+                                                         or 'ESTILO' in f['tipo']) for f in otras):
+                return 'informativo'
         return 'grave'
 
     hay_dimension_o_estilo = any(

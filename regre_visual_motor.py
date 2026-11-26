@@ -322,6 +322,10 @@ JS_EXTRACCION = """
             texto_subtree: textoSubtree,
             img_src: imgSrc,
             iframe_src: iframeSrc,
+            // Spinner/loader: animación CSS en loop infinito (ver
+            // core.elemento_es_spinner). Solo informativo para excluirlo.
+            anim_infinita: (compStyle.animationName || 'none') !== 'none' &&
+                           String(compStyle.animationIterationCount || '').indexOf('infinite') !== -1,
             order_index: orderIndex++,
             y: window.pageYOffset + rect.top,
             height: rect.height,
@@ -461,6 +465,16 @@ def ejecutar_selenium_para_estructura(url, modo, config):
     options.add_argument("--log-level=3")
     options.add_experimental_option('excludeSwitches', ['enable-logging'])
     options.add_argument(f"--user-agent={config['user_agent']}")
+    # Chrome headless se declara como dispositivo SIN mouse
+    # ((hover: none) / (pointer: none)). TN oculta los chevrons de los
+    # carruseles (brick Destacadas, etc.) con @media (hover: none), así que
+    # en desktop la captura nunca los mostraba, ni en PROD ni en VNP, y un
+    # bug en ellos no se podía detectar (QAA-96). En desktop se declara una
+    # PC con mouse (hover=2 "hover", pointer=4 "fine"), como la de un
+    # usuario real. En mobile no se toca: "sin hover" es lo correcto.
+    if modo == 'desktop':
+        options.add_argument("--blink-settings=primaryHoverType=2,availableHoverTypes=2,"
+                             "primaryPointerType=4,availablePointerTypes=4")
     options.add_argument("--disable-features=site-per-process")
 
     driver = None
@@ -588,11 +602,14 @@ def procesar_url(url_description, base_url, version_number, modo, config,
         except ImportError:
             pass
 
+    otras_fallas, cascadas, actualizaciones = core.detectar_actualizaciones_contenido(otras_fallas, cascadas)
+
     consolidado = core.consolidar_fallas(otras_fallas)
 
     return {
         'url1': url1, 'url2': url2, 'fatal': False,
         'consolidado': consolidado, 'cascadas': cascadas,
+        'actualizaciones': actualizaciones,
         'png_v1': png_v1, 'png_v2': png_v2,
         'ruido_descartado': descartadas_ruido,
         'claves_fallas': claves_fallas,
@@ -610,10 +627,11 @@ COLOR_BGR = {
     'menor': (255, 0, 0),        # azul
     'informativo': (0, 140, 255),  # naranja — degradado por confirmación visual (antes dorado, fix #26)
     'cascada': (237, 58, 124),    # violeta — desplazamiento en cascada agrupado (distinto del naranja/informativo)
+    'contenido': (178, 145, 8),   # celeste — actualización de contenido (notas que entraron/salieron, esperable)
 }
 
 
-def marcar_fallas_en_captura(png_data, consolidado, cascadas):
+def marcar_fallas_en_captura(png_data, consolidado, cascadas, actualizaciones=None):
     import cv2
     import numpy as np
 
@@ -660,6 +678,27 @@ def marcar_fallas_en_captura(png_data, consolidado, cascadas):
         # no "revisar" (violeta) — a diferencia de una cascada geométrica.
         color_key = 'grave' if cascada.get('grave') else 'cascada'
         dibujar(cascada['coords_v2'], color_key, cascada.get('_num', ''))
+    # Actualización de contenido: se marca solo lo que ENTRÓ (está en la
+    # captura de VNP). Lo que salió no existe en VNP, marcarlo con sus
+    # coordenadas de PROD apuntaría a otra nota.
+    for act in (actualizaciones or []):
+        for i, f in enumerate(act['entraron']):
+            dibujar(f['coords_v2'], 'contenido', act.get('_num', '') if i == 0 else '')
+        # Notas que solo se corrieron de lugar: recuadro celeste fino y
+        # punteado, para que se vea que se revisaron (no se escaparon).
+        for c in act.get('notas_corridas', []):
+            x1, y1 = max(0, int(c['x'])), max(0, int(c['y']))
+            x2 = min(width - 1, int(c['x'] + c['width']))
+            y2 = min(height - 1, int(c['y'] + c['height']))
+            if x2 <= x1 or y2 <= y1:
+                continue
+            color, paso = COLOR_BGR['contenido'], 10
+            for x in range(x1, x2, paso * 2):
+                cv2.line(img, (x, y1), (min(x + paso, x2), y1), color, 2)
+                cv2.line(img, (x, y2), (min(x + paso, x2), y2), color, 2)
+            for y in range(y1, y2, paso * 2):
+                cv2.line(img, (x1, y), (x1, min(y + paso, y2)), color, 2)
+                cv2.line(img, (x2, y), (x2, min(y + paso, y2)), color, 2)
 
     is_success, buffer = cv2.imencode(".png", img)
     return buffer.tobytes() if is_success else None
@@ -669,16 +708,31 @@ def marcar_fallas_en_captura(png_data, consolidado, cascadas):
 # REPORTE HTML
 # =====================================================================
 
+# Colores de la leyenda (mismos que LEYENDA_HTML) para los resúmenes en viñetas.
+COLOR_LEYENDA = {
+    'grave': 'red', 'menor': 'blue', 'informativo': '#ff8c00',
+    'cascada': '#7c3aed', 'contenido': '#0891b2', 'ok': 'green',
+}
+
+
+def _lista_coloreada(items):
+    """[(color, texto_html)] -> <ul> con una viñeta por item, en su color."""
+    lis = ''.join(f"<li style='color:{color}; font-weight:bold; margin:2px 0;'>{texto}</li>"
+                  for color, texto in items)
+    return f"<ul style='margin:4px 0 8px 0;'>{lis}</ul>"
+
+
 LEYENDA_HTML = """
 <div style="position: sticky; top: 0; z-index: 500; background: #f7f7f7;
             padding: 10px 0 8px 0; margin: 0 -20px; border-bottom: 2px solid #ddd;
             box-shadow: 0 2px 6px rgba(0,0,0,0.08);">
   <div style="display: flex; flex-wrap: wrap; gap: 8px 24px; font-size: 0.82em;
               color: #555; padding: 0 20px;">
-    <div style="flex: 1 1 220px;"><span style="color:red; font-weight:bold;">■ Rojo</span>: falla grave (elemento ausente/nuevo, o cambio de tamaño/estilo confirmado visualmente).</div>
-    <div style="flex: 1 1 220px;"><span style="color:blue; font-weight:bold;">■ Azul</span>: desplazamiento menor sin cambio de tamaño.</div>
-    <div style="flex: 1 1 220px;"><span style="color:#ff8c00; font-weight:bold;">■ Naranja</span>: el DOM detectó una diferencia pero la confirmación visual (crop + diff) mostró que la región es igual — probablemente un falso positivo.</div>
-    <div style="flex: 1 1 220px;"><span style="color:#7c3aed; font-weight:bold;">■ Violeta</span>: desplazamiento en cascada — un solo elemento anterior cambió de tamaño y corrió a los siguientes; no son N fallas independientes.</div>
+    <div style="flex: 1 1 220px;"><span style="color:red; font-weight:bold;">■ Rojo</span>: diferencia grave (falta o sobra un elemento, o cambió su tamaño o estilo).</div>
+    <div style="flex: 1 1 220px;"><span style="color:#7c3aed; font-weight:bold;">■ Violeta</span>: varios elementos corridos por una sola causa (revisar antes de deployar).</div>
+    <div style="flex: 1 1 220px;"><span style="color:blue; font-weight:bold;">■ Azul</span>: un elemento suelto que se movió, sin cambiar de tamaño (menor).</div>
+    <div style="flex: 1 1 220px;"><span style="color:#ff8c00; font-weight:bold;">■ Naranja</span>: probable falso positivo (cambió el código, pero en la imagen se ve igual).</div>
+    <div style="flex: 1 1 220px;"><span style="color:#0891b2; font-weight:bold;">■ Celeste</span>: notas que entraron o salieron por caché. Esperable, no es grave.</div>
   </div>
 </div>
 """
@@ -715,6 +769,17 @@ def etiqueta_elemento(selector, info):
     return partes
 
 
+def _info_etiqueta(item, info):
+    """Para un AUSENTE V2 la etiqueta sale del elemento de PROD (V1) que
+    viene en la propia falla, no del lookup por selector (que prioriza V2 y,
+    si el listado se corrió, apunta a otra nota)."""
+    aus = next((f for f in item['fallas'] if f['tipo'] == 'AUSENTE V2' and f.get('tag')), None)
+    if not aus:
+        return info
+    return {item['selector']: {'tag': aus['tag'], 'clase': aus.get('clase', ''),
+                               'texto': aus.get('texto_etiqueta', '')}}
+
+
 def describir_falla(f):
     """Una falla individual en lenguaje claro: que paso y con que valores."""
     tipo, v1, v2, diff = f['tipo'], f['v1'], f['v2'], f['diff']
@@ -742,12 +807,77 @@ def describir_falla(f):
 LEYENDA_REPORTE = (
     "<div style='font-size:0.85em; color:#555; background:#f6f6f6; border-radius:4px; padding:6px 10px; margin-bottom:8px;'>"
     "<b>Cómo leer esto:</b> <b>PROD</b> = la versión publicada (V1) · <b>VNP</b> = versión no publicada, la que se valida (V2). "
-    "<b>G</b> = diferencia grave · <b>C</b> = varios elementos movidos por una sola causa (cascada, a revisar). "
+    "<b>G</b> = diferencia grave · <b>C</b> = varios elementos movidos por una sola causa (cascada, a revisar) · "
+    "<b>A</b> = actualización de contenido (notas que entraron/salieron, esperable por caché). "
     "Hacé click en un hallazgo para verlo resaltado en la captura.</div>"
 )
 
 
-def construir_html_fallas(consolidado, cascadas, data_v2_por_selector, url_id):
+def _texto_corto(t, n=70):
+    t = (t or '').strip()
+    return f"{esc(t[:n])}{'…' if len(t) > n else ''}"
+
+
+def construir_html_actualizacion(act, info, url_id):
+    """Un hallazgo 🔄 por bloque: qué notas entraron y cuáles salieron."""
+    coords = act['coords_v2']
+    coords_str = f"{int(coords['x'])},{int(coords['y'])},{int(coords['width'])},{int(coords['height'])}"
+
+    def lista(fallas):
+        # Titulares (a/h*/p) con su hora (span) al lado si hay una por nota.
+        con_texto = [f for f in fallas if f.get('texto_propio')]  # los links-imagen no tienen texto
+        titulares = [f for f in con_texto if f.get('tag') != 'span']
+        horas = [f for f in con_texto if f.get('tag') == 'span']
+        if not titulares:
+            return ", ".join(f"«{_texto_corto(f.get('texto_propio'))}»" for f in horas)
+        if len(horas) == len(titulares):
+            return ", ".join(f"«{_texto_corto(t.get('texto_propio'))}» ({esc(h.get('texto_propio', ''))})"
+                             for t, h in zip(titulares, horas))
+        return ", ".join(f"«{_texto_corto(t.get('texto_propio'))}»" for t in titulares)
+
+    def notas(fallas):
+        con_texto = [f for f in fallas if f.get('texto_propio')]
+        return len([f for f in con_texto if f.get('tag') != 'span']) or len(con_texto) or len(fallas)
+    n_ent = notas(act['entraron'])
+    n_sal = notas(act['salieron'])
+    extra_cascada = ""
+    if act.get('cascadas'):
+        movidos = sum(c.get('cantidad', 0) for c in act['cascadas'])
+        extra_cascada = (f"<br>Por eso {movidos} elementos del listado se corrieron de lugar "
+                         f"(no se listan aparte, es el mismo efecto).")
+    if act.get('reubicados'):
+        extra_cascada += (f"<br>{len(act['reubicados']) // 2} elemento(s) con el mismo texto aparecen en otro lugar "
+                          f"del listado (ej: el firmante de una nota que se corrió), no son nuevos.")
+    if act.get('corridos'):
+        extra_cascada += (f"<br>{len(act['corridos'])} elemento(s) del mismo bloque se corrieron de lugar "
+                          f"por la nota nueva (no se listan aparte).")
+    if act.get('repetidos'):
+        extra_cascada += (f"<br>También cambió la cantidad de {len(act['repetidos'])} elemento(s) repetido(s) "
+                          f"de las cards (ej: ícono de video), porque las notas nuevas no son del mismo tipo.")
+    extra_corridas = ""
+    if act.get('notas_corridas'):
+        extra_corridas = (f"<br><b>Las otras {len(act['notas_corridas'])} nota(s) del listado son las mismas en otro orden "
+                          f"(recuadro celeste punteado), sin cambios de diseño.</b>")
+    color = '#0891b2'
+    return f"""
+            <li class='diff-item' style='color: {color}; border-bottom: 1px dotted #ccc; padding: 5px 0; cursor: pointer;'
+                onclick="highlightElement('{url_id}', '{coords_str}', this)"
+                data-coords="{coords_str}">
+                <span style="background:{color}; color:#fff; border-radius:3px; padding:1px 6px; font-size:0.8em; font-weight:bold; margin-right:6px;">{act.get('_num', '')}</span>
+                <span style="font-weight: bold;">🔄 Actualización de contenido (esperable):</span>
+                {n_ent} nota(s) nueva(s) en VNP, {n_sal} nota(s) ya no aparecen.
+                <span style="font-size: 0.8em; color: #888;">(click para verlo resaltado en la imagen)</span>
+                <br><span style="font-size: 0.85em; color: #555;">
+                • Entró en VNP: {lista(act['entraron'])}<br>
+                • Salió (estaba en PROD): {lista(act['salieron'])}<br>
+                Es un desfase de caché por la edición en vivo del sitio, no un cambio de la versión.{extra_cascada}{extra_corridas}
+                <br><span style='color:#888'>Ubicación del bloque: <code>{esc(act['bloque'])}</code></span>
+                </span>
+            </li>
+            """
+
+
+def construir_html_fallas(consolidado, cascadas, data_v2_por_selector, url_id, actualizaciones=None):
     info = data_v2_por_selector or {}
     html = LEYENDA_REPORTE + "<ul>"
 
@@ -822,7 +952,7 @@ def construir_html_fallas(consolidado, cascadas, data_v2_por_selector, url_id):
         for f in item['fallas']:
             nota_visual = ""
             if f.get('degradado_por_visual'):
-                nota_visual = " — <i>degradado: sin impacto visual confirmado</i>"
+                nota_visual = " — <i>en la imagen se ve igual (probable falso positivo)</i>"
             v1_display = f"{f['v1']:.2f}" if isinstance(f['v1'], (int, float)) else str(f['v1'])
             v2_display = f"{f['v2']:.2f}" if isinstance(f['v2'], (int, float)) else str(f['v2'])
             diff_display = f"{f['diff']:.2f}px" if isinstance(f['diff'], (int, float)) else str(f['diff'])
@@ -835,14 +965,17 @@ def construir_html_fallas(consolidado, cascadas, data_v2_por_selector, url_id):
             onclick="highlightElement('{url_id}', '{coords_str}', this)"
             data-coords="{coords_str}">
             <span style="background:{color}; color:#fff; border-radius:3px; padding:1px 6px; font-size:0.8em; font-weight:bold; margin-right:6px;">{item.get('_num', '')}</span>
-            <span style="font-weight: bold;">Elemento:</span> {etiqueta_elemento(item['selector'], info)}
+            <span style="font-weight: bold;">Elemento:</span> {etiqueta_elemento(item['selector'], _info_etiqueta(item, info))}
             <span style='color:{color}; font-size:0.85em;'>· {item['gravedad'].upper()}</span>
             {detalle_consolidado}
             <div style="font-size:0.8em; color:#888; margin-top:3px;">Ubicación en la página: <code>{esc(item['selector'])}</code></div>
         </li>
         """
 
-    if not consolidado and not cascadas:
+    for act in (actualizaciones or []):
+        html += construir_html_actualizacion(act, info, url_id)
+
+    if not consolidado and not cascadas and not actualizaciones:
         html += "<li>✅ No se encontraron diferencias.</li>"
     html += "</ul>"
     return html
@@ -855,6 +988,9 @@ def generar_reporte(all_results, version_number, output_dir, timestamp, umbral_p
     all_details_html = ""
     sites_con_grave = 0
     sites_con_cascada = 0
+    total_actualizaciones = 0
+    # Para el resumen global en viñetas (nombres de URL por categoría).
+    urls_graves, urls_cascada, urls_act = [], [], []
 
     for r in all_results:
         graves = [c for c in r['consolidado'] if c['gravedad'] == 'grave']
@@ -883,6 +1019,10 @@ def generar_reporte(all_results, version_number, output_dir, timestamp, umbral_p
             c['_num'] = f"CG{i}"
         for i, c in enumerate(cascadas_revisar, start=1):
             c['_num'] = f"C{i}"
+        actualizaciones = r.get('actualizaciones') or []
+        for i, a in enumerate(actualizaciones, start=1):
+            a['_num'] = f"A{i}"
+        total_actualizaciones += len(actualizaciones)
         # Una cascada geométrica sigue siendo una diferencia real entre V1 y
         # V2 (se agrupa para no listarla como N fallas repetidas, pero eso no
         # la vuelve invisible): si hay cascadas y ninguna falla grave, la
@@ -905,9 +1045,38 @@ def generar_reporte(all_results, version_number, output_dir, timestamp, umbral_p
                               f"tamaño, o un bug de layout real.")
         else:
             resumen_texto = "✅ No se encontraron diferencias."
+        if actualizaciones and not r['fatal']:
+            # Informativo: no cambia el color ni el veredicto, solo se aclara.
+            if not total_graves and not cascadas_revisar:
+                resumen_texto = "✅ Sin diferencias graves."
+            resumen_texto += (f" 🔄 {len(actualizaciones)} actualización(es) de contenido "
+                              f"(esperable por caché, ver detalle).")
+
+        # Resultado de la URL en viñetas, con los mismos colores de la leyenda.
+        # (resumen_texto se mantiene igual por compatibilidad.)
+        items_res = []
+        if r['fatal']:
+            items_res.append((COLOR_LEYENDA['grave'], "❌ Error grave en la ejecución de Selenium (ver logs)."))
+        else:
+            if total_graves:
+                items_res.append((COLOR_LEYENDA['grave'], f"❌ {total_graves} diferencia(s) grave(s)."))
+                urls_graves.append(r['description'])
+            if cascadas_revisar:
+                items_res.append((COLOR_LEYENDA['cascada'],
+                                  f"⚠️ {len(cascadas_revisar)} desplazamiento(s) en cascada para revisar "
+                                  f"(puede ser contenido que cambió de tamaño, o un bug de layout)."))
+                urls_cascada.append(r['description'])
+            if actualizaciones:
+                items_res.append((COLOR_LEYENDA['contenido'],
+                                  f"🔄 {len(actualizaciones)} actualización(es) de contenido (esperable por caché)."))
+                urls_act.append(r['description'])
+            if not items_res:
+                items_res.append((COLOR_LEYENDA['ok'], "✅ No se encontraron diferencias."))
+        resultado_html = _lista_coloreada(items_res)
 
         fallas_html = "<li>Error grave, sin datos.</li>" if r['fatal'] else construir_html_fallas(
-            r['consolidado'], r['cascadas'], r.get('info_elementos', {}), r['url_id']
+            r['consolidado'], r['cascadas'], r.get('info_elementos', {}), r['url_id'],
+            actualizaciones=actualizaciones
         )
 
         img1_tag = f"<img src='{r['filename1']}' alt='V1'>" if r.get('filename1') else "<p>Sin captura</p>"
@@ -918,7 +1087,7 @@ def generar_reporte(all_results, version_number, output_dir, timestamp, umbral_p
             <h2>{r['description']}</h2>
             <p><strong>URL PROD (V1):</strong> <a href="{r['url1']}" target="_blank"><code>{r['url1']}</code></a></p>
             <p><strong>URL VNP (V2):</strong> <a href="{r['url2']}" target="_blank"><code>{r['url2']}</code></a></p>
-            <p><strong>Resultado:</strong> <span style="font-weight:bold; color:{alert};">{resumen_texto}</span></p>
+            <div><strong>Resultado:</strong> <span style="display:none">{resumen_texto}</span>{resultado_html}</div>
             <p><strong>Tiempo de Ejecución:</strong> {r['time_elapsed']}</p>
             <details>
                 <summary style="cursor:pointer; font-weight:bold; color:#1e3a8a;">Detalle de diferencias</summary>
@@ -949,6 +1118,36 @@ def generar_reporte(all_results, version_number, output_dir, timestamp, umbral_p
     else:
         global_color = 'green'
         global_text = '✅ Todas las URLs pasaron la prueba estructural. Apto para deployar a PROD.'
+    if total_actualizaciones:
+        global_text += f' 🔄 {total_actualizaciones} actualización(es) de contenido esperable(s) por caché.'
+
+    # Resumen global en viñetas, cada una con el color de su referencia.
+    # global_text queda igual (lo usan Slack y GITHUB_OUTPUT): va en un span
+    # oculto, primero, para que el script de Slack lo siga encontrando.
+    n_urls = len(all_results)
+    fatales = [r['description'] for r in all_results if r.get('fatal')]
+    items_global = []
+    if urls_graves or fatales:
+        nombres = ', '.join(fatales + urls_graves)
+        items_global.append((COLOR_LEYENDA['grave'],
+                             f"❌ Diferencias graves en {len(fatales) + len(urls_graves)} de {n_urls} URLs: {esc(nombres)}."))
+    if urls_cascada:
+        items_global.append((COLOR_LEYENDA['cascada'],
+                             f"⚠️ Desplazamientos en cascada para revisar en {len(urls_cascada)} de {n_urls} URLs: "
+                             f"{esc(', '.join(urls_cascada))}."))
+    if urls_act:
+        items_global.append((COLOR_LEYENDA['contenido'],
+                             f"🔄 {total_actualizaciones} actualización(es) de contenido esperable(s) por caché en: "
+                             f"{esc(', '.join(urls_act))}."))
+    # Veredicto primero, sin viñeta, y después el detalle en viñetas.
+    if global_color == 'red':
+        veredicto = (COLOR_LEYENDA['grave'], "NO recomendado deployar a PROD sin revisar.")
+    elif global_color == 'orange':
+        veredicto = (COLOR_LEYENDA['cascada'], "Revisar los desplazamientos antes de deployar a PROD.")
+    else:
+        veredicto = (COLOR_LEYENDA['ok'], "Apto para deployar a PROD. Todas las URLs pasaron la prueba estructural.")
+    global_html = (f"<span style='color:{veredicto[0]}; font-weight:bold;'>{veredicto[1]}</span>"
+                   + (_lista_coloreada(items_global) if items_global else ""))
 
     html = f"""
     <html><head><meta charset="utf-8">
@@ -969,7 +1168,7 @@ def generar_reporte(all_results, version_number, output_dir, timestamp, umbral_p
     <p><strong>Fecha y Hora:</strong> {format_date(timestamp)} {timestamp.split('_')[1][:2]}:{timestamp.split('_')[1][2:4]}:{timestamp.split('_')[1][4:6]}</p>
     <p><strong>Tiempo Total:</strong> {format_time(tiempo_total)}</p>
     <p><strong>Umbral de Tolerancia:</strong> {umbral_pixeles} píxeles.</p>
-    <p><strong>Resumen global:</strong> <span style="font-weight:bold; color:{global_color};">{global_text}</span></p>
+    <div><strong>Resumen global:</strong> <span style="display:none">{global_text}</span>{global_html}</div>
     {LEYENDA_HTML}
     <hr/>
     {all_details_html}
@@ -1150,7 +1349,8 @@ def main(base_urls_map, producto_nombre="Sitio", output_dir_base=os.path.join('r
                 Image.open(io.BytesIO(r['png_v1'])).save(os.path.join(output_dir, filename1))
                 r['filename1'] = filename1
             if r['png_v2']:
-                png_marcado = marcar_fallas_en_captura(r['png_v2'], r['consolidado'], r['cascadas'])
+                png_marcado = marcar_fallas_en_captura(r['png_v2'], r['consolidado'], r['cascadas'],
+                                                       r.get('actualizaciones'))
                 Image.open(io.BytesIO(png_marcado or r['png_v2'])).save(os.path.join(output_dir, filename2))
                 r['filename2_diff'] = filename2
 

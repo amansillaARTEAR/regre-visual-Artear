@@ -811,6 +811,271 @@ def test_confirmar_por_reintento_descarta_lo_que_no_se_repite():
     print("OK: el reintento conserva lo que se repite y descarta lo que no")
 
 
+
+# ---------------------------------------------------------------------
+# Actualización de contenido (caso real TN Homepage v749 desktop)
+# ---------------------------------------------------------------------
+_BLOQUE = 'div#fusion-app > main > div:nth-child(30) > div > div:nth-child(2) > div'
+
+
+def _listado(notas, y0=1000, alto=64):
+    """Arma el DOM de un listado tipo «Últimas noticias»: por nota, un
+    wrapper div (sin texto propio), un h2 con el <a> del titular y la hora
+    en <time> > <span> (time no se extrae, igual que en el motor)."""
+    data, oi = [], 0
+    for i, (titulo, hora) in enumerate(notas):
+        nth = 'div' if i == 0 else f'div:nth-child({2 * i + 1})'
+        base = f'{_BLOQUE} > {nth}'
+        y = y0 + i * alto
+        sub = f'{hora} {titulo}'
+        data.append(item('div', base, 0, y, 300, alto, class_attr='lista-item', order_index=oi, texto_subtree=sub)); oi += 1
+        data.append(item('span', f'{base} > time > span', 0, y, 40, 12, class_attr='hora', texto=hora, order_index=oi)); oi += 1
+        data.append(item('h2', f'{base} > h2', 0, y + 14, 300, 40, class_attr='titulo', order_index=oi, texto_subtree=titulo)); oi += 1
+        data.append(item('a', f'{base} > h2 > a', 0, y + 14, 300, 40, class_attr='link', texto=titulo, order_index=oi)); oi += 1
+    return data
+
+
+def _pipeline(v1, v2):
+    fallas = core.comparar_estructura_dom(v1, v2)
+    otras, cascadas = core.agrupar_cascadas(fallas)
+    otras, cascadas, acts = core.detectar_actualizaciones_contenido(otras, cascadas)
+    return core.consolidar_fallas(otras), cascadas, acts
+
+
+def test_listado_actualizado_es_contenido_no_grave():
+    """Entró una nota arriba, el resto bajó un lugar y la última salió.
+    Antes: 4 GRAVES + 1 cascada. Ahora: 0 graves y 1 actualización de
+    contenido con la cascada adentro."""
+    notas_prod = [('Los mensajes de despedida', '15:40'), ('El ingreso de dólares', '15:34'),
+                  ('Daniela Christiansson contó', '15:16'), ('Protección de cultivos', '15:15'),
+                  ('La FIA le aplicó una multa', '15:09')]
+    notas_vnp = [('Adiós a la música hecha con IA', '15:47')] + notas_prod[:4]
+    consolidado, cascadas, acts = _pipeline(_listado(notas_prod), _listado(notas_vnp))
+    graves = [c for c in consolidado if c['gravedad'] == 'grave']
+    assert not graves, graves
+    assert not cascadas, cascadas
+    assert len(acts) == 1, acts
+    a = acts[0]
+    assert sorted(f['texto_propio'] for f in a['entraron']) == ['15:47', 'Adiós a la música hecha con IA']
+    assert sorted(f['texto_propio'] for f in a['salieron']) == ['15:09', 'La FIA le aplicó una multa']
+    assert len(a['cascadas']) == 1 and a['cascadas'][0]['cantidad'] == 8, a['cascadas']
+    print("OK: listado actualizado por caché -> 1 actualización de contenido, 0 graves")
+
+
+def test_titular_faltante_sin_reemplazo_sigue_grave():
+    """Si falta un titular y no entró otro en su lugar, puede ser un bug
+    real (el componente no lo renderiza): sigue GRAVE."""
+    notas = [('Nota uno', '10:00'), ('Nota dos', '09:00')]
+    v1 = _listado(notas)
+    v2 = [d for d in _listado(notas) if not (d['tag'] == 'a' and d['texto'] == 'Nota dos')]
+    consolidado, cascadas, acts = _pipeline(v1, v2)
+    assert not acts, acts
+    graves = [c for c in consolidado if c['gravedad'] == 'grave']
+    assert len(graves) == 1 and graves[0]['fallas'][0]['tipo'] == 'AUSENTE V2', consolidado
+    print("OK: titular faltante sin reemplazo sigue siendo GRAVE")
+
+
+def test_bloque_estructural_faltante_sigue_grave():
+    """Si falta el contenedor (componente entero), no es actualización de
+    contenido aunque adentro haya titulares y entre otro: sigue GRAVE."""
+    v1 = [
+        item('div', 'main > div.modulo', 0, 0, 300, 100, class_attr='modulo-destacado', order_index=0),
+        item('a', 'main > div.modulo > h2 > a', 0, 10, 300, 40, class_attr='link', texto='Nota vieja', order_index=1),
+    ]
+    v2 = [
+        item('a', 'main > div > h2 > a', 0, 10, 300, 40, class_attr='link', texto='Nota nueva', order_index=0),
+    ]
+    consolidado, cascadas, acts = _pipeline(v1, v2)
+    assert not acts, acts
+    assert sum(1 for c in consolidado if c['gravedad'] == 'grave') == 3, consolidado
+    print("OK: componente entero faltante sigue siendo GRAVE")
+
+
+def test_ausente_trae_datos_del_elemento_de_prod():
+    """La etiqueta de un AUSENTE tiene que ser la nota de PROD que salió,
+    no la que en VNP ocupa ese mismo selector."""
+    v1 = [item('a', 'ul > li > a', 0, 0, 100, 20, class_attr='x', texto='Sale', order_index=0)]
+    fallas = core.comparar_estructura_dom(v1, [])
+    assert fallas[0]['tipo'] == 'AUSENTE V2'
+    assert fallas[0]['texto_etiqueta'] == 'Sale' and fallas[0]['tag'] == 'a', fallas[0]
+    print("OK: AUSENTE V2 conserva el texto del elemento de PROD")
+
+
+
+_LISTA = 'div#fusion-app > main > div:nth-child(7) > div'
+
+
+def _listado_cards(notas, y0=500, alto=200):
+    """Listado tipo /ultimas-noticias/: article > a.card__image (imagen) +
+    div > header > h2 > a (titular, 6 niveles bajo la lista). Las notas con
+    video llevan además un div.icon__container (sin texto)."""
+    data, oi = [], 0
+    for i, (titulo, video) in enumerate(notas):
+        art = f'{_LISTA} > article' if i == 0 else f'{_LISTA} > article:nth-child({i + 1})'
+        y = y0 + i * alto
+        data.append(item('article', art, 0, y, 600, alto, class_attr='card', order_index=oi, texto_subtree=titulo)); oi += 1
+        data.append(item('a', f'{art} > a', 0, y, 200, 120, class_attr='card__image', order_index=oi,
+                         img_src=f'/img/{titulo}.jpg')); oi += 1
+        if video:
+            data.append(item('div', f'{art} > a > div:nth-child(2)', 10, y + 10, 30, 30,
+                             class_attr='icon__container', order_index=oi)); oi += 1
+        data.append(item('a', f'{art} > div > header > h2 > a', 220, y, 380, 60, class_attr='link',
+                         texto=titulo, order_index=oi)); oi += 1
+    return data
+
+
+def test_listado_ultimas_noticias_4_notas_nuevas():
+    """Caso real TN Listado v749: entraron 4 notas arriba y salieron 4
+    abajo. Antes: 11 GRAVES. Ahora: 0 graves, 1 actualización."""
+    prod = [(f'Nota vieja {i}', i % 2 == 0) for i in range(1, 17)]
+    vnp = [(f'Nota nueva {i}', False) for i in range(1, 5)] + prod[:12]
+    consolidado, cascadas, acts = _pipeline(_listado_cards(prod), _listado_cards(vnp))
+    graves = [c for c in consolidado if c['gravedad'] == 'grave']
+    assert not graves, [(g['selector'], [f['tipo'] for f in g['fallas']]) for g in graves]
+    assert len(acts) == 1, acts
+    titulares_ent = sorted(f['texto_propio'] for f in acts[0]['entraron'] if f['texto_propio'])
+    assert titulares_ent == [f'Nota nueva {i}' for i in range(1, 5)], titulares_ent
+    print("OK: Listado con 4 notas nuevas -> 1 actualización de contenido, 0 graves")
+
+
+
+def test_spinner_no_genera_diferencias():
+    """Un spinner/loader que está en una captura y no en la otra (o con otro
+    tamaño) no es un cambio de la versión: se excluye."""
+    base = [item('h1', 'main > h1', 0, 0, 300, 40, class_attr='titulo', texto='Hola', order_index=0)]
+    v1 = base + [
+        item('div', 'main > div', 0, 50, 40, 40, class_attr='spinner', order_index=1),
+        item('div', 'main > div:nth-child(3)', 0, 100, 600, 400, class_attr='notifications-loader', order_index=2),
+        item('span', 'main > span', 0, 60, 24, 24, class_attr='icono', order_index=3),
+    ]
+    v1[-1]['anim_infinita'] = True
+    fallas = core.comparar_estructura_dom(v1, base)
+    assert not fallas, fallas
+    print("OK: spinners/loaders no generan diferencias")
+
+
+def test_animacion_infinita_grande_se_sigue_comparando():
+    """Algo grande con animación en loop (no es un spinner) sigue
+    comparándose como antes. Tampoco se excluyen clases que solo
+    contienen la palabra (ej. 'downloads')."""
+    v1 = [item('div', 'main > div', 0, 0, 1200, 60, class_attr='ticker', order_index=0),
+          item('div', 'main > section', 0, 100, 300, 40, class_attr='downloads', order_index=1)]
+    v1[0]['anim_infinita'] = True
+    assert not core.elemento_es_spinner(v1[0]) and not core.elemento_es_spinner(v1[1])
+    tipos = [f['tipo'] for f in core.comparar_estructura_dom(v1, [])]
+    assert tipos.count('AUSENTE V2') == 2, tipos
+    print("OK: animación grande y clases parecidas se siguen comparando")
+
+
+
+def test_nuevo_sin_identidad_que_se_ve_igual_no_es_grave():
+    """Caso real El Trece v749 (Recipe Cuccinare, G4): un
+    aspect_ratio__container (sin id ni texto) marcado como «Aparece solo
+    en el VNP» sobre una imagen que se ve igual en PROD y VNP. Si la zona
+    se ve igual (aunque esté corrida unos px) -> informativo. Si se ve
+    distinta, o el elemento tiene texto propio -> sigue GRAVE."""
+    import numpy as np
+    rng = np.random.default_rng(0)
+    img_v1 = rng.integers(0, 255, (400, 400, 3), dtype='uint8')
+    img_v2 = np.roll(img_v1, -4, axis=0)  # toda la página subió 4px (cascada chica)
+    v2 = [item('div', 'article > a > div', 100, 100, 120, 80, class_attr='aspect_ratio__container', order_index=0)]
+    fallas = core.confirmar_visualmente(img_v1, img_v2, core.comparar_estructura_dom([], v2))
+    assert core.consolidar_fallas(fallas)[0]['gravedad'] == 'informativo', fallas
+
+    img_v2_distinta = img_v2.copy()
+    img_v2_distinta[100:180, 100:220] = 0
+    fallas = core.confirmar_visualmente(img_v1, img_v2_distinta, core.comparar_estructura_dom([], v2))
+    assert core.consolidar_fallas(fallas)[0]['gravedad'] == 'grave', fallas
+
+    v2_texto = [item('h2', 'article > h2', 100, 100, 120, 80, class_attr='titulo', texto='Nota', order_index=0)]
+    fallas = core.confirmar_visualmente(img_v1, img_v2, core.comparar_estructura_dom([], v2_texto))
+    assert core.consolidar_fallas(fallas)[0]['gravedad'] == 'grave', fallas
+    print("OK: NUEVO/AUSENTE sin identidad que se ve igual pasa a informativo, el resto sigue GRAVE")
+
+
+
+def test_notas_corridas_se_marcan_salvo_las_que_cambiaron_diseno():
+    """Las notas que solo se corrieron se listan para marcarlas (recuadro
+    punteado). Si una además cambió de diseño, no se marca como "solo
+    corrida" y su diferencia sigue GRAVE."""
+    prod = [('Uno', '1'), ('Dos', '2'), ('Tres', '3'), ('Cuatro', '4'), ('Cinco', '5')]
+    vnp = [('Nueva', '0')] + prod[:4]
+    v1, v2 = _listado(prod), _listado(vnp)
+    _, _, acts = _pipeline(v1, v2)
+    assert len(acts[0]['notas_corridas']) == 4, acts[0]['notas_corridas']
+    for d in v1:
+        if d['tag'] == 'a' and d['texto'] == 'Dos':
+            d['styles'] = {'fontSize': '16px'}
+    for d in v2:
+        if d['tag'] == 'a' and d['texto'] == 'Dos':
+            d['styles'] = {'fontSize': '20px'}
+    consolidado, _, acts = _pipeline(v1, v2)
+    assert len(acts[0]['notas_corridas']) == 3, acts[0]['notas_corridas']
+    assert [c['gravedad'] for c in consolidado] == ['grave'], consolidado
+    print("OK: notas corridas se marcan, la que cambió de diseño sigue GRAVE")
+
+
+
+def _f_contenido(tipo, selector, tag, texto, oi, y=0):
+    c = {'x': 0, 'y': y, 'width': 100, 'height': 20}
+    f = core._falla(selector, tipo, 'N/A', 'N/A', 'N/A', c, c, oi)
+    f.update({'tag': tag, 'texto_propio': texto, 'texto_etiqueta': texto, 'clase': '',
+              'img_src': '', 'identidad_debil': False, 'grupo_en_ambas': False})
+    return f
+
+
+def test_mismo_texto_en_otro_lugar_dentro_de_actualizacion():
+    """Caso real TN Listado v749: el firmante de una nota que solo se corrió
+    quedaba AUSENTE + NUEVO y el NUEVO salía GRAVE. Dentro de un listado
+    con actualización confirmada, mismo texto en otro lugar = reubicado.
+    Fuera de una actualización, sigue como antes."""
+    L = 'main > div > div'
+    fallas = [
+        _f_contenido('AUSENTE V2', f'{L} > article:nth-child(20) > div > header > h2 > a', 'a', 'Nota vieja', 1),
+        _f_contenido('NUEVO EN V2', f'{L} > article > div > header > h2 > a', 'a', 'Nota nueva', 0),
+        _f_contenido('AUSENTE V2', f'{L} > article:nth-child(5) > div > footer > div > h3', 'h3', 'Uriel', 2),
+        _f_contenido('NUEVO EN V2', f'{L} > article:nth-child(7) > div > footer > div > h3', 'h3', 'Uriel', 3),
+    ]
+    restantes, _, acts = core.detectar_actualizaciones_contenido(fallas, [])
+    assert not restantes, restantes
+    assert len(acts) == 1 and len(acts[0]['reubicados']) == 2, acts
+    assert [f['texto_propio'] for f in acts[0]['entraron']] == ['Nota nueva']
+
+    solo_reubicado = fallas[2:]
+    restantes, _, acts = core.detectar_actualizaciones_contenido(solo_reubicado, [])
+    assert not acts and len(restantes) == 2, (acts, restantes)
+    print("OK: mismo texto en otro lugar se agrupa solo si hay actualización confirmada")
+
+
+def test_contenedor_del_bloque_que_crece_y_lo_de_abajo_se_agrupan():
+    """Caso real TN Homepage v749 (footer «Últimas noticias»): la nota nueva
+    tiene título más largo, los contenedores del bloque crecen 20px y lo de
+    abajo baja 20px. Se agrupa en la actualización. Una cascada con otro
+    delta (otra causa) sigue aparte."""
+    L = 'footer > div:nth-child(2) > div > div:nth-child(2) > ul'
+    fallas = [
+        _f_contenido('AUSENTE V2', f'{L} > li:nth-child(5) > a > span', 'span', 'Sale', 1),
+        _f_contenido('NUEVO EN V2', f'{L} > li > a > span', 'span', 'Entra', 0),
+    ]
+    alto = {'tipo_cascada': True, 'tipo': 'DIFERENCIA ALTURA (H)', 'delta_y': 20, 'cantidad': 3,
+            'selectores': ['footer > div:nth-child(2) > div > div', 'footer > div:nth-child(2) > div',
+                           'footer > div:nth-child(2)'], 'primer_selector': 'footer', 'coords_v2': {}}
+    abajo = {'tipo_cascada': True, 'tipo': 'DIFERENCIA POSICIÓN (Y)', 'delta_y': 20, 'cantidad': 13,
+             'selectores': ['footer > div:nth-child(3)'], 'primer_selector': 'footer > div:nth-child(3)',
+             'coords_v2': {}}
+    otra = dict(abajo, delta_y=300, selectores=['main > div:nth-child(9)'])
+    _, restantes, acts = core.detectar_actualizaciones_contenido(fallas, [alto, abajo, otra])
+    assert restantes == [otra], restantes
+    assert len(acts[0]['cascadas']) == 2
+    # Caso real TN Videos v749: el bloque se ACHICÓ 20px (un <li> de adentro
+    # pasó de 2 líneas a 1) y lo de abajo SUBIÓ 20px.
+    alto_menos = dict(alto, delta_y=-20, selectores=alto['selectores'] + [f'{L} > li:nth-child(3)'])
+    arriba = dict(abajo, delta_y=-20)
+    _, restantes, acts = core.detectar_actualizaciones_contenido(fallas, [alto_menos, arriba])
+    assert not restantes and len(acts[0]['cascadas']) == 2, restantes
+    print("OK: el crecimiento del bloque y lo que bajó por eso se agrupan, otra causa sigue aparte")
+
+
 if __name__ == '__main__':
     tests = [v for k, v in list(globals().items()) if k.startswith('test_')]
     fallidos = 0
