@@ -11,6 +11,8 @@ cascadas, confirmación visual, etc.).
 Uso:
     python regre_visual_eltrece.py --modo desktop 719
     python regre_visual_eltrece.py --modo mobile 719
+    python regre_visual_eltrece.py --modo desktop 719 --ambiente dev
+    python regre_visual_eltrece.py --modo mobile 719 --ambiente sbx
     python regre_visual_eltrece.py --modo desktop 719 --urls Homepage,Listado
     python regre_visual_eltrece.py --modo desktop 719 --tolerancia 4 --sin-confirmacion-visual
 """
@@ -54,5 +56,63 @@ BASE_URLS_MAP = {
 }
 
 
+# URLs de los ambientes DEV y SBX (las mismas que usaba la regresión anterior
+# en cada ambiente). En dev/sbx se compara el ambiente tal cual contra el
+# mismo ambiente con ?d=VERSION.
+URLS_POR_AMBIENTE = {
+    "dev": {
+        "https://artear-eltrece-dev.cdn.arcpublishing.com/": "Homepage",
+        "https://artear-eltrece-dev.cdn.arcpublishing.com/ultimas-noticias/": "Listado",
+        "https://artear-eltrece-dev.cdn.arcpublishing.com/virales/": "Portada",
+        "https://artear-eltrece-dev.cdn.arcpublishing.com/videos/": "Videos",
+        "https://artear-eltrece-dev.cdn.arcpublishing.com/vivo/": "Vivo",
+        "https://artear-eltrece-dev.cdn.arcpublishing.com/cucinare/": "Cucinare",
+        "https://artear-eltrece-dev.cdn.arcpublishing.com/programas/": "Programas",
+        "https://artear-eltrece-dev.cdn.arcpublishing.com/programas/entretenimiento/": "Programa sección",
+        "https://artear-eltrece-dev.cdn.arcpublishing.com/ahora-caigo/": "Programa",
+        "https://artear-eltrece-dev.cdn.arcpublishing.com/capitulos/": "Capitulos",
+        "https://artear-eltrece-dev.cdn.arcpublishing.com/capitulos/retrotrece/": "Capitulo sección",
+        "https://artear-eltrece-dev.cdn.arcpublishing.com/convocatorias/": "Convocatorias",
+        "https://artear-eltrece-dev.cdn.arcpublishing.com/shorts/": "Shorts",
+        "https://artear-eltrece-dev.cdn.arcpublishing.com/virales/2025/02/17/quiso-mandarle-un-mensaje-a-un-amigo-se-lo-envio-al-peluquero-y-la-respuesta-se-volvio-viral/": "Article",
+        "https://artear-eltrece-dev.cdn.arcpublishing.com/virales/2025/01/27/invito-a-su-mama-al-boliche-en-la-costa-y-se-llevo-una-tremenda-sorpresa/?outputType=amp": "AMP",
+        "https://artear-eltrece-dev.cdn.arcpublishing.com/videos/otro-dia-perdido/2025/12/11/kevin-johansen-y-liniers-en-otro-dia-perdido/": "Video",
+        "https://artear-eltrece-dev.cdn.arcpublishing.com/noticias-y-actualidad/2024/11/11/guillermo-francella-lamento-en-la-divina-noche-de-dante-la-crispacion-por-la-grieta/": "Longform c/fondo",
+        "https://artear-eltrece-dev.cdn.arcpublishing.com/cucinare/2025/10/20/liveblogging-los-cinco-datos-mas-impactantes-sobre-las-joyas-robadas-en-el-museo-del-louvre-clone/": "Liveblog",
+        "https://artear-eltrece-dev.cdn.arcpublishing.com/la-1-518/historia/": "Historia",
+    },
+    "sbx": {
+        "https://artear-eltrece-sandbox.cdn.arcpublishing.com/": "Homepage",
+        "https://artear-eltrece-sandbox.cdn.arcpublishing.com/ultimas-noticias/": "Listado",
+        "https://artear-eltrece-sandbox.cdn.arcpublishing.com/virales/": "Portada",
+        "https://artear-eltrece-sandbox.cdn.arcpublishing.com/videos/": "Videos",
+        "https://artear-eltrece-sandbox.cdn.arcpublishing.com/vivo/": "Vivo",
+        "https://artear-eltrece-sandbox.cdn.arcpublishing.com/programas/": "Programas",
+        "https://artear-eltrece-sandbox.cdn.arcpublishing.com/programas/entretenimiento/": "Programa sección",
+        "https://artear-eltrece-sandbox.cdn.arcpublishing.com/ahora-caigo/": "Programa",
+        "https://artear-eltrece-sandbox.cdn.arcpublishing.com/capitulos/": "Capitulos",
+        "https://artear-eltrece-sandbox.cdn.arcpublishing.com/capitulos/retrotrece/": "Capitulo sección",
+        "https://artear-eltrece-sandbox.cdn.arcpublishing.com/convocatorias/": "Convocatorias",
+        "https://artear-eltrece-sandbox.cdn.arcpublishing.com/shorts/": "Shorts",
+        "https://artear-eltrece-sandbox.cdn.arcpublishing.com/virales/2025/02/17/quiso-mandarle-un-mensaje-a-un-amigo-se-lo-envio-al-peluquero-y-la-respuesta-se-volvio-viral/": "Article",
+        "https://artear-eltrece-sandbox.cdn.arcpublishing.com/virales/2025/01/27/invito-a-su-mama-al-boliche-en-la-costa-y-se-llevo-una-tremenda-sorpresa/?outputType=amp": "AMP",
+        "https://artear-eltrece-sandbox.cdn.arcpublishing.com/videos/otro-dia-perdido/2025/12/11/kevin-johansen-y-liniers-en-otro-dia-perdido/": "Video",
+        "https://artear-eltrece-sandbox.cdn.arcpublishing.com/noticias-y-actualidad/2024/11/11/guillermo-francella-lamento-en-la-divina-noche-de-dante-la-crispacion-por-la-grieta/": "Longform c/fondo",
+        "https://artear-eltrece-sandbox.cdn.arcpublishing.com/cucinare/2025/10/20/liveblogging-los-cinco-datos-mas-impactantes-sobre-las-joyas-robadas-en-el-museo-del-louvre-clone/": "Liveblog",
+        "https://artear-eltrece-sandbox.cdn.arcpublishing.com/la-1-518/historia/": "Historia",
+        "https://artear-eltrece-sandbox.cdn.arcpublishing.com/cucinare/": "Portada Cucinare",
+        "https://artear-eltrece-sandbox.cdn.arcpublishing.com/cucinare/capitulos/temporada-2025/navidad-viene-con-regalo[…]-suman-a-las-cocinas-de-cucinare-video-estreno-del-111225/": "Cuccinare Temporada",
+        "https://artear-eltrece-sandbox.cdn.arcpublishing.com/cucinare/noticias/": "Listado Cuccinare",
+        "https://artear-eltrece-sandbox.cdn.arcpublishing.com/cucinare/recetas/": "Portada Recetas Cuccinare",
+        "https://artear-eltrece-sandbox.cdn.arcpublishing.com/cucinare/capitulos/": "Capitulos Cuccinare",
+        "https://artear-eltrece-sandbox.cdn.arcpublishing.com/cucinare/recetas/?q=Pastel+de+bondiola": "Busqueda por palabra clave Cuccinare",
+        "https://artear-eltrece-sandbox.cdn.arcpublishing.com/cucinare/recetas/?espanola=true&pescados-y-mariscos=true&frituras=true": "Busqueda por filtro Cuccinare",
+        "https://artear-eltrece-sandbox.cdn.arcpublishing.com/tags/cucinare/arandanos/": "Tags Cuccinare",
+        "https://artear-eltrece-sandbox.cdn.arcpublishing.com/cucinare/receta/solomillo-de-cerdo-con-chutney-de-peras-y-pure-de-batata-con-salsa-toffee/": "Recipe Cuccinare",
+    },
+}
+
+
 if __name__ == "__main__":
-    motor.main(BASE_URLS_MAP, producto_nombre=PRODUCTO, output_dir_base=OUTPUT_DIR_BASE)
+    motor.main(BASE_URLS_MAP, producto_nombre=PRODUCTO, output_dir_base=OUTPUT_DIR_BASE,
+               urls_por_ambiente=URLS_POR_AMBIENTE)

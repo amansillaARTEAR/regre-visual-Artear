@@ -10,6 +10,8 @@ cada fix.
 Uso:
     python regre_visual_tn.py --modo desktop 719
     python regre_visual_tn.py --modo mobile 719
+    python regre_visual_tn.py --modo desktop 719 --ambiente dev
+    python regre_visual_tn.py --modo mobile 719 --ambiente sbx
     python regre_visual_tn.py --modo desktop 719 --urls Homepage,Listado,Juegos
     python regre_visual_tn.py --modo desktop 719 --tolerancia 4 --sin-confirmacion-visual
 """
@@ -46,5 +48,50 @@ BASE_URLS_MAP = {
 }
 
 
+# URLs de los ambientes DEV y SBX (las mismas que usaba la regresión anterior
+# en cada ambiente). En dev/sbx se compara el ambiente tal cual contra el
+# mismo ambiente con ?d=VERSION.
+URLS_POR_AMBIENTE = {
+    "dev": {
+        "https://artear-tn-dev.cdn.arcpublishing.com/": "Homepage",
+        "https://artear-tn-dev.cdn.arcpublishing.com/ultimas-noticias/": "Listado",
+        "https://artear-tn-dev.cdn.arcpublishing.com/videos/": "Videos",
+        "https://artear-tn-dev.cdn.arcpublishing.com/envivo/24hs/": "Vivo",
+        "https://artear-tn-dev.cdn.arcpublishing.com/clima/": "Clima",
+        "https://artear-tn-dev.cdn.arcpublishing.com/economia/divisas/dolar-oficial-hoy/": "Divisas",
+        "https://artear-tn-dev.cdn.arcpublishing.com/podcasts/2025/05/14/soy-adoptada-una-identidad-dicha-con-orgullo/": "Podcast",
+        "https://artear-tn-dev.cdn.arcpublishing.com/juegos/": "Juegos",
+        "https://artear-tn-dev.cdn.arcpublishing.com/elecciones-2025/": "Elecciones",
+        "https://artear-tn-dev.cdn.arcpublishing.com/internacional/2024/12/09/los-rebeldes-sirios-apuran-la-transicion-para-evitar-conflictos-internos-y-la-irrupcion-del-estado-islamico/": "Article",
+        "https://artear-tn-dev.cdn.arcpublishing.com/videos/deportes/futbol/2025/11/10/preocupacion-en-river-maxi-meza-se-lesiono-en-el-superclasico-y-salio-de-la-cancha-llorando/": "Video",
+        "https://artear-tn-dev.cdn.arcpublishing.com/videos/autos/clasicos/2024/05/09/la-inedita-foto-del-nuevo-suv-con-estilo-coupe-que-este-ano-llegara-a-la-argentina/": "Video Dark",
+        "https://artear-tn-dev.cdn.arcpublishing.com/policiales/2025/05/13/estafadores-de-america-asi-opera-la-banda-que-ofrece-prestamos-millonarios-con-el-cuento-de-la-caja-fuerte/": "Longform c/fondo",
+        "https://artear-tn-dev.cdn.arcpublishing.com/politica/2024/12/09/el-gobierno-salio-al-cruce-de-kicillof-tras-el-anuncio-de-que-quiere-quedarse-con-aerolineas-argentinas/?outputType=amp": "AMP",
+        "https://artear-tn-dev.cdn.arcpublishing.com/deportes/2025/01/30/se-avecina-un-temporal-que-pondra-a-prueba-a-varias-regiones-del-pais/": "Longform s/fondo",
+        "https://artear-tn-dev.cdn.arcpublishing.com/deportes/futbol/2025/11/13/inglaterra-vs-serbia-en-vivo-por-la-fase-de-grupos-de-las-eliminatorias-uefa-hora-donde-ver-y-formaciones/": "Liveblogging",
+    },
+    "sbx": {
+        "https://artear-tn-sandbox.cdn.arcpublishing.com/homepage-dynamic-4141/": "Portada",
+        "https://artear-tn-sandbox.cdn.arcpublishing.com/": "Homepage",
+        "https://artear-tn-sandbox.cdn.arcpublishing.com/ultimas-noticias/": "Listado",
+        "https://artear-tn-sandbox.cdn.arcpublishing.com/videos/": "Videos",
+        "https://artear-tn-sandbox.cdn.arcpublishing.com/envivo/24hs/": "Vivo",
+        "https://artear-tn-sandbox.cdn.arcpublishing.com/clima/": "Clima",
+        "https://artear-tn-sandbox.cdn.arcpublishing.com/economia/divisas/dolar-oficial-hoy/": "Divisas",
+        "https://artear-tn-sandbox.cdn.arcpublishing.com/podcasts/2025/05/14/soy-adoptada-una-identidad-dicha-con-orgullo/": "Podcast",
+        "https://artear-tn-sandbox.cdn.arcpublishing.com/juegos/": "Juegos",
+        "https://artear-tn-sandbox.cdn.arcpublishing.com/elecciones-2025/": "Elecciones",
+        "https://artear-tn-sandbox.cdn.arcpublishing.com/internacional/2024/12/09/los-rebeldes-sirios-apuran-la-transicion-para-evitar-conflictos-internos-y-la-irrupcion-del-estado-islamico/": "Article",
+        "https://artear-tn-sandbox.cdn.arcpublishing.com/videos/deportes/futbol/2025/11/10/preocupacion-en-river-maxi-meza-se-lesiono-en-el-superclasico-y-salio-de-la-cancha-llorando/": "Video",
+        "https://artear-tn-sandbox.cdn.arcpublishing.com/videos/autos/clasicos/2024/05/09/la-inedita-foto-del-nuevo-suv-con-estilo-coupe-que-este-ano-llegara-a-la-argentina/": "Video Dark",
+        "https://artear-tn-sandbox.cdn.arcpublishing.com/policiales/2025/05/13/estafadores-de-america-asi-opera-la-banda-que-ofrece-prestamos-millonarios-con-el-cuento-de-la-caja-fuerte/": "Longform c/fondo",
+        "https://artear-tn-sandbox.cdn.arcpublishing.com/politica/2024/12/09/el-gobierno-salio-al-cruce-de-kicillof-tras-el-anuncio-de-que-quiere-quedarse-con-aerolineas-argentinas/?outputType=amp": "AMP",
+        "https://artear-tn-sandbox.cdn.arcpublishing.com/deportes/2025/01/30/se-avecina-un-temporal-que-pondra-a-prueba-a-varias-regiones-del-pais/": "Longform s/fondo",
+        "https://artear-tn-sandbox.cdn.arcpublishing.com/deportes/futbol/2025/11/13/inglaterra-vs-serbia-en-vivo-por-la-fase-de-grupos-de-las-eliminatorias-uefa-hora-donde-ver-y-formaciones/": "Liveblogging",
+    },
+}
+
+
 if __name__ == "__main__":
-    motor.main(BASE_URLS_MAP, producto_nombre=PRODUCTO, output_dir_base=OUTPUT_DIR_BASE)
+    motor.main(BASE_URLS_MAP, producto_nombre=PRODUCTO, output_dir_base=OUTPUT_DIR_BASE,
+               urls_por_ambiente=URLS_POR_AMBIENTE)

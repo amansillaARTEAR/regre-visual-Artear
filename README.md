@@ -58,19 +58,33 @@ noticias distintas no es un bug real.
 
 ```bash
 pip install -r requirements.txt
-python regre_visual_tn.py 719 --modo desktop
-python regre_visual_tn.py 719 --modo mobile
+python regre_visual_tn.py 719 --modo desktop                 # PROD vs VNP (prod es el default)
+python regre_visual_tn.py 719 --modo mobile --ambiente dev   # DEV vs DEV ?d=719
+python regre_visual_tn.py 719 --modo desktop --ambiente sbx  # SBX vs SBX ?d=719
 python regre_visual_tn.py 719 --modo desktop --urls Homepage,Listado,Juegos
 python regre_visual_tn.py 719 --modo desktop --tolerancia 4 --sin-confirmacion-visual
 
 # Mismo uso para los otros productos:
 python regre_visual_eltrece.py 719 --modo desktop
-python regre_visual_eldoce.py 719 --modo mobile
+python regre_visual_eldoce.py 719 --modo mobile --ambiente dev
 python regre_visual_ciudad.py 719 --modo desktop --urls Homepage,Vivo
 ```
 
 El reporte HTML y las capturas quedan en `reportes/<producto>/desktop/` o
 `reportes/<producto>/mobile/` (ej. `reportes/eltrece/desktop/`).
+
+### Ambientes
+
+| Ambiente | V1 (base)                         | V2 (la versión que se valida)          |
+|----------|-----------------------------------|----------------------------------------|
+| `prod`   | PROD (ej. `tn.com.ar`)            | VNP: PROD con `?d=VERSION`             |
+| `dev`    | DEV (ej. `artear-tn-dev...`)      | DEV con `?d=VERSION`                   |
+| `sbx`    | SBX (ej. `artear-tn-sandbox...`)  | SBX con `?d=VERSION`                   |
+
+Las URLs de prod están en `BASE_URLS_MAP` de cada script de producto y las de
+dev/sbx en `URLS_POR_AMBIENTE`.
+Las notas AMP se prueban solo en mobile (en desktop se omiten, salvo que se
+pidan con `--urls`).
 
 ## Tests offline (sin Selenium, sin red)
 

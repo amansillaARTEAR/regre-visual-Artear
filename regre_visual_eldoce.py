@@ -11,6 +11,8 @@ visual, etc.).
 Uso:
     python regre_visual_eldoce.py --modo desktop 719
     python regre_visual_eldoce.py --modo mobile 719
+    python regre_visual_eldoce.py --modo desktop 719 --ambiente dev
+    python regre_visual_eldoce.py --modo mobile 719 --ambiente sbx
     python regre_visual_eldoce.py --modo desktop 719 --urls Homepage,Vivo
     python regre_visual_eldoce.py --modo desktop 719 --tolerancia 4 --sin-confirmacion-visual
 """
@@ -47,5 +49,53 @@ BASE_URLS_MAP = {
 }
 
 
+# URLs de los ambientes DEV y SBX (las mismas que usaba la regresión anterior
+# en cada ambiente). En dev/sbx se compara el ambiente tal cual contra el
+# mismo ambiente con ?d=VERSION.
+URLS_POR_AMBIENTE = {
+    "dev": {
+        "https://artear-eldoce-dev.web.arc-cdn.net/": "Homepage",
+        "https://artear-eldoce-dev.web.arc-cdn.net/ultimas-noticias/": "Listado",
+        "https://artear-eldoce-dev.web.arc-cdn.net/videos/": "Videos",
+        "https://artear-eldoce-dev.web.arc-cdn.net/vivo/": "Vivo",
+        "https://artear-eldoce-dev.web.arc-cdn.net/cuarteteando/": "Cuarteteando",
+        "https://artear-eldoce-dev.web.arc-cdn.net/deportes/estadisticas/": "Estadisticas",
+        "https://artear-eldoce-dev.web.arc-cdn.net/deportes/estadisticas/primera-division/": "Primera división",
+        "https://artear-eldoce-dev.web.arc-cdn.net/deportes/": "Deportes",
+        "https://artear-eldoce-dev.web.arc-cdn.net/horoscopo/": "Horoscopo",
+        "https://artear-eldoce-dev.web.arc-cdn.net/horoscopo/aries/": "Horoscopo por signo",
+        "https://artear-eldoce-dev.web.arc-cdn.net/actualidad/2025/10/17/magui-olave-y-euge-quevedo-mamas-y-artistas-un-desafio-de-amor-y-equilibrio/": "Article",
+        "https://artear-eldoce-dev.web.arc-cdn.net/fotos/mundo/impresionante-manhattanhenge-nueva-york-atardecer_149182-4/": "Galería",
+        "https://artear-eldoce-dev.web.arc-cdn.net/cuarteteando/2025/12/10/valentino-merlo-y-su-desafio-personal-entre-el-estudio-y-la-musica-me-quede-libre-por-faltas/": "Nota Cuarteteando",
+        "https://artear-eldoce-dev.web.arc-cdn.net/actualidad/2025/10/17/magui-olave-y-euge-quevedo-mamas-y-artistas-un-desafio-de-amor-y-equilibrio/?outputType=amp": "AMP",
+        "https://artear-eldoce-dev.web.arc-cdn.net/videos/actualidad/2025/07/22/preocupacion-entre-las-victimas-de-los-sanadores-egipcios-por-la-reaparicion-publica-del-lider/": "Video",
+        "https://artear-eldoce-dev.web.arc-cdn.net/videos/cuarteteando/2024/08/05/ya-salio-fama-de-diabla-en-vivo-por-david-bisbal-la-konga-y-emanero/": "Video cuarteteando",
+        "https://artear-eldoce-dev.web.arc-cdn.net/actualidad/2024/08/26/piedra-del-molino-una-cascada-oculta-dentro-de-una-caverna-en-las-sierras-de-cordoba/": "Longform c/fondo",
+        "https://artear-eldoce-dev.web.arc-cdn.net/actualidad/2024/07/15/argentina-bicampeon-de-america-le-gano-la-final-a-colombia-y-se-consagro-en-estados-unidos/": "Liveblog",
+    },
+    "sbx": {
+        "https://artear-eldoce-sandbox.web.arc-cdn.net/": "Homepage",
+        "https://artear-eldoce-sandbox.web.arc-cdn.net/ultimas-noticias/": "Listado",
+        "https://artear-eldoce-sandbox.web.arc-cdn.net/videos/": "Videos",
+        "https://artear-eldoce-sandbox.web.arc-cdn.net/vivo/": "Vivo",
+        "https://artear-eldoce-sandbox.web.arc-cdn.net/cuarteteando/": "Cuarteteando",
+        "https://artear-eldoce-sandbox.web.arc-cdn.net/deportes/estadisticas/": "Estadisticas",
+        "https://artear-eldoce-sandbox.web.arc-cdn.net/deportes/estadisticas/primera-division/": "Primera división",
+        "https://artear-eldoce-sandbox.web.arc-cdn.net/deportes/": "Deportes",
+        "https://artear-eldoce-sandbox.web.arc-cdn.net/horoscopo/": "Horoscopo",
+        "https://artear-eldoce-sandbox.web.arc-cdn.net/horoscopo/aries/": "Horoscopo por signo",
+        "https://artear-eldoce-sandbox.web.arc-cdn.net/actualidad/2025/10/17/magui-olave-y-euge-quevedo-mamas-y-artistas-un-desafio-de-amor-y-equilibrio/": "Article",
+        "https://artear-eldoce-sandbox.web.arc-cdn.net/fotos/mundo/impresionante-manhattanhenge-nueva-york-atardecer_149182-4/": "Galería",
+        "https://artear-eldoce-sandbox.web.arc-cdn.net/cuarteteando/2025/12/10/valentino-merlo-y-su-desafio-personal-entre-el-estudio-y-la-musica-me-quede-libre-por-faltas/": "Nota Cuarteteando",
+        "https://artear-eldoce-sandbox.web.arc-cdn.net/actualidad/2025/10/17/magui-olave-y-euge-quevedo-mamas-y-artistas-un-desafio-de-amor-y-equilibrio/?outputType=amp": "AMP",
+        "https://artear-eldoce-sandbox.web.arc-cdn.net/videos/actualidad/2025/07/22/preocupacion-entre-las-victimas-de-los-sanadores-egipcios-por-la-reaparicion-publica-del-lider/": "Video",
+        "https://artear-eldoce-sandbox.web.arc-cdn.net/videos/cuarteteando/2024/08/05/ya-salio-fama-de-diabla-en-vivo-por-david-bisbal-la-konga-y-emanero/": "Video cuarteteando",
+        "https://artear-eldoce-sandbox.web.arc-cdn.net/actualidad/2024/08/26/piedra-del-molino-una-cascada-oculta-dentro-de-una-caverna-en-las-sierras-de-cordoba/": "Longform c/fondo",
+        "https://artear-eldoce-sandbox.web.arc-cdn.net/actualidad/2024/07/15/argentina-bicampeon-de-america-le-gano-la-final-a-colombia-y-se-consagro-en-estados-unidos/": "Liveblog",
+    },
+}
+
+
 if __name__ == "__main__":
-    motor.main(BASE_URLS_MAP, producto_nombre=PRODUCTO, output_dir_base=OUTPUT_DIR_BASE)
+    motor.main(BASE_URLS_MAP, producto_nombre=PRODUCTO, output_dir_base=OUTPUT_DIR_BASE,
+               urls_por_ambiente=URLS_POR_AMBIENTE)

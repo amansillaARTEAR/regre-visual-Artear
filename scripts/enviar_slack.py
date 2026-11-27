@@ -171,6 +171,7 @@ def main():
     ap.add_argument("--report-dir", required=True, help="Carpeta con el .html y los .png del reporte")
     ap.add_argument("--producto", required=True, choices=list(PRODUCTO_LABEL.keys()))
     ap.add_argument("--modo", required=True, choices=["desktop", "mobile"])
+    ap.add_argument("--ambiente", default="prod", choices=["prod", "dev", "sbx"])
     ap.add_argument("--version", default=None)
     ap.add_argument("--urls", default=None, help="Lista separada por comas, vacío = todas")
     args = ap.parse_args()
@@ -211,7 +212,7 @@ def main():
     mensaje = (
         f"📣 *Regresión: {label} ({args.modo})*\n"
         f"{urls_line}\n"
-        f"🌐 Entorno: prod (v{version})\n"
+        f"🌐 Entorno: {args.ambiente} (v{version})\n"
         f"📊 Estado: {emoji_estado}{resumen}"
     )
 

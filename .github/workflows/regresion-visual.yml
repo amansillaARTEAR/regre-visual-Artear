@@ -18,6 +18,15 @@ on:
         description: "Número de versión a testear (se arma como ?d=VERSION)"
         required: true
         type: string
+      ambiente:
+        description: "Ambiente (prod = PROD vs VNP, dev/sbx = el ambiente vs el mismo con ?d=VERSION)"
+        required: true
+        type: choice
+        options:
+          - prod
+          - dev
+          - sbx
+        default: prod
       modo:
         description: "Qué correr"
         required: true
@@ -76,6 +85,7 @@ jobs:
         run: |
           python "regre_visual_${{ inputs.producto }}.py" "${{ inputs.version }}" \
             --modo desktop \
+            --ambiente "${{ inputs.ambiente || 'prod' }}" \
             --tolerancia "${{ inputs.tolerancia }}" \
             ${{ inputs.urls != '' && format('--urls "{0}"', inputs.urls) || '' }}
       - name: Subir reporte como artifact
@@ -105,6 +115,7 @@ jobs:
             --report-dir "reportes/${{ inputs.producto }}/desktop" \
             --producto "${{ inputs.producto }}" \
             --modo desktop \
+            --ambiente "${{ inputs.ambiente || 'prod' }}" \
             --version "${{ inputs.version }}" \
             --urls "${{ inputs.urls }}"
 
@@ -125,6 +136,7 @@ jobs:
         run: |
           python "regre_visual_${{ inputs.producto }}.py" "${{ inputs.version }}" \
             --modo mobile \
+            --ambiente "${{ inputs.ambiente || 'prod' }}" \
             --tolerancia "${{ inputs.tolerancia }}" \
             ${{ inputs.urls != '' && format('--urls "{0}"', inputs.urls) || '' }}
       - name: Subir reporte como artifact
@@ -154,5 +166,6 @@ jobs:
             --report-dir "reportes/${{ inputs.producto }}/mobile" \
             --producto "${{ inputs.producto }}" \
             --modo mobile \
+            --ambiente "${{ inputs.ambiente || 'prod' }}" \
             --version "${{ inputs.version }}" \
             --urls "${{ inputs.urls }}"

@@ -379,11 +379,75 @@ def esperar_fuentes(driver, timeout=5):
         pass  # no bloqueamos la corrida por esto; es una mejora best-effort
 
 
+# Gráfico de cotizaciones de TN (Divisas): es un canvas que se dibuja en el
+# navegador recién cuando llegan los datos de la API dollar-history-exchange.
+# Normalmente tardan 1-2 s, pero a veces mucho más, y la captura salía con el
+# gráfico vacío. Solo se espera por ESTE componente: las páginas que no lo
+# tienen no cambian en nada.
+# Ojo: el Clima usa el mismo componente (canvas.lineChart) con otros datos,
+# por eso se acota al bloque de cotizaciones (.dollar-graph).
+SELECTOR_GRAFICO_COTIZACIONES = '.dollar-graph canvas.lineChart'
+ESPERA_MAX_GRAFICO = 5  # segundos extra como máximo, solo si todavía no está listo
+
+JS_ESTADO_GRAFICO = """
+var cs = document.querySelectorAll(arguments[0]);
+if (!cs.length) { return null; }
+var datos = performance.getEntriesByType('resource').some(function (r) {
+    return r.name.indexOf('dollar-history-exchange') >= 0 && r.responseEnd > 0; });
+var pintados = 0;
+for (var k = 0; k < cs.length; k++) {
+    var c = cs[k];
+    if (!c.width || !c.height) { continue; }
+    try {
+        var d = c.getContext('2d').getImageData(0, 0, c.width, c.height).data;
+        for (var i = 3; i < d.length; i += 4) { if (d[i] > 0) { pintados++; } }
+    } catch (e) { pintados = -1; }
+}
+return {datos: datos, pintados: pintados};
+"""
+
+# Se completa en cada captura: True si el gráfico de cotizaciones estaba en la
+# página y no terminó de cargar. procesar_url lo usa para reintentar o marcar
+# la URL como "No se pudo validar".
+ULTIMA_CAPTURA_INCOMPLETA = {'valor': False}
+
+
+def esperar_grafico_cotizaciones(driver, espera_max=ESPERA_MAX_GRAFICO):
+    """Devuelve True si el gráfico está listo (o la página no lo tiene) y
+    False si sigue sin datos tras la espera máxima. Listo = llegaron los datos
+    y el dibujo dejó de cambiar (terminó la animación)."""
+    try:
+        estado = driver.execute_script(JS_ESTADO_GRAFICO, SELECTOR_GRAFICO_COTIZACIONES)
+    except Exception:
+        return True
+    if estado is None:
+        return True  # la página no tiene el gráfico: no se espera nada
+    limite = time.time() + espera_max
+    anterior = None
+    while True:
+        if estado.get('datos') and estado.get('pintados', 0) > 0 and estado.get('pintados') == anterior:
+            return True
+        if time.time() >= limite:
+            break
+        anterior = estado.get('pintados') if estado.get('datos') else None
+        time.sleep(0.5)
+        try:
+            estado = driver.execute_script(JS_ESTADO_GRAFICO, SELECTOR_GRAFICO_COTIZACIONES) or {}
+        except Exception:
+            return True
+    # Llegaron los datos pero seguía animando al cortar: se toma como listo.
+    if estado.get('datos') and estado.get('pintados', 0) > 0:
+        return True
+    print("     ⚠️ El gráfico de cotizaciones no terminó de cargar (sin datos de la API).")
+    return False
+
+
 def obtener_estructura_dom(driver, incluir_texto=True, espera_scroll=2):
     """Devuelve (data, png) para la URL actualmente cargada en el driver."""
     from selenium.webdriver.support.ui import WebDriverWait
 
     data, png = [], None
+    ULTIMA_CAPTURA_INCOMPLETA['valor'] = False
     try:
         WebDriverWait(driver, 20).until(lambda d: d.execute_script("return document.readyState") == "complete")
         esperar_fuentes(driver)
@@ -421,6 +485,7 @@ def obtener_estructura_dom(driver, incluir_texto=True, espera_scroll=2):
             print(f"     ⚠️ La ventana no alcanzo el alto de la pagina ({visible}px de {pagina}px): "
                   f"la captura puede salir cortada abajo.")
         esperar_fuentes(driver)  # el resize puede revelar contenido lazy-loaded con su propia fuente
+        ULTIMA_CAPTURA_INCOMPLETA['valor'] = not esperar_grafico_cotizaciones(driver)
 
         js = JS_EXTRACCION.replace('INCLUIR_TEXTO', 'true' if incluir_texto else 'false')
         result = driver.execute_script(js)
@@ -543,10 +608,20 @@ def procesar_url(url_description, base_url, version_number, modo, config,
     url1 = base_url
     url2 = f"{base_url}&d={version_number}" if '?' in base_url else f"{base_url}?d={version_number}"
 
+    def capturar(url):
+        """Captura la URL. Si el gráfico de cotizaciones quedó sin cargar,
+        reintenta una vez. Devuelve (data, png, incompleta)."""
+        data, png = ejecutar_con_reintentos(url, modo, config)
+        if ULTIMA_CAPTURA_INCOMPLETA['valor']:
+            print("     ↻ Reintentando la captura porque un componente no terminó de cargar...")
+            data, png = ejecutar_con_reintentos(url, modo, config)
+        return data, png, ULTIMA_CAPTURA_INCOMPLETA['valor']
+
     print(f"  [V1] Obteniendo datos estructurales...")
-    data_v1, png_v1 = ejecutar_con_reintentos(url1, modo, config)
+    data_v1, png_v1, incompleta_v1 = capturar(url1)
     print(f"  [V2] Obteniendo datos estructurales...")
-    data_v2, png_v2 = ejecutar_con_reintentos(url2, modo, config)
+    data_v2, png_v2, incompleta_v2 = capturar(url2)
+    no_validado = [n for n, inc in (('V1', incompleta_v1), ('V2', incompleta_v2)) if inc]
 
     # Linea base de ruido: una SEGUNDA captura de V1 (despues de V2, asi encierra
     # el mismo intervalo de tiempo). Lo que cambia entre V1 y V1' es contenido
@@ -554,7 +629,11 @@ def procesar_url(url_description, base_url, version_number, modo, config,
     data_v1b = None
     if usar_linea_base_ruido:
         print("  [V1'] Obteniendo linea base de ruido...")
-        data_v1b, _ = ejecutar_con_reintentos(url1, modo, config)
+        data_v1b, _, incompleta_v1b = capturar(url1)
+        if incompleta_v1b:
+            # Una linea base incompleta haria pasar por "ruido" diferencias reales.
+            print("     ⚠️ La linea base de ruido quedo incompleta; se reporta sin filtrarla.")
+            data_v1b = None
 
     info_elementos = {}
     for d in list(data_v2 or []) + list(data_v1 or []):
@@ -608,6 +687,7 @@ def procesar_url(url_description, base_url, version_number, modo, config,
 
     return {
         'url1': url1, 'url2': url2, 'fatal': False,
+        'no_validado': no_validado,
         'consolidado': consolidado, 'cascadas': cascadas,
         'actualizaciones': actualizaciones,
         'png_v1': png_v1, 'png_v2': png_v2,
@@ -712,6 +792,7 @@ def marcar_fallas_en_captura(png_data, consolidado, cascadas, actualizaciones=No
 COLOR_LEYENDA = {
     'grave': 'red', 'menor': 'blue', 'informativo': '#ff8c00',
     'cascada': '#7c3aed', 'contenido': '#0891b2', 'ok': 'green',
+    'no_validado': '#6b7280',
 }
 
 
@@ -780,33 +861,51 @@ def _info_etiqueta(item, info):
                                'texto': aus.get('texto_etiqueta', '')}}
 
 
+# Etiquetas de las dos versiones que se comparan. En prod: PROD (publicada)
+# contra VNP (?d=VERSION). En dev/sbx: el ambiente tal cual contra el mismo
+# ambiente con ?d=VERSION. main() las ajusta según --ambiente.
+ET_V1 = "PROD"
+ET_V2 = "VNP"
+ET_V1_DESC = "la versión publicada"
+
+
+def configurar_etiquetas(ambiente, version):
+    global ET_V1, ET_V2, ET_V1_DESC
+    if ambiente == "prod":
+        ET_V1, ET_V2, ET_V1_DESC = "PROD", "VNP", "la versión publicada"
+    else:
+        amb = ambiente.upper()
+        ET_V1, ET_V2, ET_V1_DESC = amb, f"{amb} v{version}", f"lo que hoy sirve {amb}"
+
+
 def describir_falla(f):
     """Una falla individual en lenguaje claro: que paso y con que valores."""
     tipo, v1, v2, diff = f['tipo'], f['v1'], f['v2'], f['diff']
     if tipo == 'AUSENTE V2':
-        return "🔴 Está en <b>PROD</b> pero <b>falta en el VNP</b>"
+        return f"🔴 Está en <b>{ET_V1}</b> pero <b>falta en {ET_V2}</b>"
     if tipo == 'NUEVO EN V2':
-        return "🟢 Aparece <b>solo en el VNP</b> (no existe en PROD)"
+        return f"🟢 Aparece <b>solo en {ET_V2}</b> (no existe en {ET_V1})"
     if tipo == 'DIFERENCIA POSICIÓN (Y)':
         sentido = 'hacia abajo' if v2 > v1 else 'hacia arriba'
-        return f"Se movió <b>{_num(diff)}px {sentido}</b> (distancia desde el tope de la página: PROD {_num(v1)}px → VNP {_num(v2)}px)"
+        return f"Se movió <b>{_num(diff)}px {sentido}</b> (distancia desde el tope de la página: {ET_V1} {_num(v1)}px → {ET_V2} {_num(v2)}px)"
     if tipo == 'DIFERENCIA POSICIÓN (X)':
         sentido = 'hacia la derecha' if v2 > v1 else 'hacia la izquierda'
-        return f"Se movió <b>{_num(diff)}px {sentido}</b> (PROD {_num(v1)}px → VNP {_num(v2)}px desde el borde izquierdo)"
+        return f"Se movió <b>{_num(diff)}px {sentido}</b> ({ET_V1} {_num(v1)}px → {ET_V2} {_num(v2)}px desde el borde izquierdo)"
     if tipo == 'DIFERENCIA ALTURA (H)':
-        return f"Cambió su <b>alto</b>: PROD {_num(v1)}px → VNP {_num(v2)}px ({'+' if v2 > v1 else '−'}{_num(diff)}px)"
+        return f"Cambió su <b>alto</b>: {ET_V1} {_num(v1)}px → {ET_V2} {_num(v2)}px ({'+' if v2 > v1 else '−'}{_num(diff)}px)"
     if tipo == 'DIFERENCIA ANCHO (W)':
-        return f"Cambió su <b>ancho</b>: PROD {_num(v1)}px → VNP {_num(v2)}px ({'+' if v2 > v1 else '−'}{_num(diff)}px)"
+        return f"Cambió su <b>ancho</b>: {ET_V1} {_num(v1)}px → {ET_V2} {_num(v2)}px ({'+' if v2 > v1 else '−'}{_num(diff)}px)"
     if tipo.startswith('DIFERENCIA ESTILO'):
         clave = tipo.replace('DIFERENCIA ESTILO (', '').rstrip(')')
         return (f"Cambió el <b>{esc(NOMBRE_ESTILO.get(clave, clave.lower()))}</b>: "
-                f"PROD <code>{esc(str(v1))}</code> → VNP <code>{esc(str(v2))}</code>")
-    return f"{esc(tipo)}: PROD {esc(str(v1))} → VNP {esc(str(v2))}"
+                f"{ET_V1} <code>{esc(str(v1))}</code> → {ET_V2} <code>{esc(str(v2))}</code>")
+    return f"{esc(tipo)}: {ET_V1} {esc(str(v1))} → {ET_V2} {esc(str(v2))}"
 
 
-LEYENDA_REPORTE = (
+def leyenda_reporte():
+    return (
     "<div style='font-size:0.85em; color:#555; background:#f6f6f6; border-radius:4px; padding:6px 10px; margin-bottom:8px;'>"
-    "<b>Cómo leer esto:</b> <b>PROD</b> = la versión publicada (V1) · <b>VNP</b> = versión no publicada, la que se valida (V2). "
+    f"<b>Cómo leer esto:</b> <b>{ET_V1}</b> = {ET_V1_DESC} (V1) · <b>{ET_V2}</b> = la versión que se valida (V2). "
     "<b>G</b> = diferencia grave · <b>C</b> = varios elementos movidos por una sola causa (cascada, a revisar) · "
     "<b>A</b> = actualización de contenido (notas que entraron/salieron, esperable por caché). "
     "Hacé click en un hallazgo para verlo resaltado en la captura.</div>"
@@ -865,11 +964,11 @@ def construir_html_actualizacion(act, info, url_id):
                 data-coords="{coords_str}">
                 <span style="background:{color}; color:#fff; border-radius:3px; padding:1px 6px; font-size:0.8em; font-weight:bold; margin-right:6px;">{act.get('_num', '')}</span>
                 <span style="font-weight: bold;">🔄 Actualización de contenido (esperable):</span>
-                {n_ent} nota(s) nueva(s) en VNP, {n_sal} nota(s) ya no aparecen.
+                {n_ent} nota(s) nueva(s) en {ET_V2}, {n_sal} nota(s) ya no aparecen.
                 <span style="font-size: 0.8em; color: #888;">(click para verlo resaltado en la imagen)</span>
                 <br><span style="font-size: 0.85em; color: #555;">
-                • Entró en VNP: {lista(act['entraron'])}<br>
-                • Salió (estaba en PROD): {lista(act['salieron'])}<br>
+                • Entró en {ET_V2}: {lista(act['entraron'])}<br>
+                • Salió (estaba en {ET_V1}): {lista(act['salieron'])}<br>
                 Es un desfase de caché por la edición en vivo del sitio, no un cambio de la versión.{extra_cascada}{extra_corridas}
                 <br><span style='color:#888'>Ubicación del bloque: <code>{esc(act['bloque'])}</code></span>
                 </span>
@@ -879,7 +978,7 @@ def construir_html_actualizacion(act, info, url_id):
 
 def construir_html_fallas(consolidado, cascadas, data_v2_por_selector, url_id, actualizaciones=None):
     info = data_v2_por_selector or {}
-    html = LEYENDA_REPORTE + "<ul>"
+    html = leyenda_reporte() + "<ul>"
 
     DESC_CASCADA = {
         'DIFERENCIA POSICIÓN (Y)': ('se movieron', 'verticalmente'),
@@ -982,7 +1081,7 @@ def construir_html_fallas(consolidado, cascadas, data_v2_por_selector, url_id, a
 
 
 def generar_reporte(all_results, version_number, output_dir, timestamp, umbral_pixeles,
-                     tiempo_total, modo, producto_nombre="Sitio"):
+                     tiempo_total, modo, producto_nombre="Sitio", ambiente="prod"):
     html_file = os.path.join(output_dir, f"Reporte_DOM_Estructural_v{version_number}_{timestamp}.html")
 
     all_details_html = ""
@@ -991,6 +1090,7 @@ def generar_reporte(all_results, version_number, output_dir, timestamp, umbral_p
     total_actualizaciones = 0
     # Para el resumen global en viñetas (nombres de URL por categoría).
     urls_graves, urls_cascada, urls_act = [], [], []
+    urls_no_validadas = []
 
     for r in all_results:
         graves = [c for c in r['consolidado'] if c['gravedad'] == 'grave']
@@ -1070,6 +1170,12 @@ def generar_reporte(all_results, version_number, output_dir, timestamp, umbral_p
                 items_res.append((COLOR_LEYENDA['contenido'],
                                   f"🔄 {len(actualizaciones)} actualización(es) de contenido (esperable por caché)."))
                 urls_act.append(r['description'])
+            if r.get('no_validado'):
+                # Un componente no terminó de cargar: la URL no se puede dar por buena.
+                items_res.insert(0, (COLOR_LEYENDA['no_validado'],
+                                     f"⏳ No se pudo validar: el gráfico de cotizaciones no terminó de cargar "
+                                     f"en {' y '.join(r['no_validado'])}. Volver a correr esta página o revisarla a mano."))
+                urls_no_validadas.append(r['description'])
             if not items_res:
                 items_res.append((COLOR_LEYENDA['ok'], "✅ No se encontraron diferencias."))
         resultado_html = _lista_coloreada(items_res)
@@ -1079,14 +1185,17 @@ def generar_reporte(all_results, version_number, output_dir, timestamp, umbral_p
             actualizaciones=actualizaciones
         )
 
+        # La aclaración solo se muestra si hay algo marcado en la captura.
+        hay_marcas = not r['fatal'] and bool(r.get('consolidado') or r.get('cascadas') or actualizaciones)
+        titulo_marcas = " — con diferencias marcadas" if hay_marcas else ""
         img1_tag = f"<img src='{r['filename1']}' alt='V1'>" if r.get('filename1') else "<p>Sin captura</p>"
         img2_tag = f"<img id='screenshot-{r['url_id']}' src='{r['filename2_diff']}' alt='V2'>" if r.get('filename2_diff') else "<p>Sin captura</p>"
 
         all_details_html += f"""
         <div style="border: 2px solid #ddd; padding: 15px; margin-top: 20px; border-radius: 8px;">
             <h2>{r['description']}</h2>
-            <p><strong>URL PROD (V1):</strong> <a href="{r['url1']}" target="_blank"><code>{r['url1']}</code></a></p>
-            <p><strong>URL VNP (V2):</strong> <a href="{r['url2']}" target="_blank"><code>{r['url2']}</code></a></p>
+            <p><strong>URL {ET_V1} (V1):</strong> <a href="{r['url1']}" target="_blank"><code>{r['url1']}</code></a></p>
+            <p><strong>URL {ET_V2} (V2):</strong> <a href="{r['url2']}" target="_blank"><code>{r['url2']}</code></a></p>
             <div><strong>Resultado:</strong> <span style="display:none">{resumen_texto}</span>{resultado_html}</div>
             <p><strong>Tiempo de Ejecución:</strong> {r['time_elapsed']}</p>
             <details>
@@ -1098,9 +1207,9 @@ def generar_reporte(all_results, version_number, output_dir, timestamp, umbral_p
             <details>
                 <summary style="cursor:pointer; font-weight:bold; color:#1e3a8a;">Contexto Visual</summary>
                 <div class='container' id='container-{r["url_id"]}'>
-                    <div><h4>PROD (V1)</h4>{img1_tag}</div>
+                    <div><h4>{ET_V1} (V1)</h4>{img1_tag}</div>
                     <div id="image-container-{r['url_id']}" style="position:relative;">
-                        <h4>VNP (V2) — con diferencias marcadas</h4>{img2_tag}
+                        <h4>{ET_V2} (V2){titulo_marcas}</h4>{img2_tag}
                         <div id="highlight-box-{r['url_id']}" class="highlight-box" style="display:none;"></div>
                     </div>
                 </div>
@@ -1120,6 +1229,15 @@ def generar_reporte(all_results, version_number, output_dir, timestamp, umbral_p
         global_text = '✅ Todas las URLs pasaron la prueba estructural. Apto para deployar a PROD.'
     if total_actualizaciones:
         global_text += f' 🔄 {total_actualizaciones} actualización(es) de contenido esperable(s) por caché.'
+    if urls_no_validadas:
+        texto_nv = (f"⏳ {len(urls_no_validadas)} de {len(all_results)} urls no se pudieron validar "
+                    f"(un componente no terminó de cargar): {', '.join(urls_no_validadas)}.")
+        if global_color == 'green':
+            # Sin esto quedaria "Apto para deployar" con paginas sin validar.
+            global_color = 'orange'
+            global_text = texto_nv
+        else:
+            global_text += ' ' + texto_nv
 
     # Resumen global en viñetas, cada una con el color de su referencia.
     # global_text queda igual (lo usan Slack y GITHUB_OUTPUT): va en un span
@@ -1135,6 +1253,10 @@ def generar_reporte(all_results, version_number, output_dir, timestamp, umbral_p
         items_global.append((COLOR_LEYENDA['cascada'],
                              f"⚠️ Desplazamientos en cascada para revisar en {len(urls_cascada)} de {n_urls} URLs: "
                              f"{esc(', '.join(urls_cascada))}."))
+    if urls_no_validadas:
+        items_global.insert(0, (COLOR_LEYENDA['no_validado'],
+                                f"⏳ No se pudieron validar {len(urls_no_validadas)} de {n_urls} URLs "
+                                f"(un componente no terminó de cargar): {esc(', '.join(urls_no_validadas))}."))
     if urls_act:
         items_global.append((COLOR_LEYENDA['contenido'],
                              f"🔄 {total_actualizaciones} actualización(es) de contenido esperable(s) por caché en: "
@@ -1142,6 +1264,8 @@ def generar_reporte(all_results, version_number, output_dir, timestamp, umbral_p
     # Veredicto primero, sin viñeta, y después el detalle en viñetas.
     if global_color == 'red':
         veredicto = (COLOR_LEYENDA['grave'], "NO recomendado deployar a PROD sin revisar.")
+    elif global_color == 'orange' and urls_no_validadas and not urls_cascada:
+        veredicto = (COLOR_LEYENDA['no_validado'], "Revisar las páginas que no se pudieron validar antes de deployar a PROD.")
     elif global_color == 'orange':
         veredicto = (COLOR_LEYENDA['cascada'], "Revisar los desplazamientos antes de deployar a PROD.")
     else:
@@ -1151,7 +1275,7 @@ def generar_reporte(all_results, version_number, output_dir, timestamp, umbral_p
 
     html = f"""
     <html><head><meta charset="utf-8">
-    <title>Reporte de Regresión {producto_nombre} {modo.capitalize()} - Versión {version_number}</title>
+    <title>Reporte de Regresión {producto_nombre} {modo.capitalize()} {ambiente.upper()} - Versión {version_number}</title>
     <style>
     body {{ font-family: Arial; background:#f7f7f7; margin:20px; }}
     h1 {{ color:#1e3a8a; border-bottom:3px solid #bfdbfe; padding-bottom:10px; }}
@@ -1163,7 +1287,8 @@ def generar_reporte(all_results, version_number, output_dir, timestamp, umbral_p
     .highlight-box {{ position:absolute; pointer-events:none; z-index:1000; border-left:15px solid transparent; border-right:15px solid transparent; border-top:30px solid #ffcc00; transform:translateX(-50%); }}
     </style></head>
     <body>
-    <h1>Reporte de Regresión {producto_nombre} {modo.capitalize()} - Versión {version_number}</h1>
+    <h1>Reporte de Regresión {producto_nombre} {modo.capitalize()} {ambiente.upper()} - Versión {version_number}</h1>
+    <p><strong>Ambiente:</strong> <code>{ambiente.upper()}</code></p>
     <p><strong>Versión Testeada:</strong> <code>{version_number}</code></p>
     <p><strong>Fecha y Hora:</strong> {format_date(timestamp)} {timestamp.split('_')[1][:2]}:{timestamp.split('_')[1][2:4]}:{timestamp.split('_')[1][4:6]}</p>
     <p><strong>Tiempo Total:</strong> {format_time(tiempo_total)}</p>
@@ -1255,7 +1380,8 @@ def _tiene_graves(r):
             or any(c.get('grave') for c in (r.get('cascadas') or [])))
 
 
-def main(base_urls_map, producto_nombre="Sitio", output_dir_base=os.path.join('reportes', 'sitio')):
+def main(base_urls_map, producto_nombre="Sitio", output_dir_base=os.path.join('reportes', 'sitio'),
+         urls_por_ambiente=None):
     """Punto de entrada genérico. Cada script de producto (regre_visual_tn.py,
     regre_visual_eltrece.py, regre_visual_eldoce.py, regre_visual_ciudad.py)
     llama a esta función pasando su propio BASE_URLS_MAP, nombre de producto
@@ -1271,6 +1397,8 @@ def main(base_urls_map, producto_nombre="Sitio", output_dir_base=os.path.join('r
         description=f"Regresión visual/estructural {producto_nombre} (desktop o mobile).")
     parser.add_argument("version", help="Número de versión a testear (?d=VERSION)")
     parser.add_argument("--modo", choices=["desktop", "mobile"], default="desktop")
+    parser.add_argument("--ambiente", choices=["prod", "dev", "sbx"], default="prod",
+                         help="prod: PROD vs VNP (?d=VERSION). dev/sbx: el ambiente vs el mismo ambiente con ?d=VERSION.")
     parser.add_argument("--urls", default=None,
                          help="Lista separada por comas de nombres (valores de BASE_URLS_MAP) a testear. Por defecto: todas.")
     parser.add_argument("--tolerancia", type=int, default=core.UMBRAL_PIXELES_TOLERANCIA_DEFAULT)
@@ -1298,6 +1426,21 @@ def main(base_urls_map, producto_nombre="Sitio", output_dir_base=os.path.join('r
     output_dir = config['output_dir']
     os.makedirs(output_dir, exist_ok=True)
 
+    if args.ambiente != "prod":
+        if not urls_por_ambiente or not urls_por_ambiente.get(args.ambiente):
+            print(f"❌ {producto_nombre} no tiene URLs configuradas para el ambiente {args.ambiente}.")
+            sys.exit(1)
+        base_urls_map = urls_por_ambiente[args.ambiente]
+    configurar_etiquetas(args.ambiente, args.version)
+
+    # Las notas AMP están pensadas para celular: en desktop no se prueban
+    # (salvo que se pidan explícitamente con --urls).
+    if args.modo == 'desktop' and not args.urls:
+        amp = [d for u, d in base_urls_map.items() if 'outputtype=amp' in u.lower()]
+        if amp:
+            print(f"ℹ️ AMP se prueba solo en mobile; en desktop se omite: {', '.join(amp)}")
+            base_urls_map = {u: d for u, d in base_urls_map.items() if 'outputtype=amp' not in u.lower()}
+
     urls_map = base_urls_map
     if args.urls:
         nombres = set(n.strip() for n in args.urls.split(','))
@@ -1321,7 +1464,7 @@ def main(base_urls_map, producto_nombre="Sitio", output_dir_base=os.path.join('r
     all_results = []
     start_global = time.time()
 
-    print(f"\nINICIANDO REGRESIÓN {producto_nombre.upper()} {args.modo.upper()} - VERSIÓN {args.version}")
+    print(f"\nINICIANDO REGRESIÓN {producto_nombre.upper()} {args.modo.upper()} {args.ambiente.upper()} - VERSIÓN {args.version}")
     print(f"Tolerancia: {args.tolerancia}px | Confirmación visual: {not args.sin_confirmacion_visual} | Comparar estilos: {not args.sin_estilos}\n")
 
     for idx, (base_url, descripcion) in enumerate(urls_map.items(), 1):
@@ -1368,7 +1511,7 @@ def main(base_urls_map, producto_nombre="Sitio", output_dir_base=os.path.join('r
     tiempo_total = time.time() - start_global
     html_file, resumen = generar_reporte(all_results, args.version, output_dir, timestamp,
                                           args.tolerancia, tiempo_total, args.modo,
-                                          producto_nombre=producto_nombre)
+                                          producto_nombre=producto_nombre, ambiente=args.ambiente)
 
     print(f"\n{'='*80}\n✅ Proceso completado.\n📄 Reporte: {html_file}\n{resumen}\n{'='*80}")
 
